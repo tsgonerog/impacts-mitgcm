@@ -12,9 +12,10 @@
 # What "the shape of an upstream contribution" means here:
 #
 #   * every file in this directory is either NEW to the tree, or a copy of a
-#     tree file with lines ADDED and none removed -- with one declared
-#     exception, stubs_tap_adj.F, where the five ADEXCH_* stubs are replaced
-#     by implementations;
+#     tree file with lines ADDED and none removed -- with two declared
+#     exceptions: stubs_tap_adj.F, where the five ADEXCH_* stubs are replaced
+#     by implementations, and dummy_tap.F, where the four unreachable
+#     DUMMY_IN_STEPPING_B/_D and DUMMY_FOR_ETAN_B/_D stubs are removed;
 #   * a file that has become identical to its tree counterpart is reported
 #     as "landed upstream": delete it here;
 #   * the patch series in patches/ is exactly what these files give against
@@ -44,13 +45,13 @@ TREE="$(cd "$TREE" && pwd)" || { echo "FAIL  no MITgcm tree at $TREE" >&2; exit 
 # file here | destination in the tree | kind | patch number
 #   new       : the tree has no such file
 #   add       : tree file plus added lines, nothing removed
-#   replace   : tree file with lines removed as well (declared exception)
+#   replace   : tree file with lines removed as well (a declared exception)
 MAP=(
     "stubs_tap_adj.F         pkg/tapenade/stubs_tap_adj.F          replace 0001"
     "forward_step.F          model/src/forward_step.F              add     0002"
     "integr_continuity.F     model/src/integr_continuity.F         add     0002"
     "flow_tap                tools/TAP_support/flow_tap            add     0002"
-    "dummy_tap.F             pkg/tapenade/dummy_tap.F              add     0002"
+    "dummy_tap.F             pkg/tapenade/dummy_tap.F              replace 0002"
     "dummy_in_stepping_tap.F pkg/tapenade/dummy_in_stepping_tap.F  new     0002"
     "tapenade_ad_diff.list   pkg/tapenade/tapenade_ad_diff.list    new     0002"
 )
@@ -104,7 +105,7 @@ for entry in "${MAP[@]}"; do
             elif [ "$kind" = add ]; then
                 ok "$f: $dest plus $added added lines, nothing removed"
             else
-                ok "$f: $dest with $added added, $removed removed (the declared exception: stubs replaced)"
+                ok "$f: $dest with $added added, $removed removed (a declared exception: tree stubs replaced or removed)"
             fi ;;
     esac
 done

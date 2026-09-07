@@ -1,43 +1,7 @@
 #include "CPP_EEOPTIONS.h"
 
-      SUBROUTINE DUMMY_IN_STEPPING_D( myTime, myIter, myThid )
-
-      IMPLICIT NONE
-      _RL     myTime
-      INTEGER myIter
-      INTEGER myThid
-      RETURN
-      END
-
-      SUBROUTINE DUMMY_IN_STEPPING_B( myTime, myIter, myThid )
-
-      IMPLICIT NONE
-      _RL     myTime
-      INTEGER myIter
-      INTEGER myThid
-      RETURN
-      END
-
-      SUBROUTINE DUMMY_FOR_ETAN_D(myTime, myTimed, myIter, myThid)
-
-      IMPLICIT NONE
-      _RL     myTime
-      _RL     myTimed
-      INTEGER myIter
-      INTEGER myThid
-      END
-
-      SUBROUTINE DUMMY_FOR_ETAN_B(myTime, myTimeb, myIter, myThid)
-      IMPLICIT NONE
-      _RL     myTime
-      _RL     myTimeb
-      INTEGER myIter
-      INTEGER myThid
-      END
-
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
-C--   Tapenade output hooks and adjoint-mode switches (appended to the
-C--   four stubs above, which stay as they are).
+C--   Tapenade output hooks and adjoint-mode switches.
 C--
 C--   The routines below are the hand-written derivatives of the hooks
 C--   through which pkg/autodiff writes adjoint (ADJ*) and tangent-linear
@@ -68,6 +32,18 @@ C--   of arguments, which Fortran 77 cannot detect. With one field, a
 C--   passive field loses its call entirely and an active one is always
 C--   passed with its derivative.
 C--
+C--   checkpoint69m ships this file with four empty routines,
+C--   DUMMY_IN_STEPPING_B, DUMMY_IN_STEPPING_D, DUMMY_FOR_ETAN_B and
+C--   DUMMY_FOR_ETAN_D. They are not kept here. tools/TAP_support/flow_tap
+C--   declares DUMMY_IN_STEPPING and DUMMY_FOR_ETAN as externals whose
+C--   arguments are all read only, and Tapenade generates no call to a
+C--   derivative of such an external, in either mode; no generated file of
+C--   any adjoint or tangent-linear build references the four names.
+C--   Tapenade emits calls of those shapes only for a hook that is not
+C--   declared at all (DUMMY_FOR_ETAN_B( myTime, myTimeb, myIter, myThid ),
+C--   with myTime active), which is what the stubs recorded: a trace of
+C--   development before the flow declarations existed.
+C--
 C--   Contents:
 C--    o  DUMMY_IN_STEPPING_TAP_PREP, DUMMY_IN_STEPPING_TAP_TLM: helpers
 C--    and, each with a forward no-op and its _B, _D, _FWD, _BWD:
@@ -81,8 +57,7 @@ C--    o  AUTODIFF_INADMODE_UNSET_TAP  leave adjoint mode
 C--
 C--   The option headers below give the routines their package switches
 C--   and AD_CONFIG.h the ALLOW_ADJOINT_RUN / ALLOW_TANGENTLINEAR_RUN
-C--   guards; CPP_EEOPTIONS.h, included at the top, is guarded against
-C--   re-inclusion.
+C--   guards; CPP_EEOPTIONS.h is included at the top, as in the tree's file.
 
 #include "TAPENADE_OPTIONS.h"
 #ifdef ALLOW_AUTODIFF

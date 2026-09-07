@@ -1,5 +1,39 @@
 # TODO — DINO_1deg
 
+- [x] ~~**Remove the four stock stubs from the shared `dummy_tap.F`**~~ (added
+  and **done 2026-09-07**, the evening after the move below). The tree's
+  `pkg/tapenade/dummy_tap.F` is one include and four empty routines,
+  `DUMMY_IN_STEPPING_B`/`_D` and `DUMMY_FOR_ETAN_B`/`_D`, and the shared copy
+  had kept them verbatim ahead of the appended bodies. They are unreachable:
+  `tools/TAP_support/flow_tap` declares both stock hooks with every argument
+  read-only, the tree's Tapenade options file passes that declaration to every
+  `-tap` build, and Tapenade generates no call to a derivative of a read-only
+  external in either mode. Checked before removing them: no generated
+  `_b.f`/`_d.f` of the seven adjoint builds here (this setup's five, SOMA's,
+  the gyre's) or of the study's eighteen verification builds (nine
+  experiments, pristine and modified tree, adjoint and tangent-linear, about
+  3 000 generated files) calls them; `nm` finds them defined in `dummy_tap.o`
+  and referenced by no object; TAF builds never compile `pkg/tapenade` (no
+  `code_ad/packages.conf` lists it) and use `ADDUMMY_IN_STEPPING`; forward
+  builds never compile the file. Tapenade run on a toy caller shows where the
+  stubs came from: for a hook with no `flow_tap` stanza and an active `myTime`
+  it emits `DUMMY_FOR_ETAN_B(myTime, myTimeb, myIter, myThid)`, the stub's
+  exact shape; with the stanza, nothing; the three-argument
+  `DUMMY_IN_STEPPING_B` matches no call it produces under any declaration.
+  The shared `dummy_tap.F` now keeps the tree's opening include and drops the
+  35 lines of the stubs; `check_against_tree.sh` classifies it `replace` (the
+  second declared exception, beside `stubs_tap_adj.F`), `patches/0002` is
+  regenerated and applies cleanly, and the study tree's working copy carries
+  the same file, so `build_tapAdj_hooksInTree.sh`'s byte-identity assertion
+  holds. All seven adjoint builds rebuilt (17:49–18:28): every
+  Tapenade-generated `_b.f` byte-identical to the build before the removal
+  (188 files in each of the five DINO builds, 212 in SOMA's, 165 in the
+  gyre's), the four symbols gone from every executable, `dummy_tap.o` down
+  from 41 routines to 37, every build-body check passed. No run was needed:
+  the generated code is unchanged and the removed routines were never
+  reached. The build records name commit `c2c64b6` with the shadow and the
+  documents modified; rebuild after the commit if a record naming it matters.
+
 - [x] ~~**Move the Tapenade hooks out of `code_tap/` into one shared `-mods`
   directory in the shape of the upstream contribution**~~ (added and **done
   2026-09-07**, branch `tapenade-hooks-shared-mods`, merged into `main` the
@@ -9,7 +43,8 @@
   study's branch, exported flat: four shadows under the tree files' own names
   (`forward_step.F` +18 lines, `integr_continuity.F` +5, `stubs_tap_adj.F`
   with the five `ADEXCH_*` stubs replaced, `dummy_tap.F` with the 37 hook
-  bodies appended after the stock stubs) and three new files
+  bodies appended after the stock stubs — the stubs themselves removed later
+  that day, see the entry above) and three new files
   (`dummy_in_stepping_tap.F`, `tapenade_ad_diff.list`, `flow_tap` as the
   tree's file plus the seven stanzas). `check_against_tree.sh` there verifies
   the shape and writes `patches/` (two patches; they apply cleanly to the

@@ -500,9 +500,9 @@ stock `adjoint_tap` options throughout):
    counterparts at build time, and its three new files
    (`dummy_in_stepping_tap.F`, `tapenade_ad_diff.list`, `flow_tap`) simply
    join the build. Each shadow carries the tree file's name and is the tree
-   file plus added lines — the stubs file is the one exception, its five
-   `ADEXCH_*` stubs replaced by implementations — and the tree file is never
-   edited. The upstream hooks and their TAF adjoints (`dummy_in_stepping.F`,
+   file plus added lines — with two exceptions, `stubs_tap_adj.F`, whose five
+   `ADEXCH_*` stubs are replaced by implementations, and `dummy_tap.F`, whose
+   four empty stubs are removed — and the tree file is never edited. The upstream hooks and their TAF adjoints (`dummy_in_stepping.F`,
    `addummy_in_stepping.F`, ...) compile untouched from the vendored tree;
    under Tapenade the TAF adjoints are dead code, as in the tree's own
    Tapenade verification builds.
@@ -541,7 +541,9 @@ stock `adjoint_tap` options throughout):
    is why there is one hook per field rather than one hook carrying eleven,
    whose generated call would have a configuration-dependent argument list.
 5. **Hand-written bodies resolve at link time.** They are the 37 routines
-   appended to `dummy_tap.F` after the tree's four passive stubs: for each
+   of `dummy_tap.F`, in place of the tree's four empty stubs (unreachable,
+   since `flow_tap` declares the stock hooks read-only and Tapenade never
+   calls their derivatives; removed 2026-09-07): for each
    external the forward no-op, the `_B` (halo
    fold with the `ADEXCH_*` of `stubs_tap_adj.F`, then `DUMP_ADJ_*`; the
    switches call the TAF-named `ADAUTODIFF_INADMODE_SET`/`UNSET`, so the

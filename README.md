@@ -268,7 +268,9 @@ to the crashed baseline's forward value. The override script and the frozen
 copy are deleted, and `pkg/tapenade/dummy_tap.F` — removed at vendoring time
 for a symbol collision — is restored verbatim (shadowed from `code_tap/` from
 2026-09-02 to 2026-09-07, and from `mods_tapenade_hooks/` since, as the stock
-file plus the appended `_B` bodies).
+file's opening include plus the hook bodies; the stock file's four empty
+stubs, which nothing can call, were dropped from the shadow later on
+2026-09-07).
 **The vendored `MITgcm/` tree now deviates from upstream in zero files.**
 
 **ADJetan, and the additive file layout (later the same day).** The
