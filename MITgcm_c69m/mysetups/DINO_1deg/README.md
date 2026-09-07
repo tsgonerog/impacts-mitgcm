@@ -580,7 +580,7 @@ before that change, and the validation runs of the move are in `TODO.md`.
 **The same mechanism from inside the tree.** To find out whether the
 mechanism can become an upstream change, it was integrated into a git copy of
 checkpoint69m outside this repository — `~/MITgcm_c69m_tapenade_hooks/MITgcm`,
-branch `tapenade-hooks`, three commits on the `checkpoint69m` tag, with the
+branch `tapenade-hooks`, four commits on the `checkpoint69m` tag, with the
 verification results and the write-up beside it (copy of the write-up in the
 project notes, `references/tapenade_hooks/in_tree_integration_20260905.md`).
 `scripts/build_tapAdj_hooksInTree.sh` builds this setup against that tree
