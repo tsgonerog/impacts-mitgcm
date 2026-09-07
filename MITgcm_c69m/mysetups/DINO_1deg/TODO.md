@@ -2,7 +2,9 @@
 
 - [x] ~~**Move the Tapenade hooks out of `code_tap/` into one shared `-mods`
   directory in the shape of the upstream contribution**~~ (added and **done
-  2026-09-07**, branch `tapenade-hooks-shared-mods`).
+  2026-09-07**, branch `tapenade-hooks-shared-mods`, merged into `main` the
+  same day as a fast-forward; the pre-merge `main` is tag
+  `archive/20260907_pre-hooks-shared-mods`).
   `MITgcm_c69m/mods_tapenade_hooks/` holds the seven files of the in-tree
   study's branch, exported flat: four shadows under the tree files' own names
   (`forward_step.F` +18 lines, `integr_continuity.F` +5, `stubs_tap_adj.F`
@@ -32,7 +34,13 @@
   and gradients. Runs filed under `runs/adjoint/toolchain_validation/` (DINO)
   and `runs/adjoint/` (SOMA). What is left in `code_tap/` is configuration
   only; `the_main_loop.F` with the binomial checkpointing directive stays
-  here as a separate matter.
+  here as a separate matter. After the merge the five adjoint builds of
+  this setup were rebuilt from `main` (commit `01aa06a`, clean tree) so
+  that each `build_info.txt` names a commit on `main`; the validation runs
+  31108 and 31109 keep the records of the executables they actually ran,
+  built from the same sources before the commit existed (`git_commit=
+  eada304` with the branch's 17 modified files), which is what their
+  `build_info.txt` still says.
 
 - [x] ~~**Integrate the Tapenade hooks into the MITgcm source tree and test
   the result**~~ (added and **done 2026-09-05**). The shadows were written into
