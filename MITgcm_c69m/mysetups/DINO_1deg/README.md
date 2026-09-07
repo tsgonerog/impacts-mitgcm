@@ -110,6 +110,7 @@ duration is safe; changing the starting point means editing both by hand.
 | `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` (reference: every call checkpointed; was `build_tapAdj.sh` / `build_tapAdj/` until 2026-09-02) |
 | `build_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` | `mitgcmuv_tap_adj` (adjoint-mode viscosity boost, every call checkpointed — the list is not equivalent under the boost; see "Profiling and checkpoint tuning") |
 | `build_tapAdj_profile.sh` | `build_tapAdj_profile/` | `mitgcmuv_tap_adj` (diagnostic: ckpAll + Tapenade checkpointing profiler) |
+| `build_tapAdj_hooksInTree.sh` | `build_tapAdj_hooksInTree/` | `mitgcmuv_tap_adj` (validation of the **in-tree** hooks, 2026-09-05: built against a source-modified copy of checkpoint69m outside this repository, `~/MITgcm_c69m_tapenade_hooks/MITgcm`, from a `code_tap/` stripped of the hook shadows; run 31107 bitwise identical to the default's 31101 — see "The same mechanism from inside the tree" below) |
 
 The **unmarked** adjoint names are symlinks to the current default pair; every
 real adjoint script carries a token — `_<ckp>` (`nocheckpoint` / `ckpAll`) or
@@ -470,6 +471,27 @@ Four files matter more than the rest when following how a sensitivity is produce
 Everything Tapenade-specific in this setup is delivered **without touching the
 vendored `MITgcm/` tree**. Understanding the delivery mechanism first makes
 every file below make sense.
+
+**The same mechanism from inside the tree (2026-09-05).** To find out whether
+the shadows can become an upstream change, they were integrated into a git
+copy of checkpoint69m outside this repository — `~/MITgcm_c69m_tapenade_hooks/MITgcm`,
+branch `tapenade-hooks`, two commits on the `checkpoint69m` tag, with the patch
+series, the verification results and the write-up beside it (copy of the
+write-up in the project notes, `references/tapenade_hooks/in_tree_integration_20260905.md`).
+`scripts/build_tapAdj_hooksInTree.sh` builds this setup against that tree from
+a `code_tap/` without the ten hook files (assembled as symlinks inside the build
+directory) with the tree's stock `adjoint_tap`; run 31107 reproduces the default
+build's run 31101 bitwise (`fc`, 32 `adxx_*`, 73 `ADJ*`, 441 `%MON` lines,
+`tools/compare_adj_runs.sh`). The in-tree version is **not the shadows moved**:
+the dump hook became one external call per field, made from a wrapper routine
+that Tapenade differentiates (`pkg/tapenade/dummy_in_stepping_tap.F`), because
+Tapenade omits the adjoint argument of a field that is passive at the call site
+and a single 11-field hook would be called with a configuration-dependent
+number of arguments; and every new routine is a `_TAP` addition in
+`pkg/tapenade` beside the untouched upstream hooks, so non-Tapenade builds
+preprocess to byte-identical sources. The shadows here stay as they are, and
+the vendored tree stays pristine; the `MITGCM_TREE` variable of
+`tools/lib/build_body.sh` is what points a build elsewhere.
 
 **The problem being solved.** MITgcm's `ADJ*` dumps and its adjoint-mode
 parameter switching hang off no-op forward hooks (`DUMMY_IN_STEPPING`,

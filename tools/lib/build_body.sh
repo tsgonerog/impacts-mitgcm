@@ -30,6 +30,8 @@
 #   ADOF        tapAdj: the -adof options file, relative to the build directory
 #                                           default ../code_tap/adjoint_tap_local
 #   TAP_EXTRA   tapAdj: passed verbatim through genmake2 -tap_extra     default ""
+#   MITGCM_TREE build against this MITgcm tree instead of the vendored one;
+#               recorded as mitgcm_root= in build_info.txt   default (vendored)
 #   CKP, CKP_NOTE, VARIANT, VARIANT_NOTE
 #               tapAdj: value and trailing comment of the
 #               tapenade_checkpointing= and variant= lines of build_info.txt
@@ -73,8 +75,18 @@ INVOKED_AS="$(basename "${BASH_SOURCE[1]}")"
 BUILD_SCRIPT="$(basename "$(readlink -f "${BASH_SOURCE[1]}")")"
 
 # ---------- machine profile ----------
-# Set root directory for MITgcm relative to the setup (works after cd)
-MITGCM_ROOT="$SETUP_DIR/../../MITgcm"
+# The MITgcm tree to build against: the vendored one, unless the definition
+# names another in MITGCM_TREE (build_tapAdj_hooksInTree.sh builds against a
+# source-modified copy of checkpoint69m outside the repository). A definition
+# variable rather than an environment one on purpose: ~/.bashrc could export
+# MITGCM_ROOT and silently repoint every build, the trap machine_env.sh
+# already closes for the optfiles.
+if [ -n "${MITGCM_TREE:-}" ]; then
+    MITGCM_ROOT="$MITGCM_TREE"
+    [ -x "$MITGCM_ROOT/tools/genmake2" ] || { echo "ERROR: MITGCM_TREE=$MITGCM_TREE has no tools/genmake2"; exit 1; }
+else
+    MITGCM_ROOT="$SETUP_DIR/../../MITgcm"
+fi
 
 # Per-machine optfiles, module stack and Tapenade check. Defaults reproduce the
 # sverdrup settings, so nothing changes here; on another machine add a case
@@ -237,6 +249,9 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
     echo "run_token=$RUN_TOKEN"
     if [ "$BUILD_MODE" = tapAdj ]; then
         echo "tap_extra=$(sed -n 's/^TAP_EXTRA *= *//p' Makefile)"
+    fi
+    if [ -n "${MITGCM_TREE:-}" ]; then
+        echo "mitgcm_root=$MITGCM_ROOT"   # not the vendored tree: say which
     fi
     if declare -F build_info_extra > /dev/null; then
         build_info_extra

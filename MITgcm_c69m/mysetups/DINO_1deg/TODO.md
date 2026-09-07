@@ -1,7 +1,42 @@
 # TODO — DINO_1deg
 
+- [x] ~~**Integrate the Tapenade hooks into the MITgcm source tree and test
+  the result**~~ (added and **done 2026-09-05**). The shadows were written into
+  a git copy of checkpoint69m outside this repository,
+  `~/MITgcm_c69m_tapenade_hooks/MITgcm` (branch `tapenade-hooks`, two commits:
+  the `ADEXCH_*` implementations, then the hooks), with `MITgcm_pristine/` as
+  the control, the patch series in `patches/`, every testreport output in
+  `results/` and the study in `README.md` (copy:
+  `impacts-notes/references/tapenade_hooks/in_tree_integration_20260905.md`).
+  `scripts/build_tapAdj_hooksInTree.sh` (new; `MITGCM_TREE` support added to
+  `tools/lib/build_body.sh`) builds this setup against that tree from a
+  `code_tap/` without the ten hook files; run 31107 is EQUIVALENT to 31101
+  (210 `ADJ*`/`adxx_*` files, `fc`, 441 `%MON` lines), filed under
+  `runs/adjoint/toolchain_validation/`. What the in-tree version changed, and
+  why: the dump hook is one external call per field from a wrapper Tapenade
+  differentiates, because Tapenade omits the derivative of an argument that is
+  passive at the call site and never read afterwards (`Qsw` without
+  `SHORTWAVE_HEATING`, `diffKr` in three upstream experiments), so the
+  11-field hook has no single adjoint interface that fits every
+  configuration; and everything new is an additive `*_TAP` routine in
+  `pkg/tapenade`, so `pkg/autodiff` is untouched and non-Tapenade builds
+  preprocess byte-identically (572/573 and 836/837 files, the exception being
+  the build-date line). The eight upstream Tapenade experiments give the same
+  testreport digits in both trees (`global_oce_biogeo_bling` fails in both for
+  a NetCDF-detection reason unrelated to the hooks) and the modified tree
+  additionally writes their `ADJ*` dumps. Verdict: suitable for upstream in the
+  per-field shape, as two pull requests, rebased on `master` after
+  MITgcm#1029; the open points are scope and naming, not correctness. The
+  shadows here stay as they are.
+
 - [ ] **Exercise the diagnostics route for adjoint output under the Tapenade
-  hooks** (added 2026-09-05). Upstream roadmap issue MITgcm#735, item 3
+  hooks** (added 2026-09-05; **exercised on `global_ocean.cs32x15` with the
+  in-tree hooks the same day**, see the entry above: with a snapshot
+  `frequency` and a dump every step, the `adjDiag` records are bit-identical
+  to the binary `ADJ*` dumps at the same iteration for all stepping fields,
+  and `ADJetan` is one step out of phase, as upstream's `addummy_for_etan.F`
+  says it must be. The DINO run below is still to do, mainly for the binomial
+  re-forwards.) Upstream roadmap issue MITgcm#735, item 3
   ("integrate better with the diagnostics package to manage AD output", high
   priority), is still open as of checkpoint69q. Under TAF that route is three
   hand-written calls in the reverse sweep: `ADDUMMY_IN_STEPPING` filling the
