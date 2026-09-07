@@ -31,6 +31,8 @@ analyses/
 │       └── scidac_poster_aug2026/       the SciDAC PI meeting poster
 ├── SOMA_1deg/                        secondary configuration (62 x 62 x 31)
 │   └── adjoint_sensitivity_control_set.ipynb
+├── barotropic_gyre/                  the tutorial gyre with a passive temperature (62 x 62 x 1)
+│   └── temperature_sensitivity_6months.ipynb   daily ADJtheta snapshots, figures and the animation
 ├── reference_notebooks/              collaborator material the above derives from
 │   ├── dinocean_package_usage_from_matt.ipynb
 │   ├── dino_output_walkthrough_from_matt.ipynb
@@ -277,6 +279,19 @@ The surviving c69m SOMA runs are the 5-day adjoints
 `SOMA_1deg_frd_30d_run31034`. c69m SOMA is single-tile serial, so a notebook
 repointed at them needs only `xmitgcm.open_mdsdataset` — the manual tile
 machinery is not required.
+
+## barotropic_gyre
+
+| Notebook | Runs | What it shows |
+| --- | --- | --- |
+| `temperature_sensitivity_6months.ipynb` | `barotropic_gyre_tapAdj_ckpAll_180d_run31118` (adjoint, 180 d from the end of the 2-year spin-up `barotropic_gyre_frd_2yr_run31115`) | the sensitivity of the mean temperature over a 200 km box on the western boundary current at day 180 to the temperature field at every earlier day: `adxx_theta`, six of the 180 daily `ADJtheta` snapshots, the amplitude against time, and two animations in the run's `animations/` (the sensitivity from day 180 back to day 0, and the forward temperature). Two built-in checks: the sum of the sensitivity over the ocean is 1 at every day, and the day-0 snapshot equals `adxx_theta` |
+
+Temperature is a passive tracer there (zero thermal expansion), so the
+sensitivity is the adjoint of a linear advection-diffusion operator and does
+not depend on the temperature field itself. Run 31117, the same adjoint with
+the box in the north-eastern interior, is kept beside 31118 on scratch; its
+sensitivity is diffusion-dominated because the flow there is a few millimetres
+per second.
 
 ## Reading the output files
 

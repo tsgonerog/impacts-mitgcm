@@ -1,0 +1,9 @@
+ &GRDCHK_NML
+ grdchk_eps       = 1.d-3,
+ iGloPos          = 30,
+ jGloPos          = 52,
+ kGloPos          = 1,
+ nstep            = 1,
+ nend             = 3,
+ grdchkvarname    = "xx_theta",
+ &

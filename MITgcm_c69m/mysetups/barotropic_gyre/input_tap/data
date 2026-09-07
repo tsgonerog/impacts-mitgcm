@@ -1,0 +1,51 @@
+# Barotropic gyre (the tutorial_barotropic_gyre configuration of MITgcm) with
+# temperature stepped as a PASSIVE tracer: tempStepping on, thermal expansion
+# zero, so the gyre is the tutorial's and the temperature field rides on it.
+# The adjoint starts from the pickup of the 2-year forward spin-up (input/) and
+# runs 6 months; ADJ* dumps daily. Durations and frequencies are patched by the submit
+# body from the *_days values in scripts/submit_*.sh.
+ &PARM01
+ viscAh=4.E2,
+ f0=1.E-4,
+ beta=1.E-11,
+ rhoConst=1000.,
+ gBaro=9.81,
+ rigidLid=.FALSE.,
+ implicitFreeSurface=.TRUE.,
+ tempStepping=.TRUE.,
+ saltStepping=.FALSE.,
+ tempAdvScheme=3,
+ diffKhT=100.,
+ eosType='LINEAR',
+ tAlpha=0.,
+ sBeta=0.,
+ &
+ &PARM02
+ cg2dTargetResidual=1.E-7,
+ cg2dMaxIters=1000,
+ &
+ &PARM03
+ nIter0=51840,
+ nTimeSteps=12960,
+ deltaT=1200.0,
+ pChkptFreq=31104000.,
+ chkptFreq=0.,
+ dumpFreq=86400.,
+ monitorFreq=86400.,
+ adjMonitorFreq=86400.,
+ adjDumpFreq=86400.,
+ monitorSelect=2,
+ &
+ &PARM04
+ usingCartesianGrid=.TRUE.,
+ delX=62*20.E3,
+ delY=62*20.E3,
+ xgOrigin=-20.E3,
+ ygOrigin=-20.E3,
+ delR=5000.,
+ &
+ &PARM05
+ bathyFile='bathy.bin',
+ zonalWindFile='windx_cosy.bin',
+ hydrogThetaFile='theta_init.bin',
+ &

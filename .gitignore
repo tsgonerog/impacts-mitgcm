@@ -44,3 +44,5 @@ analyses/**/*-checkpoint.ipynb
 
 # Python bytecode (analyses/.../ensemble_common.py is imported by notebooks)
 **/__pycache__/
+MITgcm_c69m/mysetups/barotropic_gyre/input_binaries/
+MITgcm_c69m/mysetups/barotropic_gyre/input_adj_binaries/
