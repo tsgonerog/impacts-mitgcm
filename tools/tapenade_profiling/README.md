@@ -105,9 +105,10 @@ Two things c69m does not provide, hence `mods_profile/`:
   `THE_MAIN_LOOP_B`, writing `tapenade_profile.NNNN.txt` per MPI process.
 
 `build_tapAdj_profile.sh` lists `mods_profile/` **before** `../code_tap` in
-`-mods` so both files shadow, and passes `-tap_extra "-profile"` (the
-setup's external library reaches Tapenade through `-adof
-../code_tap/adjoint_tap_local`, not through `-tap_extra`). After `make` it
+`-mods` so both files shadow (the build body puts the shared hooks
+directory, `MITgcm_c69m/mods_tapenade_hooks/`, ahead of both), and passes
+`-tap_extra "-profile"`, to which the body appends the `-ext` of that
+directory's `flow_tap`. After `make` it
 asserts the hook argument counts (as
 `build_tapAdj_ckpAll.sh` does), that `forward_step_b.f` carries `ADPROFILEADJ_*`
 calls, that the compiled `the_model_main.f` is the profiling variant, and that
@@ -202,15 +203,15 @@ toy program and from the DINO build:
   `analyses/DINO_1deg/adjoint/tapenade_profiling/compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md`.
 
 The list lives in `code_tap/tap_nocheckpoint.txt` (one lower-case name per
-line, `#` comments allowed) beside `flow_tap_local` and `adjoint_tap_local`,
-the setup's other Tapenade inputs. The build script joins it into
+line, `#` comments allowed), the setup's one Tapenade input besides the
+shared hooks directory. The build script joins it into
 `-tap_extra "-nocheckpoint \"<list>\""`.
 
 What a split routine must satisfy is the same as what a checkpointed one must:
 be re-entrant and free of hidden state (the Tapenade FAQ's warning about I/O
 inside checkpointed code cuts both ways). Everything inside a DINO time step
 already passes that test under joint mode, and the hand-written hook adjoints
-(`DUMMY_IN_STEPPING_B` and friends) are `-ext` externals, which
+(`DUMMY_IN_STEPPING_XYZ_RL_B` and friends) are `-ext` externals, which
 `-nocheckpoint` does not touch.
 
 ---

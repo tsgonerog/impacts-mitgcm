@@ -9,24 +9,22 @@ C--    *_B: adjoint with checkpointing on
 C--    *_D: tlm
 C--    *_FWD, *_BWD: adjoint with no checkpointing
 C--
-C--   SETUP OVERRIDE of MITgcm/pkg/tapenade/stubs_tap_adj.F, selected by
-C--   -mods=../code_tap (same-name shadowing, like addummy_in_stepping.F).
-C--   Upstream ships the five ADEXCH_* routines as no-op stubs that print
-C--   "Called not yet defined".  They are called from the ADJ* dump path
-C--   (addummy_in_stepping.F, copy_ad_uv_outp.F) and the adjoint monitor
-C--   to fold tile-halo adjoint contributions into the interior points
-C--   that own them before the fields are written.  As no-ops they left
-C--   1-2-cell stripes of partial sums pinned to every internal tile edge
-C--   (i=17|18, 34|35 and each j multiple of 22 for the 3x9 decomposition)
-C--   in every dumped ADJ* field.  Here they are implemented by composing,
-C--   in reverse order, the same EXCH*_AD routines the adjoint dynamics
-C--   already uses (EXCH2_R{L,S}{1,2}_CUBE_AD via the Tapenade-generated
-C--   EXCH2_*_CUBE_B, or the EXCH1_*_AD family without exch2), mirroring
-C--   each forward exchange wrapper.  The cubed-sphere-only corner
-C--   fix-ups of the forward UV wrappers are not differentiated: on a
-C--   cubed-sphere topology (useCubedSphereExchange) the fold would be
-C--   incomplete near facet corners.  Everything below the ADEXCH block
-C--   is byte-identical to the upstream file.
+C--   The five ADEXCH_* routines implement the adjoint halo exchanges that
+C--   pkg/autodiff applies to an adjoint field before writing it, to fold
+C--   the tile-overlap contributions into the interior points that own them
+C--   (called from addummy_in_stepping.F, copy_ad_uv_outp.F, monitor_ad.F
+C--   and the Tapenade output hooks in dummy_tap.F). They used to be no-op
+C--   stubs, which left partial sums pinned to every internal tile edge of
+C--   a dumped adjoint field on a multi-tile decomposition. Each one now
+C--   composes, in reverse order, the *_AD twins of the exchanges its
+C--   forward counterpart calls (EXCH2_R{L,S}{1,2}_CUBE_AD with pkg/exch2,
+C--   the EXCH1_*_AD family otherwise), mirroring eesupp/src/exch_3d_rl.F,
+C--   exch_uv_3d_rl.F, exch_xy_rs.F, exch_uv_xy_rs.F and exch_xy_rl.F.
+C--   Two limitations: the cubed-sphere corner fix-ups of the forward UV
+C--   wrappers (pkg/exch2/exch2_uv_3d_rl.F, active only under
+C--   useCubedSphereExchange) are not adjointed, so the fold is incomplete
+C--   next to facet corners; and under DISCONNECTED_TILES the forward
+C--   exchange (EXCH0_*) has no adjoint counterpart, so no fold is applied.
 C--
 C--    Contents:
 C--    o  GLOBAL_MAX_R8_B
@@ -190,9 +188,11 @@ C     _AD twin, composed in reverse order (corners first).
      I            OLx, OLx, OLy, OLy, myNz,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
       ELSE
+# ifndef DISCONNECTED_TILES
         CALL EXCH1_RL_AD( adVar,
      I            OLx, OLx, OLy, OLy, myNz,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
+# endif
       ENDIF
 #endif /* ALLOW_EXCH2 */
       RETURN
@@ -224,12 +224,14 @@ C     the cubed-sphere caveat.
      I            OLx, OLx, OLy, OLy, 1,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
       ELSE
+# ifndef DISCONNECTED_TILES
         CALL EXCH1_RS_AD( adV,
      I            OLx, OLx, OLy, OLy, 1,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
         CALL EXCH1_RS_AD( adU,
      I            OLx, OLx, OLy, OLy, 1,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
+# endif
       ENDIF
 #endif /* ALLOW_EXCH2 */
       RETURN
@@ -240,7 +242,7 @@ C     Adjoint halo exchange of a 3-D _RL C-grid vector pair (uVelb,vVelb).
 C     Mirrors EXCH_UV_3D_RL / EXCH2_UV_3D_RL with the exchanges replaced
 C     by their _AD twins in reverse order.  The forward wrapper's corner
 C     fix-ups run only under useCubedSphereExchange and are not adjointed
-C     here; on a single-facet topology (this setup) they never execute.
+C     here; on a single-facet topology they never execute.
       SUBROUTINE ADEXCH_UV_3D_RL( aduVel, advVel, withSigns,
      &                            myNz, myThid )
       IMPLICIT NONE
@@ -265,12 +267,14 @@ C     here; on a single-facet topology (this setup) they never execute.
      I            OLx, OLx, OLy, OLy, myNz,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
       ELSE
+# ifndef DISCONNECTED_TILES
         CALL EXCH1_RL_AD( advVel,
      I            OLx, OLx, OLy, OLy, myNz,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
         CALL EXCH1_RL_AD( aduVel,
      I            OLx, OLx, OLy, OLy, myNz,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
+# endif
       ENDIF
 #endif /* ALLOW_EXCH2 */
       RETURN
@@ -299,9 +303,11 @@ C     Mirrors EXCH_XY_RS / EXCH2_3D_RS with myNz=1.
      I            OLx, OLx, OLy, OLy, 1,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
       ELSE
+# ifndef DISCONNECTED_TILES
         CALL EXCH1_RS_AD( adVar,
      I            OLx, OLx, OLy, OLy, 1,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
+# endif
       ENDIF
 #endif /* ALLOW_EXCH2 */
       RETURN
@@ -330,9 +336,11 @@ C     Mirrors EXCH_XY_RL / EXCH2_3D_RL with myNz=1.
      I            OLx, OLx, OLy, OLy, 1,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
       ELSE
+# ifndef DISCONNECTED_TILES
         CALL EXCH1_RL_AD( adVar,
      I            OLx, OLx, OLy, OLy, 1,
      I            OLx, OLy, EXCH_UPDATE_CORNERS, myThid )
+# endif
       ENDIF
 #endif /* ALLOW_EXCH2 */
       RETURN

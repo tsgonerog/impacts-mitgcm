@@ -108,6 +108,7 @@ notes, since it only ever operated on them.
 | --- | --- | --- |
 | `MITgcm_c69m/mysetups/DINO_1deg/` | 51 × 198 × 36, curvilinear | Primary configuration. Idealised single-basin "DINO" ocean spanning pole to pole |
 | `MITgcm_c69m/mysetups/SOMA_1deg/` | 62 × 62 × 31, 1° spherical polar | SOMA — wind-driven bowl-shaped basin, 14°N–76°N, ~3500 m deep |
+| `MITgcm_c69m/mysetups/barotropic_gyre/` | 62 × 62 × 1, Cartesian 20 km | MITgcm's tutorial barotropic gyre with temperature as a passive tracer: a fast demonstration of a temperature sensitivity and its daily `ADJ*` snapshots (added 2026-09-07) |
 
 ### What is inside a setup
 
@@ -225,28 +226,35 @@ has no such directive — its `-ext` library is purely data-flow driven, and a
 passive external is dropped from the backward sweep. Both setups bridge that
 gap the same way since 2026-08-31.
 
-**DINO — Tapenade-native (since 2026-08-31).** The hook's activity is made
-visible through its interface, which is the one mechanism Tapenade honours:
-`code_tap/forward_step.F` (a `-mods` shadow) passes the state and forcing
-fields to the upstream hook `DUMMY_IN_STEPPING(...)`, whose interface gains
-those fields under `ALLOW_TAPENADE` in the shadow `code_tap/dummy_in_stepping.F`,
-and `code_tap/flow_tap_local` — a setup-local Tapenade external library that
-the setup's `-adof` file `code_tap/adjoint_tap_local` appends after the stock
-`flow_tap`, since Tapenade keeps the last declaration of an external —
-declares those arguments active. Tapenade then generates
-`CALL DUMMY_IN_STEPPING_B(theta, thetab, …)` in the reverse sweep itself; the
-hand-written `_B` body in `code_tap/dummy_tap.F` (upstream ships it as a no-op
-stub in `pkg/tapenade`) halo-folds and dumps its adjoint arguments.
-The same pattern drives the adjoint-mode switch hooks (`AUTODIFF_INADMODE_SET/UNSET`),
-which apply and revert the `inAd*` adjVisc parameters around every backward
-step — TAF did this via `ADAUTODIFF_INADMODE_*`, which nothing in a Tapenade
-build ever called, so adjVisc was silently inert before these hooks.
-DINO's adjoint builds therefore use **stock** `genmake2`, post-edit no
+**DINO — Tapenade-native (since 2026-08-31), shared with SOMA as one
+directory since 2026-09-07.** The hook's activity is made visible through an
+interface, which is the one mechanism Tapenade honours: a Tapenade counterpart
+of each hook, called beside it with the field as an argument, and an
+external-library stanza declaring that argument active. Tapenade then
+generates the reverse-sweep call itself, and a hand-written body halo-folds
+and dumps the adjoint argument. The files that do this — four tree files with
+lines added, under their own names, and three new files — are
+`MITgcm_c69m/mods_tapenade_hooks/`, a `-mods` directory that every adjoint
+build of both setups lists first, and at the same time the proposal for
+including the mechanism in MITgcm (its README maps each file to its place in
+the tree; `check_against_tree.sh` there verifies the shape and writes the
+patch series). The same pattern drives the adjoint-mode switch hooks
+(`AUTODIFF_INADMODE_SET/UNSET`), which apply and revert the `inAd*` adjVisc
+parameters around every backward step — TAF did this via
+`ADAUTODIFF_INADMODE_*`, which nothing in a Tapenade build ever called, so
+adjVisc was silently inert before these hooks. The adjoint builds therefore
+use **stock** `genmake2` and the tree's stock Tapenade options, post-edit no
 generated file, and assert after every `make` that each generated `_B` call
 carries exactly the argument count the hand-written routines declare (F77
-would silently misalign a mismatch) and that the compiled `dummy_tap.f` still
-carries the ten `ADJ*` dump calls (they vanish silently if the file loses its
-`AD_CONFIG.h` include).
+would silently misalign a mismatch), that the compiled `dummy_tap.f` still
+carries its `ADJ*` dump calls (they vanish silently if the file loses its
+`AD_CONFIG.h` include), and that the hook sources came from the shared
+directory. From 2026-09-02 to 2026-09-07 the same mechanism was ten shadow
+files in DINO's `code_tap/` that widened the upstream hooks' argument lists;
+that form could not be submitted upstream, because Tapenade omits the
+derivative of an argument that is passive in a given configuration, so a
+hand-written adjoint with one fixed argument list fits only configurations
+in which every field is active.
 
 **SOMA — converted the same day, and the conversion was a rescue.** SOMA had
 used a patched `genmake2` (`genmake2_override_forward_step_b`) that overwrote
@@ -258,8 +266,9 @@ an adjoint on this tree (runs 31029/31030). The hook conversion fixed it: run
 31031 is the first successful c69m SOMA adjoint, with `fc` bitwise-identical
 to the crashed baseline's forward value. The override script and the frozen
 copy are deleted, and `pkg/tapenade/dummy_tap.F` — removed at vendoring time
-for a symbol collision — is restored verbatim (since 2026-09-02 it is shadowed
-from `code_tap/`, its stubs filled with the real `_B` bodies).
+for a symbol collision — is restored verbatim (shadowed from `code_tap/` from
+2026-09-02 to 2026-09-07, and from `mods_tapenade_hooks/` since, as the stock
+file plus the appended `_B` bodies).
 **The vendored `MITgcm/` tree now deviates from upstream in zero files.**
 
 **ADJetan, and the additive file layout (later the same day).** The
@@ -267,8 +276,9 @@ free-surface adjoint has its own upstream hook (`DUMMY_FOR_ETAN`, inside
 `INTEGR_CONTINUITY` — `adEtaN` is half a time step out of phase with the
 `forward_step` fields), passive under Tapenade for the same reason and
 therefore never dumped. Both setups now wire it identically:
-`code_tap/integr_continuity.F` calls `DUMMY_FOR_ETAN(etaN, …)`, and the
-hand-written `DUMMY_FOR_ETAN_B` in `code_tap/dummy_tap.F` writes `ADJetan`. In the
+the shadowed `integr_continuity.F` calls a Tapenade counterpart of the hook
+with `etaN` as an argument, and its hand-written `_B` in `dummy_tap.F` writes
+`ADJetan` (both in `mods_tapenade_hooks/` since 2026-09-07). In the
 same pass every `code_tap/` shadow in both setups was re-laid out to be the
 upstream c69m file byte-for-byte plus guarded additions (and each option
 header the upstream text with only `#define`/`#undef` toggles changed), so
@@ -359,15 +369,17 @@ The body does the same four things for every definition, and never copies
 anything into `code_tap/`:
 
 1. `make CLEAN`;
-2. run stock `genmake2` with the definition's `-mods` list and, for an adjoint,
-   `-tap`, `-adof=../code_tap/adjoint_tap_local` and its `-tap_extra` string
-   (the boost definition lists `code_tap/variants/adjointViscosity` ahead of
-   `code_tap`; the `_nocheckpoint` one reads its routine list first);
+2. run stock `genmake2` with the definition's `-mods` list — for an adjoint
+   with `MITgcm_c69m/mods_tapenade_hooks/` put first, `-tap`, the tree's stock
+   `-adof`, and its `-tap_extra` string plus `-ext` of that directory's
+   `flow_tap` (the boost definition lists `code_tap/variants/adjointViscosity`
+   ahead of `code_tap`; the `_nocheckpoint` one reads its routine list first);
 3. `make depend`;
 4. `make -j 8` (`tap_adj` for an adjoint), then assert the generated hook
-   calls' argument counts (the setup's `HOOK_CHECKS` list) and the ten `ADJ*`
-   dump calls in the compiled `dummy_tap.f`, run the definition's own checks,
-   and write `build_info.txt` — forward builds included, with `run_token=frd`.
+   calls' argument counts (the setup's `HOOK_CHECKS` list), the five `ADJ*`
+   dump calls in the compiled `dummy_tap.f` and that the hook sources link
+   into the shared directory, run the definition's own checks, and write
+   `build_info.txt` — forward builds included, with `run_token=frd`.
 
 Build directories are gitignored, large, and fully reproducible — delete and
 rebuild freely. Two things about them are worth knowing:
@@ -593,6 +605,7 @@ analyses/
 │   ├── forward/                       # 200-year spin-up, MOC/AMOC, viscosity binaries
 │   └── adjoint/                       # ADJ* sensitivity, kappa_v ensemble, Tapenade profiling
 ├── SOMA_1deg/                         # 40°N heat-transport adjoint, KPP/GM disabled
+├── barotropic_gyre/                   # box-mean temperature sensitivity of the tutorial gyre, daily snapshots
 ├── reference_notebooks/               # collaborator material the above was derived from
 └── tools/                             # strip_animation_outputs.py
 ```

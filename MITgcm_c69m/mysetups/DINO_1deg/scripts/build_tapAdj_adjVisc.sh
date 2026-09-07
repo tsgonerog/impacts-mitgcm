@@ -2,8 +2,8 @@
 # Adjoint built for ADJOINT-MODE VISCOSITY INFLATION.
 #   sources : code_tap/ + input_tap/  ->  build_tapAdj_adjVisc/mitgcmuv_tap_adj
 #
-# Same stock genmake2 + flow_tap_local hook wiring as build_tapAdj_ckpAll.sh
-# (see there for how the ADJ* dump call is generated), and like it EVERY call
+# Same stock genmake2 and shared-hooks wiring as build_tapAdj_ckpAll.sh
+# (see there for where the ADJ* dump calls come from), and like it EVERY call
 # is checkpointed: this build deliberately does NOT carry the default build's
 # -nocheckpoint list. Tested 2026-09-02 (run 31056, this build + the list, vs
 # 31025, without it): fc and the %MON stream byte-identical, but every ADJ*
@@ -17,9 +17,10 @@
 # and what 31025 validated. Record: analyses/DINO_1deg/adjoint/
 # tapenade_profiling/compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md.
 #
-# What differs from build_tapAdj_ckpAll.sh is a second -mods directory,
-# code_tap/variants/adjointViscosity/, listed FIRST so that its four files shadow
-# both code_tap/ and the vendored tree: AUTODIFF_PARAMS.h / autodiff_readparms.F
+# What differs from build_tapAdj_ckpAll.sh is a further -mods directory,
+# code_tap/variants/adjointViscosity/, listed ahead of code_tap/ so that its
+# four files shadow both code_tap/ and the vendored tree (the shared hooks
+# directory, which the build body puts first of all, has none of them): AUTODIFF_PARAMS.h / autodiff_readparms.F
 # declare and read the inAd*/outAd* parameters, autodiff_inadmode_set_ad.F /
 # autodiff_inadmode_unset_ad.F apply and restore them. Those let the model run
 # with larger viscosity and diffusivity during the adjoint sweep than in the

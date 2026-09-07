@@ -1,5 +1,39 @@
 # TODO — DINO_1deg
 
+- [x] ~~**Move the Tapenade hooks out of `code_tap/` into one shared `-mods`
+  directory in the shape of the upstream contribution**~~ (added and **done
+  2026-09-07**, branch `tapenade-hooks-shared-mods`).
+  `MITgcm_c69m/mods_tapenade_hooks/` holds the seven files of the in-tree
+  study's branch, exported flat: four shadows under the tree files' own names
+  (`forward_step.F` +18 lines, `integr_continuity.F` +5, `stubs_tap_adj.F`
+  with the five `ADEXCH_*` stubs replaced, `dummy_tap.F` with the 37 hook
+  bodies appended after the stock stubs) and three new files
+  (`dummy_in_stepping_tap.F`, `tapenade_ad_diff.list`, `flow_tap` as the
+  tree's file plus the seven stanzas). `check_against_tree.sh` there verifies
+  the shape and writes `patches/` (two patches; they apply cleanly to the
+  vendored tree; `tools/pre_push_check.sh` runs the check). The ten hook files
+  left this `code_tap/` and the seven left SOMA's. `tools/lib/build_body.sh`
+  lists the directory first in `-mods` (`HOOKS_MODS`), uses the tree's stock
+  `-adof`, appends `-ext <dir>/flow_tap` to `-tap_extra`, checks the compiled
+  `dummy_tap.f` for the five dump calls and that the hook sources link into
+  the directory; `scripts/setup_params.sh` carries the seven per-field
+  `HOOK_CHECKS` in both setups. All six adjoint builds were rebuilt and pass;
+  the in-tree build now asserts the tree's hook files byte-identical to the
+  directory (study branch commit `2a2b901c0`). Validation with
+  `tools/compare_adj_runs.sh`, all EQUIVALENT: the default build, 30 d from
+  the 180-yr pickup, run 31108 vs 31101 (218 files, `fc`, 441 `%MON` lines);
+  adjVisc 30 d from rest, 31109 vs 31090 (210 fields, `fc`
+  3.99075406661494E-01, 441 `%MON`: the mode switches engage under the boost
+  as before); SOMA 5 d, 31110 vs 31076 (186 fields, `fc`, 390 `%MON`; SOMA's
+  output no longer carries the "Called not yet defined" line of the `ADEXCH_*`
+  stubs it used to compile). The stock `tutorial_tracer_adjsens` experiment
+  on the pristine tree, with the checked-in directory supplied through a
+  `genmake_local`, gives the study's testreport verdict with identical output
+  and gradients. Runs filed under `runs/adjoint/toolchain_validation/` (DINO)
+  and `runs/adjoint/` (SOMA). What is left in `code_tap/` is configuration
+  only; `the_main_loop.F` with the binomial checkpointing directive stays
+  here as a separate matter.
+
 - [x] ~~**Integrate the Tapenade hooks into the MITgcm source tree and test
   the result**~~ (added and **done 2026-09-05**). The shadows were written into
   a git copy of checkpoint69m outside this repository,

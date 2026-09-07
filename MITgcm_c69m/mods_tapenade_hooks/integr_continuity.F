@@ -310,14 +310,11 @@ C--   End bi,bj loops
 
 #ifdef ALLOW_AUTODIFF_MONITOR
 C     In reverse, print adjoint variable for etaN
-# ifdef ALLOW_TAPENADE
-C     Tapenade has no TAF ADNAME/REQUIRED equivalent to force a hand-written
-C     adjoint for a hook with no active arguments, so etaN is passed
-C     explicitly; code_tap/flow_tap_local declares it active and Tapenade
-C     generates the reverse-sweep call to DUMMY_FOR_ETAN_B itself.
-      CALL DUMMY_FOR_ETAN( etaN, myTime, myIter, myThid )
-# else
       CALL DUMMY_FOR_ETAN( myTime, myIter, myThid )
+# ifdef ALLOW_TAPENADE
+C     Tapenade counterpart (pkg/tapenade/dummy_tap.F): etaN as an argument
+C     makes Tapenade generate the reverse-sweep call that writes ADJetan.
+      CALL DUMMY_FOR_ETAN_TAP( etaN, myTime, myIter, myThid )
 # endif
       _EXCH_XY_RL( etaN , myThid )
 #else /* ALLOW_AUTODIFF_MONITOR */

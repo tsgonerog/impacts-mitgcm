@@ -27,9 +27,16 @@
 #   MODS        array of -mods directories, RELATIVE TO THE BUILD DIRECTORY;
 #               on a name clash the earlier directory wins
 #                                     default (../code) or (../code_tap) by mode
-#   ADOF        tapAdj: the -adof options file, relative to the build directory
-#                                           default ../code_tap/adjoint_tap_local
+#   ADOF        tapAdj: the -adof options file (absolute, or relative to the
+#               build directory)      default: the tree's stock adjoint_tap
 #   TAP_EXTRA   tapAdj: passed verbatim through genmake2 -tap_extra     default ""
+#   HOOKS_MODS  tapAdj: the shared Tapenade hooks directory, RELATIVE TO THE
+#               BUILD DIRECTORY (MITgcm_c69m/mods_tapenade_hooks, see its
+#               README): listed FIRST in -mods, its flow_tap handed to Tapenade
+#               as a second -ext through -tap_extra, and the compiled hook
+#               sources asserted to come from it. Empty = the tree carries the
+#               hooks itself (build_tapAdj_hooksInTree.sh)
+#                                             default ../../../mods_tapenade_hooks
 #   MITGCM_TREE build against this MITgcm tree instead of the vendored one;
 #               recorded as mitgcm_root= in build_info.txt   default (vendored)
 #   CKP, CKP_NOTE, VARIANT, VARIANT_NOTE
@@ -48,8 +55,9 @@
 #
 #   HOOK_CHECKS  array of "NAME_B <argument count> <generated file>": each
 #                hook's generated _B call is checked after make (tapAdj only)
-#   DUMP_CALLS   how many DUMP_ADJ_* calls the compiled dummy_tap.f must carry
-#                (tapAdj only)
+#   DUMP_CALLS   how many DUMP_ADJ_* calls the compiled DUMP_FILE must carry
+#   DUMP_FILE    the preprocessed source holding them (tapAdj only)
+#                                                            default dummy_tap.f
 #
 # The definition runs under `set -euo pipefail`, and so does this file.
 
@@ -120,8 +128,10 @@ if [ "$BUILD_MODE" = tapAdj ]; then
     EXE=mitgcmuv_tap_adj
     MAKE_TARGET=tap_adj
     if [ -z "${MODS+set}" ] || [ "${#MODS[@]}" -eq 0 ]; then MODS=(../code_tap); fi
-    ADOF="${ADOF:-../code_tap/adjoint_tap_local}"
+    ADOF="${ADOF:-$MITGCM_ROOT/tools/adjoint_options/adjoint_tap}"   # explicit: genmake2 would else honour a MITGCM_AD_OF in the environment
     TAP_EXTRA="${TAP_EXTRA:-}"
+    HOOKS_MODS="${HOOKS_MODS-../../../mods_tapenade_hooks}"
+    DUMP_FILE="${DUMP_FILE:-dummy_tap.f}"
     for v in CKP VARIANT; do
         [ -n "${!v:-}" ] || { echo "ERROR: a tapAdj build definition must set $v (for build_info.txt)"; exit 2; }
     done
@@ -151,14 +161,27 @@ cd "$BUILD_DIR" || { echo "Failed to enter $BUILD_DIR"; exit 1; }
 # Clean any previous build (ignore if Makefile not created yet)
 make CLEAN || true
 
+# The shared Tapenade hooks (MITgcm_c69m/mods_tapenade_hooks/): first in -mods,
+# so that nothing in a setup or variant directory can shadow them, and their
+# flow_tap handed to Tapenade as a second external library beside the stock
+# one (the hook stanzas carry new names, so the two files do not conflict).
+# Paths are relative to this build directory, like -mods.
+if [ "$BUILD_MODE" = tapAdj ] && [ -n "$HOOKS_MODS" ]; then
+    for f in flow_tap forward_step.F integr_continuity.F stubs_tap_adj.F \
+             dummy_tap.F dummy_in_stepping_tap.F tapenade_ad_diff.list; do
+        [ -f "$HOOKS_MODS/$f" ] || { echo "ERROR: $HOOKS_MODS/$f not found from $PWD (HOOKS_MODS is relative to the build directory)"; exit 1; }
+    done
+    MODS=("$HOOKS_MODS" "${MODS[@]}")
+    TAP_EXTRA="${TAP_EXTRA:+$TAP_EXTRA }-ext $HOOKS_MODS/flow_tap"
+fi
+
 # Configure the build (this creates the Makefile here). Every path handed to
 # genmake2 is relative to the build directory, like -mods, so the generated
 # Makefile carries no machine path beyond the setup's own. For the adjoint,
-# -adof names the setup's Tapenade options file, which appends
-# code_tap/flow_tap_local AFTER the stock external library (Tapenade keeps the
-# last declaration of an external), and -tap_extra carries the variant's
-# Tapenade flags, written verbatim into the Makefile's TAP_EXTRA so inner
-# quotes survive to the shell that runs Tapenade.
+# -adof names the tree's stock Tapenade options file, and -tap_extra carries
+# the variant's Tapenade flags plus the shared hooks' -ext, written verbatim
+# into the Makefile's TAP_EXTRA so inner quotes survive to the shell that
+# runs Tapenade.
 genmake_args=()
 [ "$PARALLEL" = mpi ] && genmake_args+=(-mpi)
 [ "$BUILD_MODE" = tapAdj ] && genmake_args+=(-tap)
@@ -181,9 +204,9 @@ make -j 8 $MAKE_TARGET
 # ---------- adjoint checks ----------
 if [ "$BUILD_MODE" = tapAdj ]; then
     # Tapenade must have generated each hook's _B call, and the argument lists
-    # must match the hand-written routines (DINO: dump hook 11 value/adjoint
-    # pairs + myTime, myIter, myThid = 25; etaN dump hook 1 pair + 3 = 5;
-    # mode-switch hooks 1 pair + 3 = 5). F77 would silently misalign
+    # must match the hand-written routines (a scalar field hook: fld, fldb,
+    # two names, myTime, myIter, myThid = 7; a vector pair 11; the etaN hook
+    # and the mode switches fld, fldb + 3 = 5). F77 would silently misalign
     # mismatched arguments, so fail the build loudly instead. The list of hooks
     # and counts is the setup's (HOOK_CHECKS in scripts/setup_params.sh).
     check_gen_call() {
@@ -209,18 +232,34 @@ if [ "$BUILD_MODE" = tapAdj ]; then
         check_gen_call $entry
     done
 
-    # The hook adjoints must have kept their bodies. dummy_tap.F includes
-    # AD_CONFIG.h, the only definition of ALLOW_ADJOINT_RUN, which guards the
-    # ADJ* dump code: without it the adjoint is still bitwise correct but
-    # writes no ADJ* files (2026-09-02, runs 31071-31073). Fail here rather
-    # than after a run.
-    ndump=$(grep -c 'CALL DUMP_ADJ_' dummy_tap.f || true)
-    if [ "${ndump:-0}" -lt "${DUMP_CALLS:-10}" ]; then
-        echo "ERROR: the compiled dummy_tap.f carries only ${ndump:-0} DUMP_ADJ_* calls (expected ${DUMP_CALLS:-10}):"
+    # The hook adjoints must have kept their bodies. The file holding them
+    # includes AD_CONFIG.h, the only definition of ALLOW_ADJOINT_RUN, which
+    # guards the ADJ* dump code: without it the adjoint is still bitwise
+    # correct but writes no ADJ* files (2026-09-02, runs 31071-31073). Fail
+    # here rather than after a run.
+    ndump=$(grep -c 'CALL DUMP_ADJ_' "$DUMP_FILE" || true)
+    if [ "${ndump:-0}" -lt "${DUMP_CALLS:-5}" ]; then
+        echo "ERROR: the compiled $DUMP_FILE carries only ${ndump:-0} DUMP_ADJ_* calls (expected ${DUMP_CALLS:-5}):"
         echo "       the ADJ* dump bodies were preprocessed away -- check the AD_CONFIG.h include."
         exit 1
     fi
-    echo "OK: the compiled dummy_tap.f carries ${ndump} ADJ* dump calls."
+    echo "OK: the compiled $DUMP_FILE carries ${ndump} ADJ* dump calls."
+
+    # The hooks must be the shared directory's, not a same-named file from a
+    # setup or the tree: genmake2 links the first match, so a wrong -mods order
+    # would silently build something else under this build's name.
+    if [ -n "$HOOKS_MODS" ]; then
+        hooks_abs="$(cd "$HOOKS_MODS" && pwd)"
+        for f in forward_step.F integr_continuity.F stubs_tap_adj.F dummy_tap.F dummy_in_stepping_tap.F; do
+            case "$(readlink -f "$f")" in
+                "$hooks_abs"/*) ;;
+                *) echo "ERROR: $f was compiled from $(readlink -f "$f"), not from $hooks_abs"; exit 1 ;;
+            esac
+        done
+        grep -q -- "-ext $HOOKS_MODS/flow_tap" Makefile \
+            || { echo "ERROR: the Makefile's TAP_EXTRA lacks -ext $HOOKS_MODS/flow_tap"; exit 1; }
+        echo "OK: hook sources and flow_tap came from $hooks_abs."
+    fi
 fi
 
 # The definition's own checks: the variant really compiled, every listed
@@ -249,6 +288,7 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
     echo "run_token=$RUN_TOKEN"
     if [ "$BUILD_MODE" = tapAdj ]; then
         echo "tap_extra=$(sed -n 's/^TAP_EXTRA *= *//p' Makefile)"
+        echo "hooks_mods=${HOOKS_MODS:-none (the tree carries the hooks)}"
     fi
     if [ -n "${MITGCM_TREE:-}" ]; then
         echo "mitgcm_root=$MITGCM_ROOT"   # not the vendored tree: say which

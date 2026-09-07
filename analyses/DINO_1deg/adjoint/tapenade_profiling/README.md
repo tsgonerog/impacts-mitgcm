@@ -84,8 +84,10 @@ default DINO adjoint since 2026-09-02 (`build_tapAdj.sh` is a symlink to it).
 
 `code_tap/tap_nocheckpoint.txt`: every callee with a measured gain ≥ 1 s that is
 not a Tapenade external (`cg2d` and `exch2_rl1_cube` are declared in
-`tools/TAP_support/flow_tap`, the dump and mode-switch hooks in `flow_tap_local` —
-`TAP_*`-named in the profiled build, upstream-named since 2026-09-02; externals
+`tools/TAP_support/flow_tap`, the dump and mode-switch hooks in the setup's
+library of the time, `flow_tap_local` — `TAP_*`-named in the profiled build,
+upstream-named since 2026-09-02, per-field in `mods_tapenade_hooks/flow_tap`
+since 2026-09-07; externals
 have no source to split). 33 routines, 357 of the 363 s. Compared with the
 c69f-era 64-routine list (`tools/tapenade_profiling/nocheckpoint_routines.txt`):
 8 routines in common, none of the top twelve, and that list would have

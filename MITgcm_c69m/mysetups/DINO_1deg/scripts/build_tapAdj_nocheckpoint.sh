@@ -13,8 +13,8 @@
 # re-profile with build_tapAdj_profile.sh whenever the adjoint's package
 # set, physics or decomposition changes.
 #
-# Same stock genmake2 + flow_tap_local hook wiring as build_tapAdj_ckpAll.sh
-# (see there for how the ADJ* dump call is generated), with one Tapenade flag
+# Same stock genmake2 and shared-hooks wiring as build_tapAdj_ckpAll.sh
+# (see there for where the ADJ* dump calls come from), with one Tapenade flag
 # added: -nocheckpoint "<routines>". By default Tapenade checkpoints every
 # call inside a time step ("joint" mode): the callee's primal is run once in
 # the enclosing forward sweep and run AGAIN, recording, inside its own _B

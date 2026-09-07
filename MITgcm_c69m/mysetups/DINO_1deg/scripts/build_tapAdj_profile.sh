@@ -3,8 +3,8 @@
 #   sources : code_tap/ + input_tap/ + tools/tapenade_profiling/mods_profile/
 #          -> build_tapAdj_profile/mitgcmuv_tap_adj
 #
-# Same stock genmake2 + flow_tap_local hook wiring as build_tapAdj_ckpAll.sh
-# (see there for how the ADJ* dump call is generated), plus two things:
+# Same stock genmake2 and shared-hooks wiring as build_tapAdj_ckpAll.sh
+# (see there for where the ADJ* dump calls come from), plus two things:
 #
 #   * "-profile" on the Tapenade command line, through -tap_extra. Tapenade
 #     then brackets every checkpointed call in the generated adjoint with

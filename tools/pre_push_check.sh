@@ -77,6 +77,20 @@ else
 fi
 
 echo
+echo "── Tapenade hooks directory ─────────────────────────────────────────"
+# MITgcm_c69m/mods_tapenade_hooks/ is both the -mods directory every adjoint
+# build uses and the upstream proposal; its own script checks that every file
+# is new to the tree or a tree file plus added lines, and that patches/ is
+# what the files give against the vendored tree.
+if out=$(MITgcm_c69m/mods_tapenade_hooks/check_against_tree.sh --check 2>&1); then
+    ok "mods_tapenade_hooks keeps the shape of an upstream contribution; patches/ current"
+else
+    bad "mods_tapenade_hooks/check_against_tree.sh --check failed:"
+    printf "%s\n" "$out" | grep 'FAIL' | sed 's/^/       /'
+    printf "        ${dim}run MITgcm_c69m/mods_tapenade_hooks/check_against_tree.sh to regenerate patches/${off}\n"
+fi
+
+echo
 echo "── notebook scratch paths ───────────────────────────────────────────"
 python3 - <<'PY'
 import json, glob, re, os, sys
