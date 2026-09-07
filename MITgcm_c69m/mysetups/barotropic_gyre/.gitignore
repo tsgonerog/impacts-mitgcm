@@ -1,0 +1,10 @@
+# SLURM job logs (see logs/.gitkeep). Kept as a directory so a fresh clone has
+# somewhere for `sbatch -o` to write; the logs themselves are untracked.
+logs/*
+!logs/.gitkeep
+
+# Safety net for the pre-2026-09-02 layout, when -o/-e wrote <job>.<id>.{out,err}
+# here at top level. Nothing should land here any more, but a job submitted with
+# a stale script copy still stays untracked rather than reaching a `git add -A`.
+*.out
+*.err
