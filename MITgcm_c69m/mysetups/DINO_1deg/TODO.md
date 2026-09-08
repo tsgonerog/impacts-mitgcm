@@ -31,8 +31,10 @@
   gyre's), the four symbols gone from every executable, `dummy_tap.o` down
   from 41 routines to 37, every build-body check passed. No run was needed:
   the generated code is unchanged and the removed routines were never
-  reached. The build records name commit `c2c64b6` with the shadow and the
-  documents modified; rebuild after the commit if a record naming it matters.
+  reached. After the commit (`d3df038` and the two commit-count fixes that
+  followed) all seven were rebuilt once more from the clean tree, so that
+  every `build_info.txt` names commit `cab34ff` with no modified tracked
+  files; the generated code and the symbol check came out the same.
 
 - [x] ~~**Move the Tapenade hooks out of `code_tap/` into one shared `-mods`
   directory in the shape of the upstream contribution**~~ (added and **done
