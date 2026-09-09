@@ -497,6 +497,50 @@ diffKrT (or Kp,Kz) setting in file "data" with ALLOW_3D_DIFFKR` to
 salinity share the one `diffKr` array, which is initialised from
 `diffKrNrS = diffKrNrT`, so the value is used, through the salinity slot.
 
+### Why the reference viscosity is unstable, and the smallest change that is not (2026-09-09)
+
+The 200-yr spin-up needed twice DINO's viscosity (`visc2x`); the reference
+field (`viscRef`) crashed the forward after roughly 180 yr and its adjoints
+blow up sooner. No monitor log of a crashed run survives, so the study restarts
+the 2× spin-up's mature state under each setting — `input/variants/stability_study/`
+(2 yr and 10 yr from year 170) and `input_tap/variants/stability_study/` (30 d
+and 183 d adjoints) — and reads the monitor stream and the `ADJ*` dumps;
+`analyses/DINO_1deg/stability_study_viscosity_restarts_from170yrPk.ipynb` has
+the figures and the READMEs of the two groups the run-by-run tables. What it
+found:
+
+- **The doubling acts entirely through the vorticity (Z) part of the
+  viscosity.** At the reference viscosity the equatorial western boundary
+  current spins up from 0.76 to 1.03 m/s within months (grid Reynolds number
+  |u|Δx/A = 7.6; 5.1 in the channel) and the peak kinetic energy doubles;
+  doubling only the divergence (D) part changes nothing, doubling only Z
+  reproduces the 2× run. The vorticity scheme (`selectVortScheme=2` or 3,
+  DINO's EEN), the Jamart Coriolis treatment and a grid biharmonic change the
+  peaks by at most 10 %. So it is a question of damping the jets, not of a
+  discretisation choice.
+- **DINO's closure is a grid-Reynolds-number closure with a fixed velocity
+  scale**: A = ½·U_v·Δx with `rn_Uv = 0.27` m/s keeps Re_Δ = 2 for flow at
+  that speed and under-damps anything faster. `viscAhReMax=2.` is the same
+  criterion with the local speed: a floor A ≥ |u|·Δx/2 that leaves DINO's field
+  untouched wherever |u| < 0.27 m/s and raises it only in the jets — in the
+  2-yr restart on 0.8 % of the wet points (max 2.5× the reference, in the
+  equatorial boundary current), with the peaks held exactly at the 2× level
+  and the domain-mean kinetic energy at the reference level. Its 30-d adjoint
+  is finite with the same growth as the reference run's (31163 vs 31152).
+  This is the recommended replacement for the blanket doubling; the 10-yr
+  forward (31164) and the M7 adjoint below are its longer checks.
+- **The adjoint has two separate problems.** GM/Redi, on in the forward
+  spin-up and off in every adjoint (see "KPP and GM/Redi" in the root
+  `CLAUDE.md`), cannot be switched on in the adjoint at the reference
+  viscosity (explodes within 20 d) and is marginal at 2×; and the GM-free
+  adjoint's blow-ups (four of the seven kappa members) are episodic bursts with
+  1–3-day e-folding seeded at single deep points — the signature the flux
+  limiter's adjoint leaves in nearly uniform tracer fields. MITgcm's stock
+  cure, `useApproxAdvectionInAdMode`, is inert in the Tapenade build (a
+  TAF-only macro in `gad_advection.F`); the `M7_lastHalfYr*` runs test the
+  limiter hypothesis directly by reproducing the last 183 d of member M7's
+  blown 5-yr adjoint with and without the limiter.
+
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but
 MITgcm has no parameter form for any of them (`dino_utau.bin` and

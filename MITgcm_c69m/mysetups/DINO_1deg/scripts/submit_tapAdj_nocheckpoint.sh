@@ -63,9 +63,16 @@ TIME_PARAMS=(monitorFreq adjMonitorFreq adjDumpFreq)
 # The 180-yr state of the 200-yr visc2x spin-up, matching the nIter0=3162240
 # baked into baseline/data_from180yrPk_visc2x. Changing test_cases to another
 # from*Pk tag means changing these two lines to the matching pickup as well.
+# IMPACTS_PICKUP_RUN_DIR / IMPACTS_PICKUP_ITER (since 2026-09-09) override the run
+# directory the pickup is taken from and its iteration, for a namelist whose
+# nIter0 is another run's pickup (a kappa_v_ensemble member's own, or a
+# mid-window restart of an adjoint run); the defaults are the spin-up and its
+# year-180 pickup, exactly the two lines that were hard-coded here before.
 stage_pickups() {
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.data pickup.0003162240.data
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.meta pickup.0003162240.meta
+    local pk_dir="${IMPACTS_PICKUP_RUN_DIR:-$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983}"
+    local pk_it; pk_it=$(printf '%010d' "${IMPACTS_PICKUP_ITER:-3162240}")
+    ln -s "$pk_dir/pickup.$pk_it.data" "pickup.$pk_it.data"
+    ln -s "$pk_dir/pickup.$pk_it.meta" "pickup.$pk_it.meta"
 }
 
 source "$SLURM_SUBMIT_DIR/../../../tools/lib/submit_body.sh"

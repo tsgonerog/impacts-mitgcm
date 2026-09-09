@@ -147,6 +147,15 @@ is how `isecbeg/isecend/jsec` in `code_tap/cost_atlantic_heat.F` were chosen,
 and both `README.md` and `CLAUDE.md` cite it by name. It reads grid only, from
 the 30-day adjoint 31022.
 
+`stability_study_viscosity_restarts_from170yrPk.ipynb` (2026-09-09) is the
+record of why the reference DINO viscosity is unstable here and what else
+stabilises it: 2-yr and 10-yr forward restarts of the 2× spin-up's year-170
+pickup under `input/variants/stability_study/` (31143–31151, 31160, 31161,
+31164), 30-d adjoints from the 180-yr pickup under
+`input_tap/variants/stability_study/` (31152–31159, 31163) and the 183-d
+restarts of kappa member M7's blown 5-yr adjoint (31166–31168 against 31046).
+Figures go to `analysis/stability_study/figures/`.
+
 `first_look_at_output.ipynb` is the entry point for reading any DINO run:
 `dynDiag` through `xmitgcm`, nothing configuration-specific. It reads the
 200-year spin-up 30983.
