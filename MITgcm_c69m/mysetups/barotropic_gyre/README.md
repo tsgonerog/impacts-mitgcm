@@ -32,12 +32,23 @@ gives the forward run something to advect.
 
 The Tapenade hooks are not in this setup: the build body lists
 `MITgcm_c69m/mods_tapenade_hooks/` first in `-mods` for the adjoint build, as
-for DINO and SOMA. In this configuration Tapenade generates only the hooks
-whose field is active: the temperature and vertical-velocity dumps (through
-the same routine), the velocity pair, the free surface and the two mode
-switches. Salt is not stepped and there is no heat, freshwater or wind-stress
-control, so those hooks' calls are dropped, which is what one hook per field
-allows; `scripts/setup_params.sh` lists the five that remain.
+for DINO and SOMA. Of the wrapper's eleven fields, nine reach the compiler
+here and Tapenade generates the adjoint call for every one of them: `theta`,
+`salt` and `wVel` (the 3-D scalar hook), the `uVel`/`vVel` pair, the `fu`/`fv`
+pair, `Qnet` and `EmPmR` (the 2-D scalar hook), plus the free-surface hook and
+the two mode switches; `build_tapAdj/dummy_in_stepping_tap_b.f` carries all
+seven `_B` calls, and run 31118 wrote all ten fields (`ADJtheta`, `ADJsalt`,
+`ADJwvel`, `ADJuvel`, `ADJvvel`, `ADJtaux`, `ADJtauy`, `ADJqnet`, `ADJempmr`,
+`ADJetan`) every day. The two fields that are missing, `Qsw` and `diffKr`, are
+missing at preprocessing, not by Tapenade's choice: `SHORTWAVE_HEATING` is
+undefined in `code_tap/CPP_OPTIONS.h` and `ALLOW_DIFFKR_CONTROL` in the tree's
+`pkg/ctrl/CTRL_OPTIONS.h`, so their calls are never compiled. Salt being
+unstepped (`saltStepping=.FALSE.`) and the forcing being uncontrolled are
+run-time facts that Tapenade's static activity analysis does not see, so
+those hooks keep their calls and their dumps are written (all zero for salt).
+`scripts/setup_params.sh` lists the seven generated calls the build asserts.
+(Until 2026-09-08 this paragraph claimed that the salt and forcing calls were
+dropped; the generated file says otherwise.)
 
 ## The cost function
 

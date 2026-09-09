@@ -10,14 +10,21 @@ DAYS_PER_YEAR=360         # whole years label a run <n>yr (the 2-year spin-up)
 
 # ---------- generated-hook assertions (adjoint builds) ----------
 # The hooks come from MITgcm_c69m/mods_tapenade_hooks/ (its README says how).
-# In this configuration only the state hooks are active: temperature is the
-# stepped tracer (its hook carries theta and, by the same routine, wVel), the
-# velocity pair, the free surface and the two mode switches. Salt is not
-# stepped and there is no surface heat, freshwater or wind-stress control, so
-# Tapenade drops those hooks' calls (one hook per field is what allows that).
+# Tapenade generates the adjoint call of every field hook that reaches the
+# compiler here: theta, salt and wVel (the 3-D scalar hook), the uVel/vVel
+# pair, the fu/fv pair, Qnet and EmPmR (the 2-D scalar hook), plus the
+# free-surface hook and the two mode switches: the same seven entries as DINO
+# and SOMA. Only Qsw and diffKr are absent, and at preprocessing, not by
+# Tapenade's choice (SHORTWAVE_HEATING and ALLOW_DIFFKR_CONTROL are
+# undefined). Salt being unstepped and the forcing uncontrolled are run-time
+# facts the activity analysis does not see. (Until 2026-09-08 this list held
+# five entries and the comment said the other calls were dropped; the
+# generated dummy_in_stepping_tap_b.f says otherwise.)
 HOOK_CHECKS=(
     "DUMMY_IN_STEPPING_XYZ_RL_B 7 dummy_in_stepping_tap_b.f"
+    "DUMMY_IN_STEPPING_XY_RS_B 7 dummy_in_stepping_tap_b.f"
     "DUMMY_IN_STEPPING_UV_XYZ_RL_B 11 dummy_in_stepping_tap_b.f"
+    "DUMMY_IN_STEPPING_UV_XY_RS_B 11 dummy_in_stepping_tap_b.f"
     "DUMMY_FOR_ETAN_TAP_B 5 integr_continuity_b.f"
     "AUTODIFF_INADMODE_SET_TAP_B 5 forward_step_b.f"
     "AUTODIFF_INADMODE_UNSET_TAP_B 5 forward_step_b.f"
