@@ -1,5 +1,54 @@
 # TODO — DINO_1deg
 
+- [x] ~~**Why does the forward and the adjoint need twice DINO's viscosity,
+  and what is the smallest change that stabilises them instead?**~~ (added and
+  **done 2026-09-09**, branch `dino-stability-study`; the runs are filed under
+  `runs/{forward,adjoint}/stability_study/`, the notebook is
+  `analyses/DINO_1deg/stability_study_viscosity_restarts_from170yrPk.ipynb`,
+  the two `stability_study` variant READMEs carry the run-by-run tables and
+  the setup README a subsection). No monitor log of a crashed run survives, so
+  everything restarts the 2× spin-up's mature state. **Forward** (2 yr from
+  year 170, 31143–31151/31160; 10 yr, 31161/31164): the doubling acts entirely
+  through the vorticity (Z) viscosity — at the reference viscosity the
+  equatorial and channel boundary currents spin up to 1.0–1.1 m/s within
+  months (Re_Δ 7.6 and 5.1) and `ke_max` doubles, doubling only D changes
+  nothing, doubling only Z reproduces the 2× run; `selectVortScheme` 2/3
+  (DINO's EEN), Jamart Coriolis and a grid biharmonic move the peaks by ≤ 10 %.
+  The reference viscosity is nevertheless stable for 10 yr from this state
+  (peaks flat from year 1, roughness flat, mean KE +3 %/decade): the ~180-yr
+  crash from rest is a slow loss of margin, not reproducible cheaply.
+  `viscAhReMax=2.` — DINO's own Re_Δ = 2 criterion applied with the local
+  speed — keeps DINO's field on 99.2 % of the wet points, raises it up to
+  2.5× in the equatorial boundary current, holds the peaks at the 2× level
+  for the whole 10 yr at the reference run's mean KE, and its 30-d adjoint
+  (31163) is finite with the reference run's growth: the recommended
+  replacement for the blanket doubling. **Adjoint** (30 d from the 180-yr
+  pickup, 31152–31159/31163; 183 d, 31166–31168): two separate findings.
+  (i) The spin-up runs with GM/Redi on and every adjoint with it off, unchanged
+  since the import (`input/data.pkg` vs `input_tap/data.pkg`; the two
+  `data.gmredi` differ too); GM on in both sweeps explodes within 20 d of lead
+  at the reference viscosity (31155) and is marginal at 2× (31154); GM in the
+  forward sweep only (`useGMRediInAdMode=.FALSE.`) is catastrophic at both
+  viscosities under Tapenade's checkpoint recomputation (31156/31157, rms 1e30
+  by lead 25 d); GM off in both is the only stable choice. (ii) The GM-free
+  adjoint's blow-ups are the DST3 flux limiter's adjoint: the last 183 d of
+  kappa member M7's blown 5-yr adjoint 31046, restarted from its own monthly
+  pickup 3241296 (the new `IMPACTS_PICKUP_RUN_DIR`/`IMPACTS_PICKUP_ITER`
+  override of the adjoint submit scripts), reproduce it byte for byte, blow-up
+  included (31166: rms `ADJtheta` 1.09e-4 at lead 110 d → 2.6e-2 at 140 d,
+  max 5.8); with `tempAdvScheme=saltAdvScheme=30` in both sweeps (31167) there
+  is no blow-up (rms decays to 8.5e-5 at 170 d, max 3.7e-3; `fc` 0.5125 vs
+  0.5102, +0.45 %); with `viscAhReMax=2.` alone (31168) the burst is halved.
+  The kappa members that blew up were all 2× runs — viscosity delays this
+  instability, scheme 30 removes it. MITgcm's adjoint-only form of the same
+  cure, `useApproxAdvectionInAdMode`, is inert in the Tapenade builds
+  (`gad_advection.F` guards it with `ALLOW_AUTODIFF_TAMC`; 31158/31159
+  byte-identical to 31140/31152) and would in any case need the
+  checkpoint-everything build (the tracer routines are in the `-nocheckpoint`
+  list). Not done: a from-rest spin-up with `viscAhReMax=2.` and scheme 30,
+  and the gradient check under scheme 30 — the two validations the change to
+  production needs.
+
 - [x] ~~**Replace DINO's file-based mixing inputs with MITgcm parameters
   where a parameter exists, and settle where one does not**~~ (added and
   **done 2026-09-09**, branch `dino-mixing-params`). Reviewed against the

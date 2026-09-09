@@ -39,5 +39,18 @@ port's boundary currents run at 0.8–1.1 m/s at the reference viscosity, i.e.
 Re_Δ ≈ 3–4 in the jets (up to 4.8 at the surface of the 2× state, 7 at
 reference). `viscAhReMax=2.` is that same criterion applied with the local
 speed instead of the fixed 0.27 m/s: DINO's viscosity everywhere the flow is
-slower than 0.27 m/s, and just enough more where it is faster. The 10-yr
-continuations (31161 `viscRef`, 31164 `viscRef_ReMax2`) are the next check.
+slower than 0.27 m/s, and just enough more where it is faster.
+
+**10-yr continuations (31161 `viscRef`, 31164 `viscRef_ReMax2`, monthly
+monitor).** Both run the full 10 yr without a flag. `viscRef` keeps its peaks
+flat from year 1 on (\|u\| 0.76–0.78, \|v\| 1.02–1.03, `ke_max` 0.53) with the
+domain-mean KE creeping up by 3 % over the decade (3.51 → 3.61e-4; the 2×
+spin-up is flat at 2.93–2.97e-4) and grid roughness (`*_del2`) flat; so there
+is no fast instability at the reference viscosity from a mature state, only a
+narrower margin on a slowly intensifying circulation — the crash after ~180 yr
+from rest is not reproducible in short runs. `viscRef_ReMax2` holds the 2×
+peak levels for the whole decade (\|u\| 0.51–0.52, \|v\| 0.78–0.79, `ke_max`
+0.31) at the reference run's mean KE. The floor is the recommended
+replacement for the blanket doubling; its adjoint side is in the adjoint
+half's README (finite, same 30-d growth; it does **not** cure the adjoint's
+own blow-up, which is the flux limiter's).

@@ -525,10 +525,15 @@ found:
   untouched wherever |u| < 0.27 m/s and raises it only in the jets — in the
   2-yr restart on 0.8 % of the wet points (max 2.5× the reference, in the
   equatorial boundary current), with the peaks held exactly at the 2× level
-  and the domain-mean kinetic energy at the reference level. Its 30-d adjoint
-  is finite with the same growth as the reference run's (31163 vs 31152).
-  This is the recommended replacement for the blanket doubling; the 10-yr
-  forward (31164) and the M7 adjoint below are its longer checks.
+  and the domain-mean kinetic energy at the reference level, and holds them
+  for the whole 10-yr continuation (31164) while the reference run (31161)
+  keeps its 1 m/s jets for 10 yr without a flag. Its 30-d adjoint is finite
+  with the same growth as the reference run's (31163 vs 31152). This is the
+  recommended replacement for the blanket doubling on the forward side. The
+  crash after ~180 yr from rest is not reproducible in short runs: from a
+  mature state the reference viscosity gives a narrower margin on a slowly
+  intensifying circulation (domain-mean KE +3 % per decade), not a fast
+  instability.
 - **The adjoint has two separate problems.** GM/Redi, on in the forward
   spin-up and off in every adjoint (see "KPP and GM/Redi" in the root
   `CLAUDE.md`), cannot be switched on in the adjoint at the reference
@@ -537,9 +542,21 @@ found:
   1–3-day e-folding seeded at single deep points — the signature the flux
   limiter's adjoint leaves in nearly uniform tracer fields. MITgcm's stock
   cure, `useApproxAdvectionInAdMode`, is inert in the Tapenade build (a
-  TAF-only macro in `gad_advection.F`); the `M7_lastHalfYr*` runs test the
-  limiter hypothesis directly by reproducing the last 183 d of member M7's
-  blown 5-yr adjoint with and without the limiter.
+  TAF-only macro in `gad_advection.F`). **Confirmed** by the `M7_lastHalfYr*`
+  runs, which reproduce the last 183 d of member M7's blown 5-yr adjoint from
+  its own pickup: the control (31166) is byte-identical to 31046 and blows up
+  at the same lead (rms `ADJtheta` ×240 between lead 110 and 140 d); with the
+  unlimited DST3, `tempAdvScheme=saltAdvScheme=30` in both sweeps (31167),
+  there is no blow-up at all and the forward cost moves by 0.45 %; with the
+  Reynolds floor alone (31168) the burst is merely halved. So for the adjoint
+  the viscosity was never the cure, only a delay: the kappa members that blew
+  up were all 2× runs. The change that stabilises the adjoint is scheme 30
+  for T and S (what ECCO uses for the same reason), a small change of the
+  forward that stays within DINO's family of third-order schemes; the
+  adjoint-only variant that would keep the forward at 33 needs a shadow of
+  `gad_advection.F` with its guard changed *and* the checkpoint-everything
+  build (the tracer-advection routines are in the `-nocheckpoint` list, where
+  the forward sweep's taped control flow keeps the limiter) — untested.
 
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but

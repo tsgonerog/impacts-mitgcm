@@ -53,6 +53,11 @@ The finite-difference comparison ran but fails as a validation: the response is
 nonlinear already at factor-2 steps. Full analysis:
 `analyses/DINO_1deg/adjoint/kappa_v_ensemble/`; results prose: the surrogate
 proposal's Part I §Results and its `kappa_ensemble_results`
-brief. Rerunning a blown member as-is reproduces the blow-up — pair these
-namelists with the `adjVisc` build+submit pair if a stable large-κ adjoint
-is the goal.
+brief. Rerunning a blown member as-is reproduces the blow-up — byte for byte,
+as the 2026-09-09 stability study showed by restarting the last 183 d of M7's
+run from its own monthly pickup (`stability_study/M7_lastHalfYr`, run 31166).
+**The blow-up is the flux limiter's adjoint**: the same restart with
+`tempAdvScheme=saltAdvScheme=30` (31167) does not blow up at all, while the
+`adjVisc` boost and the grid-Reynolds floor only delay or damp it. A stable
+large-κ adjoint therefore needs scheme 30 in the member namelists, not more
+viscosity; see `../stability_study/README.md`.

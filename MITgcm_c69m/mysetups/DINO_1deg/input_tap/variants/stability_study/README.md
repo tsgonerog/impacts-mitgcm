@@ -23,14 +23,28 @@ come from `gad_advection`): runs 31158/31159 are byte-identical to 31140/31152.
 | (31140) | 2× viscosity, GM off — the reference adjoint | rms(`ADJtheta`) 2.3e-4 → 4.3e-4 over 30 d |
 | `viscRef` | reference viscosity, GM off | 31152: the same curve (4.2e-4) |
 | `viscRef_vort3` | + `selectVortScheme=3` | 31153: the same curve |
-| `viscRef_ReMax2` | + `viscAhReMax=2.` | 31163 |
+| `viscRef_ReMax2` | + `viscAhReMax=2.` | 31163: the same curve (4.2e-4), finite; the floor is differentiated (`AUTODIFF_DISABLE_REYNOLDS_SCALE` undefined) and costs nothing here |
 | `visc2x_gmOn` | GM on in both sweeps | 31154: a transient burst at lead 15 d (rms 1.7e-3, max 0.35), damped again by lead 25 d |
 | `viscRef_gmOn` | reference viscosity, GM on in both sweeps | 31155: **explodes** — rms 4e-3 at lead 10 d, 0.15 at 15 d, 1e4 at 20 d, 1e6 at 25 d |
 | `visc2x_gmFwd`, `viscRef_gmFwd` | GM on in the forward sweep, off in the adjoint sweep (`useGMRediInAdMode=.FALSE.`) | 31156/31157: **catastrophic at both viscosities** (rms 1e30 by lead 25 d): under Tapenade's checkpoint recomputation the step is re-run without GM from a with-GM state, so this hybrid is unusable here |
 | `visc2x_approxAdv`, `viscRef_approxAdv` | `useApproxAdvectionInAdMode=.TRUE.`, `ckpAll` build | 31158/31159: byte-identical to 31140/31152 (the switch is inert, see above) |
-| `M7_lastHalfYr` | kappa member M7's namelist restarted at iteration 3241296, the monthly pickup its 5-yr adjoint 31046 wrote 183 d before its end: the same trajectory and cost window, so the last 183 d of that adjoint, which blew up 132 d before the end | 31166 (`ckpAll`, 183 d) |
-| `M7_lastHalfYr_adv30` | the same with the unlimited DST3 scheme 30 for T and S in both sweeps | 31167 |
-| `M7_lastHalfYr_ReMax2` | the same with `viscAhReMax=2.` | 31168 |
+| `M7_lastHalfYr` | kappa member M7's namelist restarted at iteration 3241296, the monthly pickup its 5-yr adjoint 31046 wrote 183 d before its end: the same trajectory and cost window, so the last 183 d of that adjoint, which blew up 132 d before the end | 31166 (`ckpAll`, 183 d): `fc` and all 36 dumps **byte-identical to 31046** — the blow-up reproduced: rms(`ADJtheta`) 1.09e-4 at lead 110 d, 4.0e-4 at 125 d, 2.6e-2 at 140 d (max 5.8) |
+| `M7_lastHalfYr_adv30` | the same with the unlimited DST3 scheme 30 for T and S in both sweeps | 31167: **no blow-up** — rms decays smoothly 1.36e-4 → 8.5e-5 at 170 d (max 3.7e-3); `fc` 0.5125 against 0.5102, a 0.45 % change of the forward |
+| `M7_lastHalfYr_ReMax2` | the same with `viscAhReMax=2.` | 31168: the blow-up at the same lead, halved (1.1e-2 at 140 d); `fc` changes by 0.04 % |
+
+**Verdict.** The adjoint blow-ups of this setup are the adjoint of the DST3
+flux limiter (scheme 33): bursts with 1–3-day e-folding seeded where the
+tracer field is nearly uniform (the limiter's ratio Rjm/Rj is then wildly
+sensitive), which viscosity only delays — the kappa members that blew up were
+all 2× runs. The cure is the unlimited DST3 (`tempAdvScheme=saltAdvScheme=30`,
+what ECCO uses for the same reason): it removes the M7 blow-up outright. The
+stock adjoint-only form of the same cure, `useApproxAdvectionInAdMode`, would
+keep the forward at 33 but is inert here (the `ALLOW_AUTODIFF_TAMC` guard in
+`gad_advection.F`) and, being a run-time branch, could only act in the
+checkpoint-everything build anyway (`gad_advection` and `gad_calc_rhs` are in
+the `-nocheckpoint` list, where the taped forward control flow keeps the
+limiter): a shadow of `gad_advection.F` with the guard changed is the way to
+test that route.
 
 The `M7_*` runs need the pickup override the adjoint submit definitions gained
 the same day:
