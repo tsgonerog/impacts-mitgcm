@@ -13,7 +13,8 @@ IMPACTS_TEST_CASE=kappa_v_ensemble/M3 ../../../tools/submit.sh scripts/submit_ta
 ```
 
 Each file is identical to `../data_from180yrPk_visc2x` apart from
-`diffKrFile`, because the whole design rests on κ_v being the only difference
+`diffKrT`/`diffKrS` (`diffKrFile` until 2026-09-09, see the forward half's
+README), because the whole design rests on κ_v being the only difference
 between a member and the reference. `nIter0=3162240` is year 2180 and
 `nTimeSteps=87840` is five years.
 

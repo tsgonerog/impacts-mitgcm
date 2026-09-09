@@ -793,9 +793,12 @@ git, and without them there is no run:
   wind stress, SST/SSS relaxation, big-endian `float32`).
 - `DINO_1deg/input_binaries/` — `dino_bathy.bin`, `dino_utau.bin`,
   `dino_T_star.bin`, `dino_S_star.bin`, `dino_q_solar.bin`, `dino_T0.bin`,
-  `dino_S0.bin`, `dino_U0.bin`, `dino_V0.bin`, `dino_viscAhD.bin`,
-  `dino_diffKr.bin` — is **produced outside this repository and nothing here
-  regenerates it**. Copy it.
+  `dino_S0.bin`, `dino_U0.bin`, `dino_V0.bin` — is **produced outside this
+  repository and nothing here regenerates it**. Copy it. Two exceptions since
+  2026-09-09: `dino_viscAhD*.bin` (DINO's A_h = ½·U_v·Δx law on the grid,
+  `rn_Uv = 0.27`) regenerate byte for byte with
+  `DINO_1deg/scripts/gen_viscAhD.py`, and `dino_diffKr*.bin` are no longer
+  read — the namelists set the same constants as `diffKrT`/`diffKrS`.
 - `input_adj_binaries/ones_64b.bin` is small but not optional: every
   `xx_*_weight` entry in `data.ctrl` points at it.
 

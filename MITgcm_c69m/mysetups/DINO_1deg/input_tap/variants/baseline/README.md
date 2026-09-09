@@ -16,6 +16,12 @@ is compared against, and the configuration of the reference chain 28486
 ≡ 31060 (2026-09-02, the same run with the `-nocheckpoint` build, bitwise
 identical).
 
+Since 2026-09-09 the vertical diffusivity is `diffKrT = diffKrS = 1.2E-5` in
+`PARM01` rather than `diffKrFile='dino_diffKr.bin'`; the `diffKr` array the
+model builds is the same bit for bit, and so is the adjoint (30 d, 31140 ≡
+31137: every `ADJ*`/`adxx_*`, `fc`, `%MON`). See the setup README, "Lateral
+viscosity and vertical diffusivity: file or parameter".
+
 `nIter0=3162240` is year 2180 and is coupled by hand to a pickup symlink in
 each `submit_tapAdj*.sh`. Changing the duration is safe; changing the starting point
 means editing both.

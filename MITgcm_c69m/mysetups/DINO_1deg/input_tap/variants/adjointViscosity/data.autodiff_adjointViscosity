@@ -10,6 +10,15 @@
 ### useGGL90inAdMode = .FALSE.,
  useSALT_PLUMEinAdMode = .FALSE.,
 # useInOutAdvar = .TRUE.,
+# What each inAd* line reaches in THIS configuration (2026-09-09 review):
+#  - viscArNr(k) is read every step (calc_viscosity.F), so inAdviscArNr acts.
+#  - viscAhGrid adds viscAhGrid*L^2/(4 deltaT) inside MOM_CALC_VISC, which is
+#    only called because the forward namelist names viscAh[D/Z]file
+#    (useVariableVisc, set_parms.F:132, fixed at initialisation): with a
+#    scalar viscAh instead of the files this line would be inert.
+#  - inAdviscA4Grid IS inert here: useBiharmonicVisc (set_parms.F:148) is
+#    fixed .FALSE. at initialisation because the forward namelist has no
+#    biharmonic term, and mom_vecinv never applies the A4 dissipation.
  inAdviscArNr       = 2.E-3,
  inAdviscAhGrid     = 2.5E-2,
  inAdviscA4Grid     = 0.05E0,
@@ -21,16 +30,23 @@
  inAddiffK4T        = 0.E10,
  inAddiffK4S        = 0.E10,
 # inAdviscFac        = 2.E0,
-## make sure outAdviscA[4,h]Grid matches viscA[4,h]grid in data!!
+# The outAd* values are written back at the END of every backward step
+# (AUTODIFF_INADMODE_UNSET_B) and are what every checkpoint replay of the
+# forward model then runs with, so each MUST equal the forward namelist's
+# value (input_tap/data, PARM01) or the replayed trajectory drifts from the
+# one the forward sweep taped. Until 2026-09-09 outAdviscAhGrid was 1.8E-2
+# (a leftover of the viscosity_study/viscGrid1p8e-2 namelists; the
+# production namelists set no viscAhGrid) and outAddiffKhT/S were 0
+# (forward: 500): runs 31025-31138 replayed with those values.
  outAdviscArNr      = 1.2E-4,
- outAdviscAhGrid    = 1.8E-2,
+ outAdviscAhGrid    = 0.,
 # outAdviscAhGrid    = 1.E-4,
  outAdviscA4Grid    = 0.E0,
 ##watch out for these units when using logdiffkr!!!
 # outAddiffKrNrT     = 0.E-5,
 # outAddiffKrNrS     = 0.E-5,
- outAddiffKhT       = 0.E-2,
- outAddiffKhS       = 0.E-2,
+ outAddiffKhT       = 5.E2,
+ outAddiffKhS       = 5.E2,
  outAddiffK4T       = 0.E10,
  outAddiffK4S       = 0.E10,
 # outAdviscFac       = 1.E0,
@@ -47,6 +63,10 @@
 # inSEAICEadjMODE    = 1,
 # SIregFacInAd = 0.0,
 # SIregFacInFw = 1.0,
+# viscFacInAd multiplies ONLY the PARM05 viscAh[D/Z]file fields
+# (mom_calc_visc.F:509-511, AUTODIFF_ALLOW_VISCFACADJ in AUTODIFF_OPTIONS.h):
+# it is the stock, structure-preserving boost of DINO's A_h = U*dx/2 field,
+# and it needs the files to exist -- a scalar viscAh is not multiplied.
  viscFacInFw = 1.,
  viscFacInAd = 10.,
  &

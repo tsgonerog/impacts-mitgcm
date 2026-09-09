@@ -44,6 +44,14 @@ under Tapenade. Until 2026-09-02 these files lived in `code_tap/` itself as
 script copied over the bare names; the copy step and the suffixes are gone,
 and git history holds the old layout.
 
+Not every parameter the apply block sets reaches the physics here:
+`viscA4Grid` is inert because `useBiharmonicVisc` is fixed at initialisation
+(`set_parms.F:148`), `viscAhGrid` acts only because the forward namelist's
+`viscAh[D/Z]file` keep `useVariableVisc` true (`set_parms.F:132`), and the
+stock `viscFacAdj` multiplies only those file fields
+(`mom_calc_visc.F:509-511`). The namelist half's README has the table, and
+the 2026-09-09 fix of its stale `outAd*` values.
+
 Two rules:
 
 - **The build and the submit script are a pair.** This directory only makes

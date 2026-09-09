@@ -9,8 +9,12 @@
  diffKhS=500.,
 # --- Vertical Mixing Parameters ---
  viscAr=0.8E-4,
-# diffKrT=1.2E-5,
-# diffKrS=1.2E-5,
+# background vertical diffusivity (DINO's rn_avt0). Under ALLOW_3D_DIFFKR
+# (code*/CPP_OPTIONS.h) it initialises the 3-D diffKr array (ini_mixing.F)
+# that the xx_diffkr control perturbs; until 2026-09-09 the same constant
+# was read as a field from diffKrFile='dino_diffKr.bin'
+ diffKrT=1.2E-5,
+ diffKrS=1.2E-5,
  no_slip_sides=.FALSE.,
  no_slip_bottom=.FALSE.,
  bottomDragQuadratic = 3.0E-3
@@ -105,5 +109,4 @@
  vVelInitFile='dino_V0.bin',
  viscAhDfile='dino_viscAhD.bin',
  viscAhZfile='dino_viscAhD.bin',
- diffKrFile='dino_diffKr.bin',
  /

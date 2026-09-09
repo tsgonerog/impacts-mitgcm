@@ -27,3 +27,31 @@ before — see `../../README.md`, "Profiling and checkpoint tuning".
 
 This file is *not* selected through `IMPACTS_TEST_CASE`; the submit script
 copies it by name, independently of whichever `data` variant is chosen.
+
+## What each switch reaches, and the 2026-09-09 fix
+
+Reviewed against `pkg/mom_common/mom_calc_visc.F`, `model/src/set_parms.F`,
+`model/src/calc_viscosity.F` and `model/src/calc_3d_diffusivity.F`:
+
+| Line | Effect in this configuration |
+| --- | --- |
+| `viscFacInAd = 10.` | multiplies **only** the `PARM05` `viscAh[D/Z]file` fields (`mom_calc_visc.F:509-511`, under `AUTODIFF_ALLOW_VISCFACADJ` in `code_tap/AUTODIFF_OPTIONS.h`). A scalar `viscAh` or `viscAhGrid` is never multiplied. This is the stock, structure-preserving boost of DINO's A_h = ½·U_v·Δx field and the reason the viscosity stays a file (setup README, "Lateral viscosity and vertical diffusivity: file or parameter") |
+| `inAdviscAhGrid = 2.5E-2` | adds `2.5E-2·L²/(4Δt)` (43 000 m²/s at the equator, 5 000 at 70°) inside `MOM_CALC_VISC`, which is only called because the files set `useVariableVisc` at initialisation (`set_parms.F:132`); its latitude structure is cos²φ, not the law's cos φ |
+| `inAdviscA4Grid = 0.05E0` | **inert**: `useBiharmonicVisc` (`set_parms.F:148`) is fixed `.FALSE.` at initialisation because the forward namelist has no biharmonic term, so `mom_vecinv` never applies the A4 dissipation |
+| `inAdviscArNr = 2.E-3` | acts: `viscArNr(k)` is read every step (`calc_viscosity.F:71`) |
+| `inAddiffKhT/S = 5.E2` | equal to the forward `diffKhT/S = 500.`, so no boost |
+| (`inAddiffKrNrT/S`, commented out) | would be inert even if enabled: under `ALLOW_3D_DIFFKR` the run-time vertical diffusivity is the 3-D `diffKr` array (`calc_3d_diffusivity.F`), not `diffKrNrT(k)`. Boosting it means scaling the array in the set/unset pair |
+
+**The `outAd*` values are not cosmetic.** `AUTODIFF_INADMODE_UNSET_B` writes
+them back at the end of every backward step, and every checkpoint replay of
+the forward model that follows runs with them, so each must equal the forward
+namelist's value or the replayed trajectory drifts from the one the forward
+sweep taped. Until 2026-09-09 `outAdviscAhGrid` was `1.8E-2` (the
+`viscosity_study/viscGrid1p8e-2` value; the production namelists set no
+`viscAhGrid`, so the replays carried an extra `1.8E-2·L²/(4Δt)` — 31 000 m²/s
+at the equator) and `outAddiffKhT/S` were `0` against a forward `500` (no
+lateral tracer diffusion in the replays). Every boosted run from 31025 to
+31138 ran that way; `fc` and the `%MON` stream were unaffected, because they
+come from the forward sweep. The values are now `0.` and `5.E2`; run 31141
+against 31138 (30 d from rest, same executable, `TODO.md`) records the
+difference.

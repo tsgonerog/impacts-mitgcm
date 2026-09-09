@@ -1,5 +1,69 @@
 # TODO — DINO_1deg
 
+- [x] ~~**Replace DINO's file-based mixing inputs with MITgcm parameters
+  where a parameter exists, and settle where one does not**~~ (added and
+  **done 2026-09-09**, branch `dino-mixing-params`). Reviewed against the
+  DINO paper (Kamm et al. 2025, GMD 18, 8091) and its `EXPREF/namelist_cfg`
+  (`nn_ahm_ijk_t = 20`, `rn_Uv = 0.27`; `rn_avm0 = 1.2e-4`, `rn_avt0 =
+  1.2e-5`, `rn_evd = 100`), and against `pkg/mom_common/mom_calc_visc.F`,
+  `model/src/set_parms.F`, `ini_mixing.F`, `calc_3d_diffusivity.F`,
+  `calc_viscosity.F`. **`diffKrFile` → `diffKrT = diffKrS`** in all 34
+  namelists: `dino_diffKr.bin` was 51×198×36 copies of 1.2e-5 (DINO's
+  `rn_avt0`) and the kappa members' `_M<n>.bin` the same constant × 0.25 …
+  32, each an exact power-of-two multiple, so the doubles are the ones the
+  files held; under `ALLOW_3D_DIFFKR` the `diffKr` array is initialised from
+  `diffKrNrS(k)` before a file overwrites it, so the runs are bitwise the
+  same — forward 30 d from rest 31139 vs 31100 (48 `.data` files, 1665
+  `%MON` lines; same `build_frd` executable), default adjoint 30 d from the
+  180-yr pickup 31140 vs 31137 (210 `ADJ*`/`adxx_*`, `fc`
+  3.48990284064362E-01, 441 `%MON`; the only "other" difference the compare
+  script flags is the staged `data`), and the new
+  `baseline/from170yrPk_visc2x` restarted from the spin-up's year-170 pickup
+  for 1 yr, 31142: all 48 diagnostic records and 12 monthly pickups
+  byte-identical to the spin-up's own year 171, the 12 `%MON` blocks
+  identical (the restart's block at `nIter0` differs only in the three
+  `trAdv_CFL_*_max` lines, still 0 before the first step), MOC difference
+  exactly 0, AMOC at 26 °N the same to four decimals in every month
+  (`analyses/DINO_1deg/forward/diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb`;
+  its figures in 31142's `figures/`). The expected `INI_PARMS: Ignores
+  diffKrT ... with ALLOW_3D_DIFFKR` warning now appears in `STDERR.0000`.
+  **The lateral viscosity stays a `PARM05` file.** `dino_viscAhD.bin` is
+  `0.27·dxC/2`, DINO's own law A_h = ½·U_v·Δx with `rn_Uv = 0.27` (the
+  production `_2p00` file is U_v = 0.54); MITgcm has no parameter linear in
+  Δx — `viscAhGrid·L²/(4Δt)` is ∝ cos²φ against the file's cos φ (matching
+  the meridional mean, `2.27E-2` for the 2× field, is 30 % high at the
+  equator and 55 % low at 70°; matching the equator, `1.75E-2`, is 65 % low
+  at 70°), `viscAhReMax` and Leith/Smagorinsky use the local flow and would
+  make the viscosity adjoint-active. `scripts/gen_viscAhD.py` (new)
+  regenerates all eight `dino_viscAhD*.bin` byte for byte from
+  `tile001.mitgrid` (float32 arithmetic, as the originals were made).
+  Nothing else in `PARM05` can move: bathymetry, wind, restoring targets and
+  shortwave are analytic in DINO but MITgcm has no parameter form for them,
+  and `T0/S0/U0/V0` are a spun-up 3-D state. **The premise that parameters
+  would make the adjoint-viscosity boost controllable is the reverse of the
+  code**: `viscFacInAd` multiplies *only* the `viscAh[D/Z]file` fields
+  (`mom_calc_visc.F:509-511`), the ASTE `inAdviscAhGrid` acts only because
+  the files keep `useVariableVisc` true (`set_parms.F:132`),
+  `inAdviscA4Grid` is inert (`useBiharmonicVisc` fixed `.FALSE.` at
+  initialisation, `set_parms.F:148`), `inAdviscArNr` acts, and no `inAd*`
+  scalar reaches the 3-D `diffKr`. **Stale `outAd*` values found and
+  fixed** in `data.autodiff_adjointViscosity`: `outAdviscAhGrid = 1.8E-2` (a
+  `viscGrid1p8e-2` study value; the production namelists set none) and
+  `outAddiffKhT/S = 0` (forward 500) are written back after every backward
+  step and every checkpoint replay of the forward ran with them, so every
+  boosted run 31025–31138 replayed the forward with an extra `1.8E-2·L²/(4Δt)`
+  (31 000 m²/s at the equator) and no lateral tracer diffusion. Now `0.`
+  and `5.E2`. Run 31141 (corrected) vs 31138 (stale; same executable, 30 d
+  from rest, `viscFacInAd = 10`): `fc` 3.99075406661494E-01 and 441 `%MON`
+  identical, all 80 sensitivity files differ — RMS(new−old)/RMS(old) 0.20
+  for `ADJdiffkr`/`adxx_diffkr`, 0.15–0.16 `qnet`, 0.12 `ADJqsw`, 0.09–0.11
+  `theta`/`salt`, 0.02–0.04 the velocities, ≤ 0.01 wind stress and `etan`;
+  pattern correlations 0.978–1.000; peak `|ADJtheta|` at 30-d lead 3.349e-2
+  against 3.347e-2 (the plain adjoint 31026: 3.961e-2). All six runs filed
+  under `runs/{forward,adjoint}/toolchain_validation/`; the scratch README
+  lists them. `dinocean`'s `DINOLoader` gained an `iters=` argument for the
+  spin-up comparison (uncommitted, in `~/tools_and_software/dinocean`).
+
 - [x] ~~**Remove the four stock stubs from the shared `dummy_tap.F`**~~ (added
   and **done 2026-09-07**, the evening after the move below). The tree's
   `pkg/tapenade/dummy_tap.F` is one include and four empty routines,

@@ -1,8 +1,9 @@
-# Ensemble member M5: kappa_v = 9.6e-05 m2/s (8 x reference 1.2e-05).
-# Forward re-equilibration leg 2170 -> 2180, from the 200-yr spin-up pickup.
-# Derived from data_from_rest_visc2x; differs only in nIter0 (2986560),
-# diffKrT/diffKrS, and pChkptFreq (raised so only the final pickup at 3162240
-# is written -- the spin-up keeps its monthly restarts, members need not).
+# The 200-yr spin-up's physics restarted from its year-170 pickup: identical to
+# data_from_rest_visc2x except nIter0=2986560 (the pickup submit_frd.sh already
+# stages for the kappa_v_ensemble members). Added 2026-09-09 for the short
+# from-pickup validation of the diffKrT/diffKrS setting: 1 yr, compared with
+# the spin-up's own year 170 -> 171 (dynDiag records, MOC and AMOC), see
+# analyses/DINO_1deg/forward/diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -14,12 +15,12 @@
  diffKhS=500.,
 # --- Vertical Mixing Parameters ---
  viscAr=1.2E-4,
-# member kappa_v, 8 x the reference 1.2E-5. Under ALLOW_3D_DIFFKR
+# background vertical diffusivity (DINO's rn_avt0). Under ALLOW_3D_DIFFKR
 # (code*/CPP_OPTIONS.h) it initialises the 3-D diffKr array (ini_mixing.F)
 # that the xx_diffkr control perturbs; until 2026-09-09 the same constant
-# was read as a field from diffKrFile='dino_diffKr_M5.bin'
- diffKrT=9.6E-5,
- diffKrS=9.6E-5,
+# was read as a field from diffKrFile='dino_diffKr.bin'
+ diffKrT=1.2E-5,
+ diffKrS=1.2E-5,
  no_slip_sides=.FALSE.,
  no_slip_bottom=.FALSE.,
  bottomDragQuadratic = 3.0E-3
@@ -71,7 +72,7 @@
  nIter0=2986560,
  nTimeSteps=175680,
  deltaT=1800.,
- pChkptFreq=316224000.,
+ pChkptFreq=2635200.,
  chkptFreq=155520000.,
  dumpFreq=31104000.,
  monitorFreq=2635200.,

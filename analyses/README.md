@@ -115,7 +115,10 @@ DINO notebook names end in the viscosity setting the run used, because that is
 the axis most of these experiments vary. The reference field is
 `dino_viscAhD.bin`, built as `dxC * 0.27 / 2` by
 `DINO_1deg/forward/viscosity_binaries_construction.ipynb`; the `_2p00` file is
-that field doubled.
+that field doubled. That is DINO's own law, A_h = ½·U_v·Δx with `rn_Uv = 0.27`
+(NEMO `nn_ahm_ijk_t = 20`), which MITgcm has no parameter for, so it stays a
+`PARM05` file; `DINO_1deg/scripts/gen_viscAhD.py` regenerates every
+`dino_viscAhD*.bin` byte for byte from the grid file (2026-09-09).
 
 | Token | Meaning |
 | --- | --- |
@@ -155,6 +158,7 @@ the 30-day adjoint 31022.
 | `viscosity_binaries_construction.ipynb` | 30983 | builds and verifies `dino_viscAhD.bin` against `dxC * 0.27 / 2` (exact: `max\|diff\| = 0`), and scales it to the `_2p50`/`_3p00`/`_5p00` variants. Also carries the retired `viscAhGrid` comparison results |
 | `spinup_200yr_from_rest_visc2x.ipynb` | 30983 | the 200-year spin-up that completed: MOC in depth and density space, barotropic streamfunction, AMOC timeseries. Writes everything into `figures/` |
 | `moc_amoc_animation_200yr_visc2x.ipynb` | 30983 | renders the MOC + AMOC-timeseries frames into `moc_anim/` and `moc_anim_jpg_std2/` |
+| `diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb` | 31142 vs 30983 (and 31139 vs 31100, 31140 vs 31137, 31141 vs 31138) | the 2026-09-09 review of file-based mixing inputs: `diffKrT`/`diffKrS` in place of `diffKrFile` — 1 yr restarted from the spin-up's year 170 against the spin-up's own year 171 (dynDiag bitwise, MOC and 26°N AMOC overlaid), the 30-day forward and adjoint bitwise pairs, why no `viscAhGrid` reproduces the viscosity file (∝ cos²φ against cos φ), and what the stale `outAd*` values changed in the adjoint-viscosity boost. Writes into 31142's `figures/` |
 
 ### adjoint/
 

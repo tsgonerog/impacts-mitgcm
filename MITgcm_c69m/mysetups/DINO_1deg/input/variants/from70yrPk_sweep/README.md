@@ -21,5 +21,6 @@ large implicit diffusivity applied *only where the water column is unstable*, so
 this tag weakens **convective adjustment** by a factor of ten — it does not
 change mixing in a stably stratified column at all. That makes it a different
 quantity from the one `kappa_v_ensemble/` perturbs, which is the background
-vertical diffusivity `diffKr`, supplied as a binary field through `diffKrFile`.
+vertical diffusivity `diffKr`, set by `diffKrT`/`diffKrS` (a binary field
+through `diffKrFile` until 2026-09-09).
 The two are easy to confuse from the tag names alone and are not comparable.

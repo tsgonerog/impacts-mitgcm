@@ -1,6 +1,6 @@
 # Ensemble member M5: kappa_v = 9.6e-05 m2/s (8 x reference 1.2e-05).
 # 5-yr adjoint 2180 -> 2185, from the pickup the member forward leg writes.
-# Identical to data_from180yrPk_visc2x apart from diffKrFile.
+# Identical to data_from180yrPk_visc2x apart from diffKrT/diffKrS.
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -12,8 +12,12 @@
  diffKhS=500.,
 # --- Vertical Mixing Parameters ---
  viscAr=1.2E-4,
-# diffKrT=1.2E-5,
-# diffKrS=1.2E-5,
+# member kappa_v, 8 x the reference 1.2E-5. Under ALLOW_3D_DIFFKR
+# (code*/CPP_OPTIONS.h) it initialises the 3-D diffKr array (ini_mixing.F)
+# that the xx_diffkr control perturbs; until 2026-09-09 the same constant
+# was read as a field from diffKrFile='dino_diffKr_M5.bin'
+ diffKrT=9.6E-5,
+ diffKrS=9.6E-5,
  no_slip_sides=.FALSE.,
  no_slip_bottom=.FALSE.,
  bottomDragQuadratic = 3.0E-3
@@ -111,5 +115,4 @@
  vVelInitFile='dino_V0.bin',
  viscAhDfile='dino_viscAhD_2p00.bin',
  viscAhZfile='dino_viscAhD_2p00.bin',
- diffKrFile='dino_diffKr_M5.bin',
  /

@@ -60,7 +60,7 @@ submission.
 
 | What | Size | How to get it |
 | --- | --- | --- |
-| `DINO_1deg/input_binaries/` | 179 MB, 23 files | copy from sverdrup — **produced outside this repo, nothing regenerates it** |
+| `DINO_1deg/input_binaries/` | 179 MB, 23 files | copy from sverdrup — **produced outside this repo, nothing regenerates it**, except `dino_viscAhD*.bin` (`scripts/gen_viscAhD.py` rebuilds them from `tile001.mitgrid`); `dino_diffKr*.bin` are no longer read (since 2026-09-09) |
 | `DINO_1deg/input_adj_binaries/ones_64b.bin` | 2.8 MB | copy; every `xx_*_weight` in `data.ctrl` points at it |
 | `SOMA_1deg/input_binaries/` | 64 KB | regenerate with `input/gendata.py` |
 | `SOMA_1deg/input_adj_binaries/` | 1.2 MB | copy |

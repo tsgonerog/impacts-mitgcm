@@ -18,5 +18,17 @@ spin-up bit-identically, which is the standing check that a rebuild has not
 altered the physics. The full spin-up is the same namelist with
 `IMPACTS_DURATION_DAYS=73200`.
 
+`data_from170yrPk_visc2x` (2026-09-09) is the same physics restarted from the
+spin-up's year-170 pickup (`nIter0=2986560`, the pickup `submit_frd.sh` already
+stages for the `kappa_v_ensemble` members): a cheap from-pickup check with a
+mature AMOC. Its first use was the validation of the `diffKrT`/`diffKrS`
+setting — 1 year, run 31142, against the spin-up's own year 171.
+
+Both files set the vertical diffusivity as `diffKrT = diffKrS = 1.2E-5` since
+2026-09-09 (DINO's `rn_avt0`); `diffKrFile='dino_diffKr.bin'` before, a field
+of that one constant, and the two give the same `diffKr` array bit for bit
+(31139 ≡ 31100). The setup README, "Lateral viscosity and vertical
+diffusivity: file or parameter", says why the viscosity stays a file.
+
 `visc2x` rather than `viscD2x_Zref` is not cosmetic: the spin-up first ran as
 `viscD2x_Zref` and **crashed at 126.3 years**. See `analyses/README.md`.

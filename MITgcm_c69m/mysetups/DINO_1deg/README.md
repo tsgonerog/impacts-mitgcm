@@ -57,7 +57,7 @@ Two untracked directories must exist, or staging fails:
 
 | Directory | Needed by | Notes |
 | --- | --- | --- |
-| `input_binaries/` | both | 179 MB of `dino_*.bin`, produced outside this repo — nothing here regenerates it |
+| `input_binaries/` | both | 179 MB of `dino_*.bin`, produced outside this repo. Two exceptions since 2026-09-09: `dino_viscAhD*.bin` regenerate byte for byte with `scripts/gen_viscAhD.py`, and no namelist reads `dino_diffKr*.bin` any more (`diffKrT`/`diffKrS` in `PARM01` set the same constants) |
 | `input_adj_binaries/` | adjoint only | `ones_64b.bin`, the uniform weight every `data.ctrl` entry points at |
 
 ### Changing the run without editing anything
@@ -334,6 +334,31 @@ directory, listed first — see the README there), which is what provides the
 `data.autodiff_adjointViscosity` in at run time, which is what sets them. **The two must be used together** — pairing the
 plain submit script with this build silently runs the ordinary configuration.
 
+**What the switches can reach (reviewed 2026-09-09).** The stock `viscFacInAd`
+multiplies **only** the `PARM05` `viscAh[D/Z]file` fields
+(`pkg/mom_common/mom_calc_visc.F:509-511`, under `AUTODIFF_ALLOW_VISCFACADJ`);
+a scalar `viscAh`/`viscAhD` or `viscAhGrid` is not multiplied, so the
+file-based viscosity is what makes this boost work at all, and it boosts
+DINO's A_h = ½·U_v·Δx field with its latitude structure intact. The ASTE
+`inAdviscAhGrid` term is added inside `MOM_CALC_VISC`, which is only called
+because the files set `useVariableVisc` at initialisation
+(`model/src/set_parms.F:132`); `inAdviscA4Grid` is inert here because
+`useBiharmonicVisc` (`set_parms.F:148`) is fixed `.FALSE.` by a forward
+namelist with no biharmonic term; `inAdviscArNr` acts (`viscArNr(k)` is read
+every step in `calc_viscosity.F`). The `outAd*` values are what every
+checkpoint replay of the forward model runs with after the first backward
+step, so each must equal the forward namelist's value: until 2026-09-09
+`outAdviscAhGrid` was `1.8E-2` (a value from the `viscGrid1p8e-2` study
+namelists; the production namelists set no `viscAhGrid`) and `outAddiffKhT/S`
+were `0` (forward: `500`), so every boosted run up to 31138 replayed the
+forward with an extra `1.8E-2·L²/(4Δt)` of viscosity and no lateral tracer
+diffusion. Fixed in `data.autodiff_adjointViscosity`; run 31141 against 31138
+(30 d from rest, same executable) measures what that changed — see `TODO.md`.
+Vertical diffusivity cannot be boosted through any `inAd*` scalar: under
+`ALLOW_3D_DIFFKR` the run-time diffusivity is the 3-D `diffKr` array
+(`model/src/calc_3d_diffusivity.F`), which a boost would have to scale
+directly in the set/unset pair.
+
 **27 ranks**, fixed by `code_tap/SIZE.h` (`nPx=3, nPy=9` over `sNx=17, sNy=22`).
 Changing the decomposition means changing `code_tap/SIZE.h` *and* `#SBATCH -n`.
 
@@ -365,7 +390,7 @@ variable in your shell would silently become a namelist key.
 | `code_tap/`, `input_tap/` | adjoint model — adds `data.autodiff`, `data.cost`, `data.ctrl`, `data.grdchk` |
 | `scripts/` | the build and submit definitions (since 2026-09-05), one per build directory, plus the two default symlinks and `setup_params.sh` (dT, duration key, calendar, hook list, run-naming rule); each definition sources a shared body in `tools/lib/` |
 | `input*/variants/` | alternative namelists, grouped by purpose, each group with its own `README.md`; the submit script stages the selected `data_<tag>` plus any sibling sharing its tag |
-| `input_binaries/` | **untracked, 179 MB.** Produced outside this repo; nothing here regenerates it |
+| `input_binaries/` | **untracked, 179 MB.** Produced outside this repo, except that `scripts/gen_viscAhD.py` regenerates every `dino_viscAhD*.bin` byte for byte (since 2026-09-09) and `dino_diffKr*.bin` are no longer read by any namelist |
 | `input_adj_binaries/` | **untracked.** `ones_64b.bin`, the uniform control weight every `data.ctrl` entry points at |
 | `build_*/` | **gitignored, reproducible.** One per build script: `build_frd/` and `build_tapAdj_{nocheckpoint,ckpAll,adjVisc,profile}/`; each carries the `build_info.txt` the submit body names run directories from |
 | `00_archive/` | superseded config in `code_tap/`, `input_tap/`, `scripts/`, mirroring the live dirs — nothing live reads it; has its own `README.md` |
@@ -450,6 +475,34 @@ every configuration.
 
 Only the selected variant is copied to scratch, so a run directory contains the
 12 namelists MITgcm reads and nothing else.
+
+### Lateral viscosity and vertical diffusivity: file or parameter
+
+DINO (Kamm et al. 2025, GMD 18, 8091, and its `EXPREF/namelist_cfg`) sets at
+1°: Laplacian viscosity `nn_ahm_ijk_t = 20` with `rn_Uv = 0.27` m/s, i.e.
+A_h = ½·U_v·Δx; background vertical viscosity `rn_avm0 = 1.2e-4` and
+diffusivity `rn_avt0 = 1.2e-5`; convective mixing `rn_evd = 100`. How this
+port carries each (reviewed 2026-09-09; the runs are in `TODO.md`):
+
+| DINO | Here | Why |
+| --- | --- | --- |
+| A_h = ½·0.27·Δx | `viscAhDfile` = `viscAhZfile` = `dino_viscAhD.bin` (reference) or `dino_viscAhD_2p00.bin` (production: ½·0.54·Δx) | MITgcm has no parameter for a viscosity **linear** in Δx. `viscAhGrid` gives `viscAhGrid·L²/(4Δt)`, ∝ cos²φ on this Mercator grid against the law's cos φ: matched at the domain mean it is 30 % high at mid-domain (`analyses/DINO_1deg/forward/viscosity_binaries_construction.ipynb`). `viscAhReMax` gives \|u\|·L/Re with the *local* speed — state-dependent, so adjoint-active and a different model; Leith and Smagorinsky likewise. So the law stays a `PARM05` field, and the field is now reproducible: `scripts/gen_viscAhD.py` regenerates every `dino_viscAhD*.bin` byte for byte from `input_binaries/tile001.mitgrid` (float32 arithmetic, as the originals). The file is also what the adjoint-mode factor `viscFacInAd` multiplies (see "Run") |
+| `rn_avt0 = 1.2e-5` | `diffKrT = diffKrS = 1.2E-5` in `PARM01` (since 2026-09-09; before, `diffKrFile='dino_diffKr.bin'`, a 51×198×36 field of that one constant) | exact: with `ALLOW_3D_DIFFKR` (`code*/CPP_OPTIONS.h`, needed for the `xx_diffkr` control) the 3-D `diffKr` array is initialised from `diffKrNrS(k)` (`model/src/ini_mixing.F`) and only then overwritten by a file, so the two give the same array. 30-day forward and adjoint runs are bitwise identical to their file-based twins (31139 ≡ 31100, 31140 ≡ 31137) and a 1-year restart from year 170 reproduces the spin-up's year 171 (31142, `analyses/DINO_1deg/forward/diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb`). The `kappa_v_ensemble` members carry their κ the same way (`3.E-6` … `3.84E-4`, each an exact power-of-two multiple of the reference, so the double is the one the retired `dino_diffKr_M<n>.bin` held); no namelist reads `dino_diffKr*.bin` any more |
+| `rn_avm0 = 1.2e-4` | `viscAr = 1.2E-4` | already a parameter |
+| `rn_evd = 100` | `ivdc_kappa = 100.` | already a parameter |
+
+With `diffKrT` set, `ini_parms.F` prints `** WARNING ** INI_PARMS: Ignores
+diffKrT (or Kp,Kz) setting in file "data" with ALLOW_3D_DIFFKR` to
+`STDERR.0000`. Expected and harmless: under that flag temperature and
+salinity share the one `diffKr` array, which is initialised from
+`diffKrNrS = diffKrNrT`, so the value is used, through the salinity slot.
+
+Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
+targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but
+MITgcm has no parameter form for any of them (`dino_utau.bin` and
+`dino_S_star.bin` are even constant in time — 365 identical daily records —
+and still need to be files); `dino_T0/S0/U0/V0.bin` are a spun-up 3-D state
+with non-zero velocities, not a profile, so `tRef`/`sRef` cannot replace them.
 
 ## Reading the code
 
