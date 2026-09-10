@@ -1,3 +1,9 @@
+# Production configuration since 2026-09-09 (stability study, TODO.md): DINO's reference
+# viscosity files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the unlimited
+# DST3 tracer advection (scheme 30, what the adjoint needs). The previous production
+# configuration, both viscosity files at 2x (visc2x, spin-up 30983), stays in
+# input_tap/variants/baseline/data_from180yrPk_visc2x. This file IS the baseline: the
+# 5-yr adjoint from the year-180 pickup of the production spin-up (nIter0=3162240).
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -42,14 +48,17 @@
  saltStepping=.TRUE.,
  tempAdvection=.TRUE.,
  saltAdvection=.TRUE.,
- tempAdvScheme=33,
- saltAdvScheme=33,
+ tempAdvScheme=30,
+ saltAdvScheme=30,
  staggerTimeStep=.TRUE.,
  tempImplVertAdv=.TRUE.,
  saltImplVertAdv=.TRUE.,
 # 
  useSingleCpuIO=.TRUE.,
  vectorInvariantMomentum=.TRUE.,
+# viscAhReMax: a floor A >= |u| dx / 2, DINO's own Re_dx = 2 criterion with the local
+# speed -- the reference file wherever |u| < 0.27 m/s, raised only in the jets (2026-09-09).
+ viscAhReMax=2.,
  readBinaryPrec=64,
  writeBinaryPrec=32,
  debugLevel=1,
@@ -63,7 +72,7 @@
 
 # Time stepping parameters
  &PARM03
- nIter0=0,
+ nIter0=3162240,
  nTimeSteps=87840,
  deltaT=1800.,
  pChkptFreq=2635200.,

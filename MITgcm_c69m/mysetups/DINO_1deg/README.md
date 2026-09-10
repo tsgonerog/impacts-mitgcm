@@ -486,7 +486,7 @@ port carries each (reviewed 2026-09-09; the runs are in `TODO.md`):
 
 | DINO | Here | Why |
 | --- | --- | --- |
-| A_h = ½·0.27·Δx | `viscAhDfile` = `viscAhZfile` = `dino_viscAhD.bin` (reference) or `dino_viscAhD_2p00.bin` (production: ½·0.54·Δx) | MITgcm has no parameter for a viscosity **linear** in Δx. `viscAhGrid` gives `viscAhGrid·L²/(4Δt)`, ∝ cos²φ on this Mercator grid against the law's cos φ: matched at the domain mean it is 30 % high at mid-domain (`analyses/DINO_1deg/forward/viscosity_binaries_construction.ipynb`). `viscAhReMax` gives \|u\|·L/Re with the *local* speed — state-dependent, so adjoint-active and a different model; Leith and Smagorinsky likewise. So the law stays a `PARM05` field, and the field is now reproducible: `scripts/gen_viscAhD.py` regenerates every `dino_viscAhD*.bin` byte for byte from `input_binaries/tile001.mitgrid` (float32 arithmetic, as the originals). The file is also what the adjoint-mode factor `viscFacInAd` multiplies (see "Run") |
+| A_h = ½·0.27·Δx | `viscAhDfile` = `viscAhZfile` = `dino_viscAhD.bin` (the reference, and since 2026-09-09 the production setting, with the floor `viscAhReMax=2.` beside it); `dino_viscAhD_2p00.bin` (½·0.54·Δx) was the production setting of the 2× spin-up 30983 | MITgcm has no parameter for a viscosity **linear** in Δx. `viscAhGrid` gives `viscAhGrid·L²/(4Δt)`, ∝ cos²φ on this Mercator grid against the law's cos φ: matched at the domain mean it is 30 % high at mid-domain (`analyses/DINO_1deg/forward/viscosity_binaries_construction.ipynb`). `viscAhReMax` gives \|u\|·L/Re with the *local* speed — state-dependent, so adjoint-active and a different model; Leith and Smagorinsky likewise. So the law stays a `PARM05` field, and the field is now reproducible: `scripts/gen_viscAhD.py` regenerates every `dino_viscAhD*.bin` byte for byte from `input_binaries/tile001.mitgrid` (float32 arithmetic, as the originals). The file is also what the adjoint-mode factor `viscFacInAd` multiplies (see "Run") |
 | `rn_avt0 = 1.2e-5` | `diffKrT = diffKrS = 1.2E-5` in `PARM01` (since 2026-09-09; before, `diffKrFile='dino_diffKr.bin'`, a 51×198×36 field of that one constant) | exact: with `ALLOW_3D_DIFFKR` (`code*/CPP_OPTIONS.h`, needed for the `xx_diffkr` control) the 3-D `diffKr` array is initialised from `diffKrNrS(k)` (`model/src/ini_mixing.F`) and only then overwritten by a file, so the two give the same array. 30-day forward and adjoint runs are bitwise identical to their file-based twins (31139 ≡ 31100, 31140 ≡ 31137) and a 1-year restart from year 170 reproduces the spin-up's year 171 (31142, `analyses/DINO_1deg/forward/diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb`). The `kappa_v_ensemble` members carry their κ the same way (`3.E-6` … `3.84E-4`, each an exact power-of-two multiple of the reference, so the double is the one the retired `dino_diffKr_M<n>.bin` held); no namelist reads `dino_diffKr*.bin` any more |
 | `rn_avm0 = 1.2e-4` | `viscAr = 1.2E-4` | already a parameter |
 | `rn_evd = 100` | `ivdc_kappa = 100.` | already a parameter |
@@ -529,7 +529,9 @@ found:
   for the whole 10-yr continuation (31164) while the reference run (31161)
   keeps its 1 m/s jets for 10 yr without a flag. Its 30-d adjoint is finite
   with the same growth as the reference run's (31163 vs 31152). This is the
-  recommended replacement for the blanket doubling on the forward side. The
+  recommended replacement for the blanket doubling on the forward side, **and
+  it is the production configuration since 2026-09-09** together with scheme
+  30: the live `input/data` and `input_tap/data` (spin-up 31169). The
   crash after ~180 yr from rest is not reproducible in short runs: from a
   mature state the reference viscosity gives a narrower margin on a slowly
   intensifying circulation (domain-mean KE +3 % per decade), not a fast

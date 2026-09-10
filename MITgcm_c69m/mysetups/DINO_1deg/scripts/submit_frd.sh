@@ -35,7 +35,7 @@ EXPECT_RUN_TOKEN=frd        # refuse a build directory holding anything else
 # Set to "" for default (i.e., use input/data). IMPACTS_TEST_CASE overrides
 # this per run. The `-` (not `:-`) is deliberate: IMPACTS_TEST_CASE= selects the
 # live input/data, which `:-` would swallow.
-test_cases="${IMPACTS_TEST_CASE-baseline/from_rest_visc2x}"
+test_cases="${IMPACTS_TEST_CASE-}"      # the live input*/data is the baseline (since 2026-09-09); a run of it is named from the namelist
 
 # ========== TIME STEPPING PARAMETERS (IN DAYS) ==========
 

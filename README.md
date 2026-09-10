@@ -503,7 +503,9 @@ says so in its `README.md`.
 | --- | --- | --- |
 | start | `from_rest`, `from50yrPk`, `from70yrPk`, `from180yrPk` | `nIter0` = 0, 878400, 1229760, 3162240 |
 | viscosity | `viscRef` | `viscAhDfile` = `viscAhZfile` = `dino_viscAhD.bin` |
-| | `visc2x` | both at `dino_viscAhD_2p00.bin`, i.e. 2× reference |
+| | `visc2x` | both at `dino_viscAhD_2p00.bin`, i.e. 2× reference (the production setting until 2026-09-09) |
+| | `ReMax2` | appended when `viscAhReMax=2.` is set: the grid-Reynolds floor of the 2026-09-09 stability study, production since then |
+| tracer advection | `adv30` | `tempAdvScheme=saltAdvScheme=30`, the unlimited DST3; production since 2026-09-09 (the limited scheme 33 is the default and needs no token) |
 | | `viscD2x_Zref` | `viscAhD` 2×, `viscAhZ` left at reference — a *mixed* setting |
 | | `viscGrid1p8e-2` | scalar `viscAhGrid=1.8E-2` in `PARM01`, `PARM05` files off |
 | extras | `A4Grid1p0e-2` | `viscA4Grid=0.01E0` alongside |

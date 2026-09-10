@@ -42,8 +42,9 @@ EXPECT_RUN_TOKEN=tapAdj_ckpAll_adjVisc   # refuse a build directory holding any 
 # Set to "" for default (i.e., use input_tap/data). IMPACTS_TEST_CASE overrides
 # this per run. The `-` (not `:-`) is deliberate: IMPACTS_TEST_CASE= selects the
 # live input_tap/data, which `:-` would swallow. The committed default here IS
-# the live namelist (a 30-day run of it is 31025/31075/31090, from rest); the
-# run is then named from the namelist (from_rest_viscRef).
+# the live namelist, since 2026-09-09 the production adjoint from the year-180
+# pickup (the earlier from-rest boost runs 31025/31075/31090/31109/31138/31141
+# used its from-rest predecessor); the run is named from the namelist.
 test_cases="${IMPACTS_TEST_CASE-}"
 
 # ========== TIME STEPPING PARAMETERS (IN DAYS) ==========
@@ -76,23 +77,19 @@ stage_extra() {
 
 # ========== PICKUP ==========
 
-# from_rest needs none. Uncomment for a from50yrPk / from70yrPk / from180yrPk
-# start, matching the nIter0 baked into whichever data_<tag> test_cases selects.
-#
-# NOTE (2026-09-03): these used to come from crashed run 19369
-# (viscD2x_Zref, the 50 yr anchor) and crashed run 18277 (the 70 yr one).
-# Both runs were deleted in the scratch consolidation. The 200-yr visc2x
-# spin-up 30983 carries all 2 402 pickups and is now the only source, so a
-# 50 yr or 70 yr start is a *visc2x* state, not the viscD2x_Zref state the
-# earlier runs used. That changes the experiment, not just the path.
+# Until 2026-09-09 the live namelist started from rest and needed none (the
+# from-rest boost runs 31025/31075/31090/31109/31138/31141 are that
+# configuration); the 50 yr and 70 yr anchors are visc2x states of spin-up
+# 30983 since the 2026-09-03 consolidation (the crashed runs they came from
+# are gone).
+# IMPACTS_PICKUP_RUN_DIR / IMPACTS_PICKUP_ITER override the pickup, as in the other two
+# adjoint definitions; the defaults are the spin-up 30983 and its year-180 pickup, which
+# the live input_tap/data starts from since 2026-09-09 (nIter0=3162240).
 stage_pickups() {
-    :   # nothing for from_rest
-    #ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0000878400.data pickup.0000878400.data
-    #ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0000878400.meta pickup.0000878400.meta
-    #ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0001229760.data pickup.0001229760.data
-    #ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0001229760.meta pickup.0001229760.meta
-    #ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.data pickup.0003162240.data
-    #ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.meta pickup.0003162240.meta
+    local pk_dir="${IMPACTS_PICKUP_RUN_DIR:-$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983}"
+    local pk_it; pk_it=$(printf '%010d' "${IMPACTS_PICKUP_ITER:-3162240}")
+    ln -s "$pk_dir/pickup.$pk_it.data" "pickup.$pk_it.data"
+    ln -s "$pk_dir/pickup.$pk_it.meta" "pickup.$pk_it.meta"
 }
 
 source "$SLURM_SUBMIT_DIR/../../../tools/lib/submit_body.sh"

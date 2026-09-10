@@ -1,16 +1,23 @@
-# `baseline/` — the production forward configuration
+# `baseline/` — the previous production forward configuration, kept as a record
 
-What `submit_frd.sh` runs when you give it no `IMPACTS_TEST_CASE`:
+**Since 2026-09-09 the baseline is the live `input/data` itself**, which
+`submit_frd.sh` runs when you give it no `IMPACTS_TEST_CASE`
+(`test_cases="${IMPACTS_TEST_CASE-}"`; the run is named from the namelist,
+`from_rest_viscRef_ReMax2_adv30`). That configuration is the outcome of the
+stability study (`../stability_study/`, the setup README's "Why the reference
+viscosity is unstable", `TODO.md`): DINO's reference viscosity files on both D
+and Z, the grid-Reynolds floor `viscAhReMax=2.` (DINO's own Re_Δ = 2 criterion
+applied with the local speed, so the field is DINO's wherever |u| < 0.27 m/s
+and raised only in the jets), and the unlimited DST3 tracer advection, scheme
+30, whose adjoint does not blow up where the limited scheme 33's does. Its
+200-year spin-up from rest is run 31169 (2026-09-09).
 
-```bash
-test_cases="${IMPACTS_TEST_CASE-baseline/from_rest_visc2x}"
-```
-
-`data_from_rest_visc2x` is the configuration of the **200-year spin-up** (run
-30983, and run 28463 before the repository cleanup), from rest with both
-`viscAhDfile` and `viscAhZfile` at `dino_viscAhD_2p00.bin` — 2× the reference
-field. Every other group here is a departure from this one, so change it only
-when the production configuration itself changes.
+`data_from_rest_visc2x` is the **previous** production configuration, kept as
+the record: the 200-year spin-up 30983 (and 28463 before the repository
+cleanup), from rest with both viscosity files at `dino_viscAhD_2p00.bin`, 2×
+the reference field, scheme 33. It is still what the forward reproducibility
+check against 30983 needs, and every kappa_v_ensemble member derives from it.
+Every other group here is a departure from one of these two.
 
 The committed *duration* is 10 years, not 200: that is the cheap regression
 configuration. A 10-year run from rest reproduces the first 10 years of the

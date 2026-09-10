@@ -1,9 +1,5 @@
-# Production configuration since 2026-09-09 (stability study, TODO.md): DINO's reference
-# viscosity files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the unlimited
-# DST3 tracer advection (scheme 30, what the adjoint needs). The previous production
-# configuration, both viscosity files at 2x (visc2x, spin-up 30983), stays in
-# input/variants/baseline/data_from_rest_visc2x. This file IS the baseline: the 200-yr
-# spin-up from rest; submit_frd.sh patches the duration (10 yr by default).
+# grdchk_repair under the 2026-09-09 production configuration (reference viscosity + viscAhReMax=2.
+# + scheme 30): data_from180yrPk_visc2x_grdchkON with the three settings changed.
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -72,19 +68,23 @@
 
 # Time stepping parameters
  &PARM03
- nIter0=0,
- nTimeSteps=3513600,
+ nIter0=3162240,
+ nTimeSteps=87840,
  deltaT=1800.,
  pChkptFreq=2635200.,
  chkptFreq=155520000.,
  dumpFreq=31104000.,
- monitorFreq=2635200.,
+ monitorFreq=432000.,
  monitorSelect=2,
  tauThetaClimRelax=561600.0,
  tauSaltClimRelax=561600.0,
  periodicExternalForcing=.TRUE.,
  externForcingPeriod=86400.,
  externForcingCycle=31536000.,
+#-adjMonitorFreq ==> monitors adj information inside STDOUT.0000 (or inside output_tap_adj.txt file for serial run)
+ adjMonitorFreq=432000.,
+#-adjDumpFreq ==> spit out adj fields along the way e.g., ADJTheta.0000000000.data
+ adjDumpFreq=432000.,
 #-for longer run (100 yrs)
 # endTime = 3110400000.,
 # monitorFreq=2592000.,

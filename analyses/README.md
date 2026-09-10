@@ -125,6 +125,8 @@ that field doubled. That is DINO's own law, A_h = ½·U_v·Δx with `rn_Uv = 0.2
 | `visc2x` | `viscAhDfile` = `viscAhZfile` = `dino_viscAhD_2p00.bin` — both components at **2× reference**, through `PARM05` |
 | `viscD2x_Zref` | `viscAhDfile` at 2× but `viscAhZfile` left at the reference field — a **mixed** setting, not the same experiment as `visc2x` |
 | `viscRef` | both files at the unscaled reference |
+| `ReMax2` | `viscAhReMax=2.` on top, the grid-Reynolds floor; with `viscRef` this is the production viscosity since 2026-09-09 |
+| `adv30` | `tempAdvScheme=saltAdvScheme=30`, the unlimited DST3, whose adjoint does not blow up; production since 2026-09-09 |
 | `viscGrid<v>` | scalar `viscAhGrid` in `PARM01` instead, `PARM05` files commented out; `viscGrid1p8e-2` is `viscAhGrid=1.8E-2` |
 | `adjVisc` | adjoint-mode viscosity inflation: `viscFacInAd = 10.` against `viscFacInFw = 1.`, from `data.autodiff_adjointViscosity`. Needs the matching build *and* submit script |
 | `ckpAll` / `nocheckpoint` | which Tapenade checkpointing the adjoint was built with; `nocheckpoint` is the DINO default since 2026-09-02 and is bitwise identical to `ckpAll` except under `adjVisc` |

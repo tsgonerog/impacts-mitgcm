@@ -41,7 +41,8 @@ DUMP_CALLS=5
 # variants"): nIter0 -> from_rest / from<N>yrPk (366-day years at dT=1800);
 # viscAhDfile/viscAhZfile -> viscRef (dino_viscAhD.bin, both) / visc2x (_2p00,
 # both) / viscD2x_Zref (D doubled, Z at reference); a scalar viscAhGrid with no
-# files -> viscGrid<value> (1.8E-2 -> viscGrid1p8e-2). Anything unrecognised
+# files -> viscGrid<value> (1.8E-2 -> viscGrid1p8e-2); viscAhReMax -> _ReMax<v> and a
+# tempAdvScheme other than 33 -> _adv<n> are appended (2026-09-09). Anything unrecognised
 # gives liveData, so the name never claims a setting the script could not read.
 run_suffix_from_namelist() {
   awk -F'[=, ]+' '
@@ -50,6 +51,8 @@ run_suffix_from_namelist() {
     k=="viscahdfile" {d=$2; gsub(/\047/,"",d)}
     k=="viscahzfile" {z=$2; gsub(/\047/,"",z)}
     k=="viscahgrid"  {g=$2}
+    k=="viscahremax" {r=$2}
+    k=="tempadvscheme" {a=$2}
     END {
       spd=48*366
       s = (n==0) ? "from_rest" : ((n%spd==0) ? "from" n/spd "yrPk" : "liveData")
@@ -58,6 +61,8 @@ run_suffix_from_namelist() {
       else if (d=="dino_viscAhD_2p00.bin" && z=="dino_viscAhD.bin")      v="viscD2x_Zref"
       else if (d=="" && z=="" && g!="") { v=g; gsub(/\./,"p",v); gsub(/E/,"e",v); v="viscGrid" v }
       else v="liveData"
+      if (r!="") { rr=r; sub(/\.0*$/,"",rr); gsub(/\./,"p",rr); v=v "_ReMax" rr }   # viscAhReMax=2. -> _ReMax2 (since 2026-09-09)
+      if (a!="" && a!=33) v=v "_adv" a                                              # tempAdvScheme other than 33 -> _adv<n>
       print s "_" v
     }' "$1"
 }

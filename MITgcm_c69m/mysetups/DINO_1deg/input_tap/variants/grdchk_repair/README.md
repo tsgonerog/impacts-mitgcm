@@ -7,6 +7,10 @@ with the perturbation moved from (4,8,1) to the 30-day sensitivity peak
 (i=2, j=127, k=26 on the cost section) and `grdchk_eps` raised to `1e-3`,
 per the repair prescribed in the root `README.md` ("Verifying correctness").
 
+Since 2026-09-09 there is a second tag, `from180yrPk_viscRef_ReMax2_adv30_grdchkON`,
+the same check under the new production configuration (reference viscosity,
+`viscAhReMax=2.`, scheme 30; run 31172).
+
 Run it as
 
     IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_visc2x_grdchkON \

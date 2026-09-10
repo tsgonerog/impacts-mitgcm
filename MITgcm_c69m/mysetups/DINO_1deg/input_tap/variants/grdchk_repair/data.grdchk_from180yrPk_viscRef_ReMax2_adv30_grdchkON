@@ -1,0 +1,25 @@
+# *******************
+# ECCO gradient check
+# *******************
+# Repaired configuration (2026-08-31): the committed data.grdchk perturbs
+# xx_theta at (4,8,1), near the southern boundary where the 30-day adjoint
+# sensitivity is ~6e-10 against a field maximum of ~3.9e-2 at the cost
+# section, so the check divides its own noise by 2*eps and fails by ~8
+# orders of magnitude -- it always has (see "Verifying correctness" in the
+# root README). This variant moves the point onto the sensitivity peak
+# (global i=2, j=127, k=26, the cost-section row) and raises grdchk_eps so
+# the predicted response clears the perturbed-run noise floor.
+# NOTE the naming trap: i/jGloPos are TILE-LOCAL (grdchk_readparms errors if
+# > sNx/sNy); the tile is chosen with i/jGloTile. Global (2,127) on the
+# 17x22 tiles of the 3x9 decomposition = tile (1,6), local (2,17).
+ &GRDCHK_NML
+ grdchk_eps       = 1.d-3,
+ iGloPos          = 2,
+ jGloPos          = 17,
+ iGloTile         = 1,
+ jGloTile         = 6,
+ kGloPos          = 26,
+ nstep            = 1,
+ nend             = 4,
+ grdchkvarname    = "xx_theta",
+ &

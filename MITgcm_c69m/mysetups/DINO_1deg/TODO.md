@@ -1,5 +1,26 @@
 # TODO — DINO_1deg
 
+- [ ] **Production runs of the 2026-09-09 configuration** (launched 2026-09-09,
+  branch `dino-stability-study`): reference viscosity files + `viscAhReMax=2.`
+  + `tempAdvScheme=saltAdvScheme=30`, now the live `input/data` (200 yr from
+  rest) and `input_tap/data` (5 yr from the year-180 pickup), which are the
+  baseline: `submit_frd.sh`, `submit_tapAdj_nocheckpoint.sh`,
+  `submit_tapAdj_ckpAll.sh` and `submit_tapAdj_adjVisc.sh` default to
+  `test_cases=""` and name the run from the namelist
+  (`run_suffix_from_namelist` appends `_ReMax<v>` and `_adv<n>`); the
+  `baseline/` variant group keeps the `visc2x` predecessors as records. Runs, none filed yet: **31169** the 200-yr spin-up from
+  rest (~33 h); **31173** the 5-yr production adjoint from its year-180 pickup,
+  held on `afterok:31169` with `IMPACTS_PICKUP_RUN_DIR` pointing at 31169's
+  directory — do not move that directory before 31173 starts; **31171** the
+  same 5-yr adjoint from the 2× spin-up's year-180 pickup (early stability
+  check, ~9.5 h); **31172** the gradient check under the new configuration
+  (`grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON`, 30 d, the
+  repaired point). To close: the spin-up completes and its MOC/AMOC look like
+  30983's (`forward/moc_amoc_animation_200yr_visc2x.ipynb` diagnostics); 31171
+  and 31173 stay finite over 5 yr; 31172 agrees at the repaired point at the
+  percent level, as 31037 did (0.9 %). Then file the runs and rerun the
+  forward reproducibility check against 31169.
+
 - [x] ~~**Why does the forward and the adjoint need twice DINO's viscosity,
   and what is the smallest change that stabilises them instead?**~~ (added and
   **done 2026-09-09**, branch `dino-stability-study`; the runs are filed under
