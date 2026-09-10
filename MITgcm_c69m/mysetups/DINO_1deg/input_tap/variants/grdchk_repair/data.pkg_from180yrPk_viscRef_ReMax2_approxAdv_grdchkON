@@ -1,0 +1,11 @@
+# Packages (lines beginning "#" are comments)
+ &PACKAGES
+ useMNC         = .FALSE.,
+ useDiagnostics = .TRUE.,
+ useGMRedi      = .FALSE.,
+ useKPP         = .FALSE.,
+# grdchk off for the kappa_v ensemble: at its current check point it measures
+# noise, not the gradient, and costs ~2.6x the adjoint proper. The ensemble's
+# own finite-difference comparison is the real validation.
+ useGrdchk      = .TRUE.,
+ &

@@ -1,5 +1,42 @@
 # TODO — DINO_1deg
 
+- [ ] **Scheme 30 or scheme 33 for production — a decision for the user**
+  (study done 2026-09-10, branch `dino-stability-study`; the setup README's
+  "Scheme 30 or scheme 33" subsection and the `stability_study` /
+  `grdchk_repair` variant READMEs carry the tables). The question raised: the
+  advisor recalled scheme-30 overturning cells reaching too deep and prefers
+  33 where it can be used. Measured, all at reference viscosity +
+  `viscAhReMax=2.` from the 2× spin-up's year-170 state: (1) **forward**
+  one-setting twins 31174 vs 31160 (2 yr) and 31175 vs 31164 (10 yr) — poleward
+  of 15° the depth-space cells have the same vertical extent under both
+  schemes and are weaker under 30 (0.3–0.6 Sv at 2 yr, 1.1–1.6 Sv at 10 yr:
+  2.8 vs 4.4 Sv at 26° N, a steady decline only flattening at year 10; the
+  scheme-30 spin-up 31169 is at 2.8 Sv at 26° N at year 35 against 4.9 Sv in
+  30983 at the same age, i.e. heading for an AMOC ~40 % weaker); the equatorial pair is
+  stronger (22 vs 8.5 Sv) **and deeper** (the cell north of the equator to
+  ~900 m instead of ~300 m) — presumably the "too deep" the advisor saw —
+  behind an equatorial thermocline 0.5–1.1 °C colder through 400 m;
+  over/undershoots negligible, mixed-layer statistics identical. (2) **gradient check** 31177/31178/31179 — the
+  scheme-33 cost jumps by +5e-4 (0.13 %) for a ±1e-3 K perturbation of either
+  sign, ten perturbed runs identical across builds: scheme 33 has no
+  finite-difference-verifiable adjoint at this viscosity (exact adjoint 22 %
+  off at the strongest point, factors elsewhere), scheme 30 verifies to 1e-6.
+  (3) **the approximate adjoint under Tapenade** — new
+  `code_tap/variants/approxAdvection/` + `build_tapAdj_approxAdv.sh` /
+  `submit_tapAdj_approxAdv.sh` (`ckpAll`; `gad_advection.F` guard widened,
+  `gad_implicit_r.F` given the same swap) — works: M7 restart 31176 keeps
+  `fc` byte-identical to the scheme-33 control and does not blow up, adjoint
+  fields correlated 0.999 with the scheme-30 run's, gradient within 3 % of
+  the exact scheme-33 one. Runs unfiled (31174–31179 and the build). **To
+  decide:** keep scheme 30 in both (the live `input*/data`, exact, fast,
+  ECCO's forward choice) or switch the forward to 33 with the approximate
+  adjoint (DINO's monotone family, 1.5× slower adjoint, unverifiable
+  gradient). If the latter: cancel 31169/31171/31173, set
+  `tempAdvScheme=saltAdvScheme=33` in the live `input*/data`, make
+  `submit_tapAdj_approxAdv.sh` (with a `data.autodiff` carrying the switch)
+  the production adjoint pair, and rerun the spin-up. Either way, file
+  31174–31179 under `stability_study/` and `gradient_check/` with the rest.
+
 - [ ] **Production runs of the 2026-09-09 configuration** (launched 2026-09-09,
   branch `dino-stability-study`): reference viscosity files + `viscAhReMax=2.`
   + `tempAdvScheme=saltAdvScheme=30`, now the live `input/data` (200 yr from

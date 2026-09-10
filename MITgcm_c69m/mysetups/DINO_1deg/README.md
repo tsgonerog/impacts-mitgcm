@@ -109,6 +109,7 @@ duration is safe; changing the starting point means editing both by hand.
 | `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`; see below) |
 | `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` (reference: every call checkpointed; was `build_tapAdj.sh` / `build_tapAdj/` until 2026-09-02) |
 | `build_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` | `mitgcmuv_tap_adj` (adjoint-mode viscosity boost, every call checkpointed — the list is not equivalent under the boost; see "Profiling and checkpoint tuning") |
+| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (scheme 33 forward, scheme 30 in the adjoint sweep: `code_tap/variants/approxAdvection/` ahead of `code_tap/`, every call checkpointed because the switch is a run-time branch; since 2026-09-09, see "Scheme 30 or scheme 33" below) |
 | `build_tapAdj_profile.sh` | `build_tapAdj_profile/` | `mitgcmuv_tap_adj` (diagnostic: ckpAll + Tapenade checkpointing profiler) |
 | `build_tapAdj_hooksInTree.sh` | `build_tapAdj_hooksInTree/` | `mitgcmuv_tap_adj` (validation of the **in-tree** form of the hooks: built against a git copy of checkpoint69m outside this repository, `~/MITgcm_c69m_tapenade_hooks/MITgcm`, in which the files of `mods_tapenade_hooks/` are applied to the tree, with the shared directory left out; run 31107 bitwise identical to the default's 31101 on 2026-09-05 — see "The same mechanism from inside the tree" below) |
 
@@ -560,7 +561,97 @@ found:
   adjoint-only variant that would keep the forward at 33 needs a shadow of
   `gad_advection.F` with its guard changed *and* the checkpoint-everything
   build (the tracer-advection routines are in the `-nocheckpoint` list, where
-  the forward sweep's taped control flow keeps the limiter) — untested.
+  the forward sweep's taped control flow keeps the limiter) — built and
+  validated on 2026-09-10 as `build_tapAdj_approxAdv.sh`, see the next
+  subsection.
+
+### Scheme 30 or scheme 33: what the tracer advection scheme does to the forward and to the adjoint (2026-09-10)
+
+Scheme 33 is DST3 with the Sweby flux limiter, monotone and non-linear;
+scheme 30 is the same third-order direct-space-time scheme without the
+limiter, linear in the tracer, not monotone. DINO itself uses NEMO's FCT
+(Zalesak) scheme, a limited one, so 33 is the closer analogue; ECCO v4's
+forward model runs scheme 30 (`tempAdvScheme=saltAdvScheme=30`, vertical
+scheme 3, in its release-4 `namelist/data`), because its adjoint has to be
+smooth. Three things were measured, all from the 2× spin-up's mature state
+and all with the reference viscosity + `viscAhReMax=2.`:
+
+- **The unlimited scheme does not deepen the mid-latitude cells; it
+  deepens and strengthens the equatorial ones, and slowly weakens the
+  AMOC.** One-setting twins, 2 yr from year 170 (31174 vs 31160,
+  `input/variants/stability_study/`) and 10 yr (31175 vs 31164): poleward
+  of 15° every depth-space overturning cell has the same vertical extent
+  under the two schemes (bottom of the upper cell at 2100–2400 m in both,
+  scheme 33 one level deeper at 28–47° N after 10 yr) and is weaker under
+  scheme 30 — by 0.3–0.6 Sv at 2 yr (4.4 vs 4.8 Sv at 26° N) and 1.1–1.6 Sv
+  after 10 yr (2.8 vs 4.4 Sv at 26° N, 5.5 vs 6.8 at 41° N, 4.8 vs 5.9 at
+  55° N): the monthly AMOC index declines steadily through the whole decade
+  under scheme 30 and only begins to flatten at its end, while the scheme-33
+  twin holds level. The two spin-ups from rest tell the same story at equal
+  age (`amoc_index_spinups_*` in the figures directory): at year 35 the
+  scheme-30 production run 31169 stands at 2.8 Sv at 26° N against 4.9 Sv in
+  the scheme-33 2× run 30983 (41° N: 5.6 vs 7.9; 55° N: 5.4 vs 7.1), so a
+  scheme-30 spin-up is heading for an AMOC roughly 40 % weaker at 26° N. The
+  mixed-layer statistics are identical.
+  Within ±10° of the equator the tropical cells are much stronger under
+  scheme 30 (21.7–22.5 vs 8.5 Sv at 3° S in the 12-month mean) **and
+  deeper**: the counter-clockwise cell north of the equator reaches about
+  900 m instead of 300 m (6.9 vs 1.7 Sv at 5° N after 10 yr). If the
+  overturning cells were seen to "extend too deep" under scheme 30, this
+  equatorial pair is what it was. Behind it is an equatorial thermocline
+  0.5–1.1 °C colder through the top 400 m and an upwelling confined to the
+  top 150 m instead of 400 m: the limiter, active where the equatorial
+  thermocline is sharp and the vertical velocity large, acts as extra
+  vertical mixing there, and removing it sharpens the thermocline, cools the
+  mean ocean by 0.02 °C over the decade and raises the domain-mean kinetic
+  energy by 15 %. Over/undershoots, the classic objection to an unlimited scheme, are
+  negligible in this mature state: no salinity cell outside the limited run's
+  range, one surface cell per month above its maximum, `salt_min` never below
+  35.00. (The 200-yr scheme-30 spin-up 31169 shows the same equatorial
+  signature at year 17–18 against the 2× scheme-33 spin-up, with a handful of
+  cells below the salinity range at 1000–1200 m.) Which equatorial structure
+  is the more realistic one cannot be settled here — it needs DINO's own NEMO
+  solution — but "the cells extend too deep" is not what the scheme does at
+  this resolution.
+- **The scheme-33 cost is not differentiable at the scale of a gradient
+  check.** `grdchk_repair/` runs 31177–31179 (30 d, five points, `eps` =
+  1e-3 K): the ten perturbed forward integrations are digit-for-digit the
+  same whichever adjoint build ran them, and every one of them lands 5–6e-4
+  *above* the unperturbed cost for `+eps` and `−eps` alike — a one-signed jump
+  of 0.13 % of `fc` that no derivative produces, where the adjoint predicts
+  ±4e-5. Under scheme 30 the same perturbations give ±3.7e-5, symmetric, and
+  match the adjoint to 1e-6 (31172). So the exact adjoint of scheme 33
+  "fails" its own check by 22 % at the strongest point and by factors at the
+  others (31178), as it did at 2× viscosity (31037: 0.9 % then 45–318 %),
+  only ten times worse in the sharper reference-viscosity state. The
+  limiter's branches flip under a 1e-3 K perturbation and the 30-day-mean
+  heat transport moves with them (Thuburn & Haine 2001). Scheme 30 is what
+  makes the model differentiable at that amplitude; it does not mask an
+  instability, it removes a non-smoothness.
+- **Scheme 33 forward with scheme 30 in the adjoint sweep works under
+  Tapenade** — `code_tap/variants/approxAdvection/` + `build_tapAdj_approxAdv.sh`
+  / `submit_tapAdj_approxAdv.sh`, the stock `useApproxAdvectionInAdMode`
+  made reachable (its guard is TAF-only, and the implicit vertical advection
+  never had the swap). On the M7 restart (31176 against the control 31166 and
+  the scheme-30 run 31167): `fc` byte-identical to the control, no blow-up,
+  the adjoint fields within 1 % of the scheme-30 run's in rms and correlated
+  with them at 0.999 (`adxx_theta`, `adxx_salt`; 0.991 for `adxx_diffkr`).
+  The 30-d gradient at the check's strongest point is −3.717e-2 (approximate)
+  against −3.835e-2 (exact scheme 33) and −3.735e-2 (exact scheme 30 on its
+  own trajectory): the approximation moves the gradient by 3 %, the
+  trajectory by 0.5 %. It has to be a checkpoint-everything build (the switch
+  is a run-time branch re-evaluated only where the primal is re-run inside
+  the backward sweep), so 1.5× the default's reverse-sweep time; with the
+  switch off it reproduces the `ckpAll` adjoint to the last digit (31179).
+
+So the choice is between two stable, validated configurations: **scheme 30
+in both** (the live `input*/data`: exact adjoint of a smooth model, the
+default build's speed, ECCO's forward choice; equatorial cells stronger and
+deeper, AMOC drifting weaker by ~1.5 Sv per decade relative to 33) and
+**scheme 33 forward with the approximate adjoint** (DINO's monotone family,
+1.5× slower adjoint, a gradient that is a 3 % approximation and cannot be
+finite-difference-verified at all). What is not available is scheme 33 with
+an exact, long-stable adjoint.
 
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but
@@ -748,6 +839,7 @@ previous layout's runs bit for bit (31069 vs 31054 for the default build,
 | `cost_atlantic_heat.F` | the cost function |
 | `tap_nocheckpoint.txt` | the routines `build_tapAdj_nocheckpoint.sh` (the default) passes to Tapenade's `-nocheckpoint` — `build_tapAdj_adjVisc.sh` deliberately does not (see "Profiling and checkpoint tuning") (split `_FWD`/`_BWD` mode instead of checkpointing), each annotated with the profiling-run gain that put it there — see "Profiling and checkpoint tuning" below |
 | `variants/adjointViscosity/` | (named `adjVisc/` until 2026-09-04; the build script, build directory and run token keep the old tag on purpose, because scratch run directories record it) the four ASTE-derived shadows of `pkg/autodiff` (`AUTODIFF_PARAMS.h`, `autodiff_readparms.F`, `autodiff_inadmode_set_ad.F`, `autodiff_inadmode_unset_ad.F`) that declare, read, apply and restore the `inAd*`/`outAd*` parameters; compiled only by `build_tapAdj_adjVisc.sh`, as its first `-mods` directory — see the README inside. A plain build compiles the vendored files |
+| `variants/approxAdvection/` | (since 2026-09-09) shadows of `pkg/generic_advdiff/gad_advection.F` (the `useApproxAdvectionInAdMode` block's CPP guard widened from `ALLOW_AUTODIFF_TAMC`, TAF only, to `ALLOW_AUTODIFF`) and `gad_implicit_r.F` (the same scheme swap added for the implicit vertical advection, which the vendored file never covered); compiled only by `build_tapAdj_approxAdv.sh`, as its first `-mods` directory — see the README inside |
 | `SIZE.h` | grid and decomposition (`nPx=3, nPy=9` over `sNx=17, sNy=22`); the one and only copy |
 | `CTRL_SIZE.h` | control-vector dimensions |
 | `DIAGNOSTICS_SIZE.h` | diagnostics buffer sizes |
@@ -779,7 +871,7 @@ Beyond the forward set, the adjoint adds four:
 | --- | --- |
 | `data.cost` | `mult_atl` — scales the cost function |
 | `data.ctrl` | which controls are optimised (`xx_theta`, `xx_salt`, `xx_diffkr`, wind stress, heat and freshwater flux) and their weight files — every `xx_*_weight` points at `ones_64b.bin` |
-| `data.autodiff` | checkpointing and adjoint-mode behaviour; `data.autodiff_adjointViscosity` is the inflated-viscosity variant |
+| `data.autodiff` | checkpointing and adjoint-mode behaviour; `data.autodiff_adjointViscosity` is the inflated-viscosity variant, and a `data.autodiff` sibling with `useApproxAdvectionInAdMode=.TRUE.` (the `*_approxAdv*` tags) is what switches the `approxAdv` build's adjoint sweep to scheme 30 |
 | `data.grdchk` | the finite-difference gradient check: `grdchk_eps`, `grdchkvarname`, and the `iGloPos/jGloPos/kGloPos` point to perturb |
 
 Variants are selected by `test_cases` in a submit script as `<group>/<tag>`; see

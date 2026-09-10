@@ -15,6 +15,44 @@ to 0.0035 %), against 0.88 % and then 318 %, 78 %, 87 %, 45 % for the same
 points under scheme 33 (31037). The four weaker points were never at a noise
 floor of the model; they were at the flux limiter's.
 
+**Three more tags the same day, all at reference viscosity + `viscAhReMax=2.`
+with the flux-limited scheme 33 in the forward model** (runs 31177–31179,
+each 30 d from the year-180 pickup, the same five points, `grdchk_eps=1e-3`):
+
+| Tag | Adjoint | Build / submit pair |
+| --- | --- | --- |
+| `from180yrPk_viscRef_ReMax2_adv33_grdchkON` | the exact adjoint of scheme 33 (31178) | the default `build_tapAdj.sh` / `submit_tapAdj.sh` |
+| `from180yrPk_viscRef_ReMax2_approxAdv_grdchkON` | scheme 33 forward, scheme 30 in the adjoint sweep: the `data.autodiff` sibling sets `useApproxAdvectionInAdMode=.TRUE.` (31177) | `build_tapAdj_approxAdv.sh` / `submit_tapAdj_approxAdv.sh` |
+| `from180yrPk_viscRef_ReMax2_approxAdvOff_grdchkON` | the same build with the switch `.FALSE.` — the control (31179) | the same pair |
+
+What they show. The reference cost and all ten perturbed costs are
+**digit-for-digit identical across the three runs** (`fcref` = 0.425345777609569,
+the plain 30-d run 31163's value; FC1/FC2 of point 1 = 0.42588141290819 /
+0.42594121354982): the perturbed runs are primal integrations of the
+scheme-33 forward and depend on nothing the adjoint build does, and the
+`approxAdv` build with its switch off is the `ckpAll` adjoint (its five
+`ADJ GRAD` values equal 31178's to every digit). But those perturbed costs
+are **not a derivative's**: at every point both the `+eps` and the `−eps` run
+land 5–6e-4 *above* the reference (point 4: one 7e-5 below, the other 6e-4
+above), a one-signed jump of 0.13 % of `fc` from a 1e-3 K change in one
+cell, where the adjoint predicts ±4e-5. Under scheme 30 (31172) the same
+perturbations give ±3.7e-5, symmetric, and agree with the adjoint to 1e-6.
+So at this viscosity the scheme-33 cost is non-smooth at the scale of
+`grdchk_eps`: the flux limiter's branches flip under the perturbation and
+the 30-d mean heat transport moves with them (Thuburn & Haine 2001). The
+exact adjoint of scheme 33 "fails" its own check by 22 % at the strongest
+point and by factors at the rest (31178, RMS ratio 21.5) — the same pattern
+as 31037 at 2× viscosity (0.9 %, then 318 %, 78 %, 87 %, 45 %), ten times
+worse because the limiter is busier in the sharper reference-viscosity
+state. The three adjoint gradients at the strongest point: exact scheme 33
+−3.8353e-2, approximate (scheme 30 about the scheme-33 trajectory)
+−3.7173e-2, exact scheme 30 (31172, its own trajectory) −3.7347e-2: the
+approximation moves the gradient by 3 %, the trajectory by 0.5 %. The
+conclusion is not that any of these adjoints is wrong but that **a
+flux-limited forward cannot be gradient-checked at 1e-3 K** — and that the
+production choice of scheme 30 is what makes the model differentiable at
+that amplitude, not a mask over it.
+
 Run it as
 
     IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_visc2x_grdchkON \
