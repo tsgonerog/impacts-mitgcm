@@ -387,7 +387,13 @@ digit for digit, and its 62 `adxx_*`/`ADJ*` files bitwise — so the check
 verifies the hook-generated adjoint and the hand-patched one identically.
 SOMA's always-on check passes at 0.07–1.8 % on all five of its points (5-d
 runs 31031/31033, identical output between the pre- and post-refactor
-builds).
+builds). **Under the 2026-09-09 production configuration (scheme 30,
+`viscAhReMax=2.`, reference viscosity) the DINO check passes at all five
+points, 0.0001–0.0035 % (run 31172,
+`grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON`)** — the four
+weaker points' "noise" above was the flux limiter's non-smoothness, which
+scheme 30 removes, so the `|adj grad|·eps` rule of thumb only applies to
+scheme-33 runs.
 
 **4. The kappa_v ensemble's adjoint-vs-finite-difference comparison — executed,
 and it fails as a validation for a physical reason.** The 2026-08-28/29 ensemble

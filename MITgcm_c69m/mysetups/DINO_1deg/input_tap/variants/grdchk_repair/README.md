@@ -9,7 +9,11 @@ per the repair prescribed in the root `README.md` ("Verifying correctness").
 
 Since 2026-09-09 there is a second tag, `from180yrPk_viscRef_ReMax2_adv30_grdchkON`,
 the same check under the new production configuration (reference viscosity,
-`viscAhReMax=2.`, scheme 30; run 31172).
+`viscAhReMax=2.`, scheme 30). **Run 31172 (2026-09-09) passes at all five
+points**: 1 − fd/adj = −9.8e-7, −1.6e-5, −3.5e-5, +4.9e-6, +5.1e-6 (0.0001 %
+to 0.0035 %), against 0.88 % and then 318 %, 78 %, 87 %, 45 % for the same
+points under scheme 33 (31037). The four weaker points were never at a noise
+floor of the model; they were at the flux limiter's.
 
 Run it as
 

@@ -531,7 +531,9 @@ found:
   with the same growth as the reference run's (31163 vs 31152). This is the
   recommended replacement for the blanket doubling on the forward side, **and
   it is the production configuration since 2026-09-09** together with scheme
-  30: the live `input/data` and `input_tap/data` (spin-up 31169). The
+  30: the live `input/data` and `input_tap/data` (spin-up 31169). Under that
+  configuration the gradient check passes at all five of its points,
+  0.0001–0.0035 % (31172), where scheme 33 passed only the strongest at 0.9 %. The
   crash after ~180 yr from rest is not reproducible in short runs: from a
   mature state the reference viscosity gives a narrower margin on a slowly
   intensifying circulation (domain-mean KE +3 % per decade), not a fast

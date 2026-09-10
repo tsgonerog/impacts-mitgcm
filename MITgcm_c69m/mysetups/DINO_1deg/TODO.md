@@ -15,10 +15,15 @@
   same 5-yr adjoint from the 2× spin-up's year-180 pickup (early stability
   check, ~9.5 h); **31172** the gradient check under the new configuration
   (`grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON`, 30 d, the
-  repaired point). To close: the spin-up completes and its MOC/AMOC look like
-  30983's (`forward/moc_amoc_animation_200yr_visc2x.ipynb` diagnostics); 31171
-  and 31173 stay finite over 5 yr; 31172 agrees at the repaired point at the
-  percent level, as 31037 did (0.9 %). Then file the runs and rerun the
+  repaired point). **31172 is done (16 min) and passes at all five points**:
+  adjoint against finite-difference gradient −3.734668e-2 vs −3.734671e-2 at
+  the repaired point (0.0001 %), then 0.0016 %, 0.0035 %, 0.0005 %, 0.0005 % at
+  the four weaker points — under scheme 33 (31037) the same five points gave
+  0.88 % and then 318 %, 78 %, 87 %, 45 %, so the "fc noise floor" that made
+  the weaker points unusable was the flux limiter's non-smoothness, not the
+  model's. To close the rest: the spin-up completes and its MOC/AMOC look
+  like 30983's (`forward/moc_amoc_animation_200yr_visc2x.ipynb` diagnostics);
+  31171 and 31173 stay finite over 5 yr. Then file the runs and rerun the
   forward reproducibility check against 31169.
 
 - [x] ~~**Why does the forward and the adjoint need twice DINO's viscosity,
