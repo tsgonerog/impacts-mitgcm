@@ -24,6 +24,15 @@ at `runs/{forward,adjoint}/` level while their dependents run); figures under
 | M6 | 1.92e-4 | 16 | 31217 | 31218 |
 | M7 | 3.84e-4 | 32 | 31219 | 31220 |
 
+Two more runs belong to the campaign without being ensemble members: **31203**,
+the 200-yr spin-up from rest under the same forward configuration (filed under
+`runs/forward/spinup_200yr_viscRef_ReMax2/`, analysed in
+`../../forward/spinup_200yr_from_rest_viscRef_ReMax2.ipynb` against the 2×
+spin-up 30983), and **31204**, the production adjoint proper: the same 5-yr
+adjoint as 31206 started from 31203's own year-180 pickup instead of the
+reference leg's (`runs/adjoint/spinup_200yr_viscRef_ReMax2/` once done; read
+by `production_adjoint_stability_and_pathways.ipynb` beside 31206 and 31171).
+
 The first submission of the same campaign that morning (31180–31196) ran the
 implicit vertical advection this setup had used since its import; two legs
 (8× and 16×) blew up within two years through the flux-limited implicit

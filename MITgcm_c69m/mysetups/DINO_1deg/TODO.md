@@ -45,10 +45,29 @@
   limiter; on the diffusive branch (4×–16×) the adjoint dJ/dlnκ matches the
   member secants within 6–19 %. Pathways depend on κ_v beyond the first
   months (correlation with the reference at 1 yr: 0.84 at 2×, 0.43 at 32×).
-  Still to close: the spin-up 31203 (year ~105 at the time of writing) and
-  its chained adjoint 31204 → file under `runs/forward/spinup_200yr_viscRef_ReMax2/`,
-  MOC/AMOC against 30983, then rerun the forward reproducibility check
-  against 31203.
+  **The spin-up 31203 completed on 2026-09-11 (200 yr in 31 h 39 min, ended
+  normally; filed under `runs/forward/spinup_200yr_viscRef_ReMax2/`; notebook
+  `analyses/DINO_1deg/forward/spinup_200yr_from_rest_viscRef_ReMax2.ipynb`):**
+  KE steady from year 30, no burst anywhere; AMOC 5.1 / 7.1 / 6.3 Sv at
+  26 / 41 / 55° N in years 190–200 against 4.6 / 6.9 / 5.9 in the 2× spin-up
+  30983, the same history (maximum at years 50–100, then −0.04 to −0.06 Sv
+  per decade) and the same vertical extent (maximum at 915 m, zero crossing
+  at 2429 m at 26° N); the tropical cell at 3° S a third of the 2× run's (3.6
+  against 9.4 Sv) and the deep cell at 26° N half (−0.45 against −0.96): the
+  Reynolds floor acts in the equatorial band, which is the only place the two
+  overturnings differ. Tracers within the forcing range with none of the 2×
+  run's monthly salinity spikes above 37.0. The mean temperature still drifts
+  +0.03 K per decade at year 200 in both runs. The ensemble's year-180 state
+  (the reference leg 31205, the 2× year 170 plus 10 yr under the new
+  configuration) differs from the spin-up's own year 180 by 0.40 K rms, up to
+  1.6 K at 700 m in the tropics — it carries the 2× state's thick tropical
+  thermocline; 31204, the production adjoint on the spin-up's own state, is
+  the measure of what that does to the pathways. Still to close: 31204
+  (running since 2026-09-11 11:01 CDT) → file under
+  `runs/adjoint/spinup_200yr_viscRef_ReMax2/`, compare with 31206 and 31171,
+  update the page; the forward reproducibility check 31256 (10 yr from rest,
+  same executable and namelist as 31203; byte-identical over its first 18
+  months at the time of writing) → record and delete.
 
 - [x] ~~**Scheme 30 or scheme 33 for production**~~ (study done 2026-09-10,
   decided the same day: **scheme 33 forward, scheme 30 adjoint sweep**; the

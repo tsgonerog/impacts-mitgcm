@@ -686,7 +686,18 @@ reference leg 31205 (10 yr from the year-170 pickup — 31164 ran with the
 implicit form, so it is no longer the reference state) with the production
 adjoint 31206 chained on it, the chained adjoint 31204 on the spin-up, and
 the kappa ensemble 31207–31220; the runs made with the implicit form that
-morning (31180–31196) were cancelled and deleted.
+morning (31180–31196) were cancelled and deleted. The spin-up completed on
+2026-09-11 (200 yr in 31 h 39 min, no incident; filed under
+`runs/forward/spinup_200yr_viscRef_ReMax2/`, analysed against the 2× spin-up
+in `analyses/DINO_1deg/forward/spinup_200yr_from_rest_viscRef_ReMax2.ipynb`):
+its overturning is 0.3–0.5 Sv stronger than the 2× run's at 26/41/55° N with
+the same history and vertical extent, its tropical cell a third and its deep
+cell half of the 2× run's (the Reynolds floor acts in the equatorial band, the
+only place the two differ), its tracers inside the forcing range with none of
+the 2× run's monthly salinity spikes above 37.0. The ensemble's year-180 state
+(the reference leg 31205) is 0.40 K rms from the spin-up's own year 180 and
+keeps the 2× state's thick tropical thermocline; the DINO `TODO.md` entry has
+the numbers, 31204 the adjoint on the spin-up's own state.
 
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but
