@@ -682,13 +682,16 @@ forward runs whether or not you want them.
 
 ### Cheap regression test
 
-Rebuild, run the forward model 10 years from rest with `from_rest_visc2x`, and
-diff `dynDiag` against the 200-year spin-up 30983. It should be bit-identical.
-That catches a
-compiler or source change that alters the physics, and takes about 1.6 hours on
-27 ranks. The 2026-08-18 run that established it (30945) was deleted in the
-2026-09-03 scratch consolidation, so the check now has to be re-run rather than
-looked up.
+Rebuild, run the forward model 10 years from rest under the live `input/data`
+(`../../../tools/submit.sh scripts/submit_frd.sh` from the setup directory; 10
+years is the committed default), and `cmp` its diagnostic records against the
+200-year production spin-up 31203 (`runs/forward/spinup_200yr_viscRef_ReMax2/`
+on scratch). They should be byte-identical. That catches a compiler or source
+change that alters the physics, and takes about 1.6 hours on 27 ranks. Last
+done 2026-09-11 (run 31256, then deleted): all 601 diagnostic and pickup files
+and all 6 050 monitor values identical. The 2026-08-18 form of it (30945
+against the `visc2x` spin-up 30983) was deleted in the 2026-09-03 scratch
+consolidation.
 
 ---
 

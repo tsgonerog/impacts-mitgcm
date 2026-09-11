@@ -65,9 +65,11 @@
   the measure of what that does to the pathways. Still to close: 31204
   (running since 2026-09-11 11:01 CDT) → file under
   `runs/adjoint/spinup_200yr_viscRef_ReMax2/`, compare with 31206 and 31171,
-  update the page; the forward reproducibility check 31256 (10 yr from rest,
-  same executable and namelist as 31203; byte-identical over its first 18
-  months at the time of writing) → record and delete.
+  update the page. The forward reproducibility check 31256 (10 yr from rest,
+  the committed `submit_frd.sh` defaults, same executable as 31203) is done:
+  all 601 diagnostic and pickup files and all 6 050 `%MON` values byte-identical
+  to 31203's first 10 years (1 h 37 min); the run was deleted, CLAUDE.md's
+  verification item 1 records it.
 
 - [x] ~~**Scheme 30 or scheme 33 for production**~~ (study done 2026-09-10,
   decided the same day: **scheme 33 forward, scheme 30 adjoint sweep**; the

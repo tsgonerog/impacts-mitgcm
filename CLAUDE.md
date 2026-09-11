@@ -340,17 +340,21 @@ when they match with the measured seconds masked and the rows sorted, and reads
 a serial run's `fc` and `%MON` from `output_tap_adj.txt` — before that a SOMA
 adjoint comparison always came out `NOT CLEAN` with an empty `fc`.)
 
-**1. Forward reproducibility — verified, but the recorded comparison is gone.**
-A 10-year run from rest with `from_rest_visc2x` reproduced the first 10 years of
-the 200-year production spin-up **bit-identically**: 161 `dynDiag` field
-comparisons, all of `surfDiag`/`atmDiag`/`viscDiag`, 1334 monitor values across
-134 variables, and the AMOC series, every one at exactly zero difference. The
-spin-up ran twice — 28463 and 30983, byte-identical to each other — and the
-10-year run was 30945. The 2026-09-03 consolidation deleted 28463 and 30945 and
-kept 30983, so this is now a check to **re-run**, not one to look up: rebuild,
-run 10 years from rest with `from_rest_visc2x`, diff `dynDiag` against 30983.
-~1.6 h on 27 ranks. It catches a compiler or source change that alters the
-physics.
+**1. Forward reproducibility — verified again on 2026-09-11 under the
+production configuration.** A 10-year run from rest under the live `input/data`
+(31256, the committed `submit_frd.sh` defaults, same executable) reproduced the
+first 10 years of the 200-year production spin-up 31203 **byte for byte**:
+every `dynDiag`/`surfDiag`/`atmDiag`/`viscDiag` record and every monthly
+pickup (601 files) identical under `cmp`, all 6 050 `%MON` values over 121
+blocks identical (last cell of
+`analyses/DINO_1deg/forward/spinup_200yr_from_rest_viscRef_ReMax2.ipynb`);
+31256 was then deleted, being a copy of what 31203 holds. The 2026-08 form of
+the check (30945 against the `visc2x` spin-up, 161 `dynDiag` fields, 1334
+monitor values) was deleted in the 2026-09-03 consolidation. To re-run it:
+rebuild, `../../../tools/submit.sh scripts/submit_frd.sh` from the setup
+directory (10 yr from rest is the default), `cmp` the `*Diag.*.data` files
+against 31203's. ~1.6 h on 27 ranks. It catches a compiler or source change
+that alters the physics.
 
 **2. Adjoint runs end to end — verified.** A 30-day adjoint from the 180-year
 pickup produces `ADJ*` and `adxx*` output with sensitivity concentrated on the
