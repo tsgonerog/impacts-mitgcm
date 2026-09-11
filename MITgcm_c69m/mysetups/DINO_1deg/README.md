@@ -545,8 +545,11 @@ found:
   instability.
 - **The adjoint has two separate problems.** GM/Redi, on in the forward
   spin-up and off in every adjoint (see "KPP and GM/Redi" in the root
-  `CLAUDE.md`), cannot be switched on in the adjoint at the reference
-  viscosity (explodes within 20 d) and is marginal at 2×; and the GM-free
+  `CLAUDE.md`), cannot be switched on in the adjoint sweep (it explodes within
+  20 d at the reference viscosity, is marginal at 2×, and still explodes with
+  scheme 30 in the adjoint sweep, 31236) but can run in the forward sweep alone
+  in the `approxAdv` build (2026-09-11: stable, a better κ_v gradient, no better
+  temperature sensitivities; not adopted, see the stability_study README); and the GM-free
   adjoint's blow-ups (four of the seven kappa members) are episodic bursts with
   1–3-day e-folding seeded at single deep points — the signature the flux
   limiter's adjoint leaves in nearly uniform tracer fields. MITgcm's stock

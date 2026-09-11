@@ -239,6 +239,16 @@ Several runs named in those comparison reports (31055, 31060–31067) were
 deleted in the 2026-09-03 consolidation. The reports are the record; the
 `ckpAll` half of every pair survives.
 
+`gm_in_adjoint/` (2026-09-11) is scripts rather than notebooks: the test of
+running GM/Redi in the adjoint's forward sweep only. `compare_gm_adjoints.py`
+compares the `ADJ*` dumps and `adxx_*` gradients of runs against a reference by
+lead, `forward_drift.py` compares two forward sweeps' monthly `dynDiag`,
+`perturb_pickup.py` writes pickups with Theta perturbed in a box, and
+`fd_summary.py` sets both adjoints (31206, 31237) against the finite
+differences of both models. Its `README.md` has the run table; the runs are
+filed under `runs/adjoint/stability_study/`, the outputs under
+`analysis/gm_in_adjoint/`.
+
 `scidac_poster_aug2026/` is the poster prepared for the SciDAC PI meeting in
 August 2026 — `adj_field_animations.ipynb` animates the 3-D and 2-D `ADJ*`
 fields of run 28486, `poster_panel_frames.ipynb` is the trimmed version that

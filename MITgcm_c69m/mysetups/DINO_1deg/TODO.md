@@ -1,5 +1,27 @@
 # TODO — DINO_1deg
 
+- [ ] **Decide whether production adjoints run GM/Redi in the forward sweep**
+  (tested 2026-09-11 on branch `dino-stability-study`, variants and scripts in
+  commit `7cd4772`): the spin-up and forward legs use GM, every adjoint so far
+  ran without it. In the `approxAdv` build from the REF_ReMax2 leg's year-180
+  pickup: GM in both sweeps blows up at lead 4 d even with scheme 30 in the
+  adjoint sweep (31236); GM in the forward sweep only (`useGMRedi=.TRUE.` with
+  the spin-up's `data.gmredi`, `useGMRediInAdMode=.FALSE.`) is stable over 30 d
+  (31234) and 5 yr (31237, 14 h 28 against 13 h 24) and removes the GM-free
+  forward sweep's drift (AMOC at 26° N +0.6 Sv in the first month; rms T
+  0.23 K and more than 1 K in the zonal mean of the Southern Ocean surface
+  layer after 5 yr). Against finite differences of the GM model (κ_v ±10 %,
+  31238/31239; θ in three boxes, 31241–31246) its gradients are off by +22 %
+  for dJ/dκ_v (production 31206: +65 %), +4 % in the tropics (+5 %), +45 % in
+  the upper Southern Ocean (+42 %) and −21 % in the deep North Atlantic
+  (−9 %); the GM-free model's own differences (31231/31232, 31247–31252) put
+  production within 1–8 % of its own model on θ and 21 % on κ_v. The 5-yr
+  sensitivity fields differ by 41–43 % RMS (correlation 0.91 for
+  `adxx_theta`, 0.94 for `adxx_diffkr`). So: a better κ_v gradient and a
+  consistent trajectory, no better temperature sensitivities. Adopting it
+  means `useGMRedi=.TRUE.` and `input/data.gmredi` in `input_tap/`, in the
+  `approxAdv` or `ckpAll` build only. The table is in
+  `input_tap/variants/stability_study/README.md`.
 - [ ] **Production campaign under the 2026-09-10 configuration** (branch
   `dino-stability-study`): scheme 33 in the forward model, reference viscosity
   + `viscAhReMax=2.`, GM on, **explicit vertical tracer advection**; the
@@ -152,9 +174,10 @@
   since the import (`input/data.pkg` vs `input_tap/data.pkg`; the two
   `data.gmredi` differ too); GM on in both sweeps explodes within 20 d of lead
   at the reference viscosity (31155) and is marginal at 2× (31154); GM in the
-  forward sweep only (`useGMRediInAdMode=.FALSE.`) is catastrophic at both
-  viscosities under Tapenade's checkpoint recomputation (31156/31157, rms 1e30
-  by lead 25 d); GM off in both is the only stable choice. (ii) The GM-free
+  forward sweep only (`useGMRediInAdMode=.FALSE.`) blew up at both viscosities
+  (31156/31157, rms 1e30 by lead 25 d), but those ran the `-nocheckpoint`
+  build, where the switch half-applies; in the `approxAdv` build it is stable
+  (retested 2026-09-11, the entry at the top). (ii) The GM-free
   adjoint's blow-ups are the DST3 flux limiter's adjoint: the last 183 d of
   kappa member M7's blown 5-yr adjoint 31046, restarted from its own monthly
   pickup 3241296 (the new `IMPACTS_PICKUP_RUN_DIR`/`IMPACTS_PICKUP_ITER`
