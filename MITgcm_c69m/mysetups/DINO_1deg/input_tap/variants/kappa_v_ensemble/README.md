@@ -1,5 +1,23 @@
 # `kappa_v_ensemble/` — adjoint runs
 
+**Since 2026-09-10 the members are `M<k>_ReMax2`** (runs 31208, 31210, 31212,
+31214, 31216, 31218, 31220; the first submission 31184–31196 was cancelled with
+its forward legs): the live `input_tap/data` (scheme 33 in the forward
+sweep, reference viscosity + `viscAhReMax=2.`; the live `data.autodiff` switches
+the adjoint sweep to scheme 30 through the approxAdv build) with `diffKrT/S` set
+to the member's κ, each started from the year-180 pickup its own forward leg
+(`../../../input/variants/kappa_v_ensemble/data_M<k>_ReMax2`, runs 31207–31219
+odd) wrote:
+
+```bash
+IMPACTS_PICKUP_RUN_DIR=$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/<leg run directory> \
+IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 ../../../tools/submit.sh scripts/submit_tapAdj.sh
+```
+
+The reference member's adjoint is the live namelist from the `REF_ReMax2` leg's
+pickup (31205 → run 31206). The bare `M<k>` files below are the 2026-08 members (2× viscosity,
+exact adjoint of scheme 33, runs 31039–31046), kept as the record.
+
 Vertical-mixing perturbation ensemble, Part I of the neural-network surrogate
 proposal. These seven
 namelists are the **5-year adjoint**, year 2180 → 2185, each at its own vertical

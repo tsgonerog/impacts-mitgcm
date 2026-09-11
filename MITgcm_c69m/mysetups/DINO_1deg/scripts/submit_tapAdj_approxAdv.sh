@@ -2,8 +2,10 @@
 # Submit the APPROXIMATE-ADVECTION adjoint (scheme 33 forward, scheme 30 in the adjoint sweep;
 # every call checkpointed).      build_tapAdj_approxAdv/mitgcmuv_tap_adj
 #
-# The switch is useApproxAdvectionInAdMode=.TRUE. in the selected data.autodiff
-# (a variant sibling; the live input_tap/data.autodiff does not set it), and the
+# THE DEFAULT adjoint submit script since 2026-09-10: ./scripts/submit_tapAdj.sh
+# is a symlink to this file. The switch is useApproxAdvectionInAdMode=.TRUE. in
+# the live input_tap/data.autodiff (since 2026-09-10; a variant sibling can
+# override it), and the
 # build is the one whose gad_advection.F / gad_implicit_r.F make that switch
 # reachable under Tapenade -- see build_tapAdj_approxAdv.sh. With the switch
 # off this pair is the ckpAll adjoint. Build and submit script are a pair, and

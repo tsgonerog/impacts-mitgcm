@@ -53,8 +53,8 @@ So the two stable routes are scheme 30 in both sweeps (exact adjoint of a
 smooth model, the live `input*/data`) and scheme 33 forward with scheme 30 in
 the adjoint sweep (the approximate adjoint, ECCO's `useApproxAdvectionInAdMode`
 practice, 1.5× slower because it must be a `ckpAll` build); which forward
-scheme to run is a physics choice, see the setup README's "Scheme 30 or
-scheme 33". What scheme 33 cannot have is a finite-difference-verifiable
+scheme to run was a physics choice, see the setup README's "Scheme 30 or
+scheme 33" — decided 2026-09-10 for the second route, now the default pair. What scheme 33 cannot have is a finite-difference-verifiable
 adjoint at this viscosity: `grdchk_repair/` runs 31177–31179.
 
 The `M7_*` runs need the pickup override the adjoint submit definitions gained

@@ -1,5 +1,19 @@
 # `kappa_v_ensemble/` — forward legs
 
+**Since 2026-09-10 the members are `REF_ReMax2` and `M<k>_ReMax2`** (runs 31205 and
+31207, 31209, 31211, 31213, 31215, 31217, 31219; a first submission that morning,
+31183–31195, ran with implicit vertical advection, lost two members to it and was
+deleted — setup README, "Scheme 30 or scheme 33"): the same seven κ_v, the same 10-yr leg from the 2×
+spin-up's year-170 pickup, but under the production configuration of that day —
+reference viscosity files, `viscAhReMax=2.`, the flux-limited scheme 33 — i.e.
+`../stability_study/data_from170yrPk_viscRef_ReMax2` with `diffKrT/S`, `pChkptFreq`
+and the vertical advection (explicit) changed; `REF_ReMax2` is the κ = 1.2e-5
+member, needed because 31164 ran the implicit form. The
+matching adjoints are `../../../input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2`,
+run with the default (approxAdv) pair from each leg's year-180 pickup. The
+bare `M<k>` files below are the 2026-08 members at 2× viscosity (runs
+30996–31002), kept as the record of that campaign.
+
 Vertical-mixing perturbation ensemble, Part I of the neural-network surrogate
 proposal: **do the adjoint sensitivity patterns depend on the model's vertical
 mixing?**

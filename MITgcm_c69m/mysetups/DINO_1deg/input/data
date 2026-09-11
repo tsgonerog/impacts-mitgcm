@@ -1,9 +1,17 @@
-# Production configuration since 2026-09-09 (stability study, TODO.md): DINO's reference
-# viscosity files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the unlimited
-# DST3 tracer advection (scheme 30, what the adjoint needs). The previous production
-# configuration, both viscosity files at 2x (visc2x, spin-up 30983), stays in
-# input/variants/baseline/data_from_rest_visc2x. This file IS the baseline: the 200-yr
-# spin-up from rest; submit_frd.sh patches the duration (10 yr by default).
+# Production configuration since 2026-09-10 (scheme study, TODO.md): DINO's reference viscosity
+# files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the flux-limited DST3 tracer
+# advection (scheme 33, DINO's monotone family). The adjoint keeps scheme 33 in its forward sweep
+# and linearises about the unlimited scheme 30 in the adjoint sweep (input_tap/data.autodiff,
+# useApproxAdvectionInAdMode; the approxAdv build). From 2026-09-09 to 2026-09-10 production was
+# scheme 30 in both models (spin-up 31169, cancelled at year 35: AMOC 40 % weaker at 26N); before
+# that both viscosity files at 2x (visc2x, spin-up 30983), kept in
+# input/variants/baseline/data_from_rest_visc2x. This file IS the baseline: the 200-yr spin-up from
+# rest; submit_frd.sh patches the duration (10 yr by default).
+# Since 2026-09-10 (later the same day) the vertical tracer advection is EXPLICIT (tempImplVertAdv=
+# saltImplVertAdv=.FALSE.): the implicit form of the flux-limited DST3 blew up two kappa-ensemble legs
+# (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column
+# (runs 31191/31193, diagnosed with 31198-31201; stability_study README); the explicit form, DINO's own
+# choice, survives, and the vertical CFL here is below 0.05.
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -48,11 +56,11 @@
  saltStepping=.TRUE.,
  tempAdvection=.TRUE.,
  saltAdvection=.TRUE.,
- tempAdvScheme=30,
- saltAdvScheme=30,
+ tempAdvScheme=33,
+ saltAdvScheme=33,
  staggerTimeStep=.TRUE.,
- tempImplVertAdv=.TRUE.,
- saltImplVertAdv=.TRUE.,
+ tempImplVertAdv=.FALSE.,
+ saltImplVertAdv=.FALSE.,
 # 
  useSingleCpuIO=.TRUE.,
  vectorInvariantMomentum=.TRUE.,

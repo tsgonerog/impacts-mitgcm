@@ -140,7 +140,7 @@ DINO_1deg/
 │   ├── build_frd.sh                    ─┐
 │   ├── build_tapAdj_nocheckpoint.sh     │  build definitions, one per build directory;
 │   ├── build_tapAdj_ckpAll.sh           │  build_tapAdj.sh is a symlink to the current
-│   ├── build_tapAdj_adjVisc.sh     │  default (_nocheckpoint since 2026-09-02)
+│   ├── build_tapAdj_adjVisc.sh     │  default (_approxAdv since 2026-09-10)
 │   ├── build_tapAdj_approxAdv.sh    │
 │   ├── build_tapAdj_profile.sh      ─┘
 │   ├── submit_frd.sh                   ─┐
@@ -177,10 +177,10 @@ enforced as well as documented:
 | --- | --- | --- | --- |
 | `build_frd.sh` | `build_frd/` | `mitgcmuv` | `submit_frd.sh` |
 | `build_tapAdj.sh` → `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` — **the default** (symlink) | `submit_tapAdj.sh` → `submit_tapAdj_nocheckpoint.sh` |
-| `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`) | `submit_tapAdj_nocheckpoint.sh` |
+| `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`; the default until 2026-09-10; ignores the adjoint-sweep scheme switch) | `submit_tapAdj_nocheckpoint.sh` |
 | `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` (reference: every call checkpointed; was `build_tapAdj.sh` until 2026-09-02) | `submit_tapAdj_ckpAll.sh` |
 | `build_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` | `mitgcmuv_tap_adj` (adjoint-mode viscosity boost, every call checkpointed — the list is not equivalent under the boost) | `submit_tapAdj_adjVisc.sh` |
-| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (scheme 33 forward, scheme 30 in the adjoint sweep — MITgcm's `useApproxAdvectionInAdMode` made reachable under Tapenade; every call checkpointed, since the switch is a run-time branch; since 2026-09-09) | `submit_tapAdj_approxAdv.sh` |
+| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (**the default since 2026-09-10**: scheme 33 forward, scheme 30 in the adjoint sweep — MITgcm's `useApproxAdvectionInAdMode` made reachable under Tapenade; every call checkpointed, since the switch is a run-time branch) | `submit_tapAdj_approxAdv.sh` |
 | `build_tapAdj_profile.sh` | `build_tapAdj_profile/` | `mitgcmuv_tap_adj` (diagnostic: ckpAll + Tapenade `-profile`) | `submit_tapAdj_profile.sh` |
 
 **`SOMA_1deg` — serial adjoint, 4-rank MPI forward**

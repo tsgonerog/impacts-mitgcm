@@ -174,6 +174,12 @@ Figures go to `analysis/stability_study/figures/`.
 
 ### adjoint/
 
+`kappa_v_ensemble_ReMax2_approxAdv/` (2026-09-10) is the vertical-diffusivity
+ensemble rerun under the production configuration of that day (scheme 33
+forward with explicit vertical advection, approximate adjoint, reference
+viscosity + `viscAhReMax=2.`): runs 31205–31220, its own README gives the
+reading order. `kappa_v_ensemble/` stays the record of the 2026-08 campaign.
+
 All read `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`.
 
 | Notebook | Run | Start (`nIter0`) | Viscosity / mods |

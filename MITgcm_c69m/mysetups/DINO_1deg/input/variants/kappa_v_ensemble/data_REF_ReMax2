@@ -1,18 +1,9 @@
-# Production configuration since 2026-09-10 (scheme study, TODO.md): DINO's reference viscosity
-# files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the flux-limited DST3 tracer
-# advection (scheme 33) in the forward sweep; data.autodiff sets useApproxAdvectionInAdMode so the
-# adjoint sweep linearises about the unlimited scheme 30 -- which only the approxAdv build honours
-# (scripts/build_tapAdj.sh -> build_tapAdj_approxAdv.sh since 2026-09-10; the nocheckpoint and
-# ckpAll builds silently run the exact, blow-up-prone adjoint of scheme 33 with this file). From
-# 2026-09-09 to 2026-09-10 production was scheme 30 in both sweeps; before that both viscosity
-# files at 2x (visc2x), kept in input_tap/variants/baseline/data_from180yrPk_visc2x. This file IS
-# the baseline: the 5-yr adjoint from the year-180 pickup of the production spin-up (nIter0=3162240;
-# IMPACTS_PICKUP_RUN_DIR selects which run supplies it).
-# Since 2026-09-10 (later the same day) the vertical tracer advection is EXPLICIT (tempImplVertAdv=
-# saltImplVertAdv=.FALSE.): the implicit form of the flux-limited DST3 blew up two kappa-ensemble legs
-# (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column
-# (runs 31191/31193, diagnosed with 31198-31201; stability_study README); the explicit form, DINO's own
-# choice, survives, and the vertical CFL here is below 0.05.
+# Ensemble reference member REF under the 2026-09-10 production configuration: kappa_v = 1.2e-05 m2/s (the
+# reference). Forward re-equilibration leg 2170 -> 2180 from the 2x spin-up's year-170 pickup (30983,
+# nIter0=2986560) with the reference viscosity files, viscAhReMax=2., the flux-limited scheme 33 and
+# EXPLICIT vertical tracer advection -- identical to the members data_M<k>_ReMax2 apart from diffKrT/diffKrS.
+# Needed because the earlier reference run 31164 used the implicit vertical advection that blew up two
+# members (see the stability_study README); its year-180 pickup is what the production adjoint reads.
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -65,8 +56,6 @@
 # 
  useSingleCpuIO=.TRUE.,
  vectorInvariantMomentum=.TRUE.,
-# viscAhReMax: a floor A >= |u| dx / 2, DINO's own Re_dx = 2 criterion with the local
-# speed -- the reference file wherever |u| < 0.27 m/s, raised only in the jets (2026-09-09).
  viscAhReMax=2.,
  readBinaryPrec=64,
  writeBinaryPrec=32,
@@ -81,23 +70,19 @@
 
 # Time stepping parameters
  &PARM03
- nIter0=3162240,
- nTimeSteps=87840,
+ nIter0=2986560,
+ nTimeSteps=175680,
  deltaT=1800.,
- pChkptFreq=2635200.,
+ pChkptFreq=316224000.,
  chkptFreq=155520000.,
  dumpFreq=31104000.,
- monitorFreq=432000.,
+ monitorFreq=2635200.,
  monitorSelect=2,
  tauThetaClimRelax=561600.0,
  tauSaltClimRelax=561600.0,
  periodicExternalForcing=.TRUE.,
  externForcingPeriod=86400.,
  externForcingCycle=31536000.,
-#-adjMonitorFreq ==> monitors adj information inside STDOUT.0000 (or inside output_tap_adj.txt file for serial run)
- adjMonitorFreq=432000.,
-#-adjDumpFreq ==> spit out adj fields along the way e.g., ADJTheta.0000000000.data
- adjDumpFreq=432000.,
 #-for longer run (100 yrs)
 # endTime = 3110400000.,
 # monitorFreq=2592000.,

@@ -1,13 +1,9 @@
-# Production configuration since 2026-09-10 (scheme study, TODO.md): DINO's reference viscosity
-# files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the flux-limited DST3 tracer
-# advection (scheme 33) in the forward sweep; data.autodiff sets useApproxAdvectionInAdMode so the
-# adjoint sweep linearises about the unlimited scheme 30 -- which only the approxAdv build honours
-# (scripts/build_tapAdj.sh -> build_tapAdj_approxAdv.sh since 2026-09-10; the nocheckpoint and
-# ckpAll builds silently run the exact, blow-up-prone adjoint of scheme 33 with this file). From
-# 2026-09-09 to 2026-09-10 production was scheme 30 in both sweeps; before that both viscosity
-# files at 2x (visc2x), kept in input_tap/variants/baseline/data_from180yrPk_visc2x. This file IS
-# the baseline: the 5-yr adjoint from the year-180 pickup of the production spin-up (nIter0=3162240;
-# IMPACTS_PICKUP_RUN_DIR selects which run supplies it).
+# Ensemble member M7 under the 2026-09-10 production configuration: kappa_v = 3.84e-04 m2/s (32 x reference
+# 1.2e-05). 5-yr adjoint 2180 -> 2185 from the pickup the member's forward leg (data_M7_ReMax2 under
+# input/variants/kappa_v_ensemble/) writes at 3162240; IMPACTS_PICKUP_RUN_DIR must point at that run.
+# Identical to the live input_tap/data (scheme 33 forward sweep, reference viscosity + viscAhReMax=2.;
+# the live data.autodiff supplies useApproxAdvectionInAdMode for the scheme-30 adjoint sweep) apart from
+# diffKrT/diffKrS. The 2026-08 member data_M7 is the visc2x predecessor.
 # Since 2026-09-10 (later the same day) the vertical tracer advection is EXPLICIT (tempImplVertAdv=
 # saltImplVertAdv=.FALSE.): the implicit form of the flux-limited DST3 blew up two kappa-ensemble legs
 # (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column
@@ -28,8 +24,8 @@
 # (code*/CPP_OPTIONS.h) it initialises the 3-D diffKr array (ini_mixing.F)
 # that the xx_diffkr control perturbs; until 2026-09-09 the same constant
 # was read as a field from diffKrFile='dino_diffKr.bin'
- diffKrT=1.2E-5,
- diffKrS=1.2E-5,
+ diffKrT=3.84E-4,
+ diffKrS=3.84E-4,
  no_slip_sides=.FALSE.,
  no_slip_bottom=.FALSE.,
  bottomDragQuadratic = 3.0E-3

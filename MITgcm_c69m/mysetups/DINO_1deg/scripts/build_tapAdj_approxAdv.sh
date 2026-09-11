@@ -32,6 +32,11 @@
 # also the exact alternative the live input*/data take since 2026-09-09. This
 # build is the Tapenade form of the switch, for keeping scheme 33 forward.
 #
+# THE DEFAULT adjoint build since 2026-09-10: ./scripts/build_tapAdj.sh is a
+# symlink to this file (and ./scripts/submit_tapAdj.sh to
+# submit_tapAdj_approxAdv.sh), because the live input_tap/data keeps scheme 33
+# and the live input_tap/data.autodiff sets the switch; the nocheckpoint and
+# ckpAll builds ignore the switch and run the exact adjoint of scheme 33.
 # Pair with submit_tapAdj_approxAdv.sh (run token tapAdj_ckpAll_approxAdv).
 # This file says WHAT to build; HOW is tools/lib/build_body.sh. Run from the
 # setup directory: ./scripts/build_tapAdj_approxAdv.sh

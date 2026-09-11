@@ -7,4 +7,10 @@
 # inAdExact = .FALSE.,
  useKPPinAdMode = .FALSE.,
  useGMRediInAdMode = .FALSE.,
+# Since 2026-09-10: the adjoint sweep linearises about the unlimited DST3 (scheme 30) while the
+# forward sweep keeps the flux-limited scheme 33 of data -- the flux limiter's adjoint is what
+# blew up every long adjoint here (stability_study, runs 31166/31167/31176). Honoured only by the
+# approxAdv build (code_tap/variants/approxAdvection/, the default build_tapAdj.sh); inert, and
+# therefore dangerous, with the nocheckpoint and ckpAll builds.
+ useApproxAdvectionInAdMode = .TRUE.,
  &

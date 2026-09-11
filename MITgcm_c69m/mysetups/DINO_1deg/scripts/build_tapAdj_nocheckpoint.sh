@@ -2,9 +2,13 @@
 # Build the Tapenade ADJOINT with PROFILE-GUIDED -nocheckpoint tuning.
 #   sources : code_tap/ + input_tap/  ->  build_tapAdj_nocheckpoint/mitgcmuv_tap_adj
 #
-# THE DEFAULT adjoint build since 2026-09-02: ./scripts/build_tapAdj.sh is a
-# symlink to this file (and ./scripts/submit_tapAdj.sh to
-# submit_tapAdj_nocheckpoint.sh). The former default, with every call
+# THE DEFAULT adjoint build from 2026-09-02 to 2026-09-10; since then the
+# symlink ./scripts/build_tapAdj.sh points at build_tapAdj_approxAdv.sh (the
+# live namelists keep scheme 33 in the forward model and switch the adjoint
+# sweep to scheme 30, which this build cannot do: the switch is a run-time
+# branch that split mode never re-evaluates, so with the live
+# input_tap/data.autodiff this build runs the exact, blow-up-prone adjoint of
+# scheme 33). The earlier default, with every call
 # checkpointed, is build_tapAdj_ckpAll.sh; this build is bitwise identical to
 # it in fc, adxx_* and ADJ* at 30 d (run 31054 vs 31052) and 5 yr (31055 vs
 # 31039) and 1.5x faster. The routine list is a profile of ONE configuration

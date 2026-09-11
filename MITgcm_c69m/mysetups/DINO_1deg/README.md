@@ -21,14 +21,14 @@ per-machine sbatch flags.
 
 ```bash
 ./scripts/build_frd.sh                                   # -> build_frd/mitgcmuv
-../../../tools/submit.sh scripts/submit_frd.sh           # 10 yr from rest, visc2x
+../../../tools/submit.sh scripts/submit_frd.sh           # 10 yr from rest, reference viscosity + viscAhReMax=2, scheme 33
 ```
 
 ### Adjoint model
 
 ```bash
-./scripts/build_tapAdj.sh                                # -> build_tapAdj_nocheckpoint/mitgcmuv_tap_adj
-../../../tools/submit.sh scripts/submit_tapAdj.sh        # 5 yr from the 180 yr pickup
+./scripts/build_tapAdj.sh                                # -> build_tapAdj_approxAdv/mitgcmuv_tap_adj (since 2026-09-10)
+../../../tools/submit.sh scripts/submit_tapAdj.sh        # 5 yr from the 180 yr pickup; scheme 33 forward sweep, scheme 30 adjoint sweep
 ```
 
 Build and submit scripts are **paired by build directory** — `submit_frd.sh`
@@ -105,11 +105,11 @@ duration is safe; changing the starting point means editing both by hand.
 | Script | Build directory | Executable |
 | --- | --- | --- |
 | `build_frd.sh` | `build_frd/` | `mitgcmuv` (forward only) |
-| `build_tapAdj.sh` → `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` — **the default** (symlink since 2026-09-02) |
-| `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`; see below) |
+| `build_tapAdj.sh` → `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` — **the default** (symlink; `_approxAdv` since 2026-09-10, `_nocheckpoint` from 2026-09-02) |
+| `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`; see below; the default until 2026-09-10 — it cannot honour the adjoint-sweep scheme switch of the live `data.autodiff`) |
 | `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` (reference: every call checkpointed; was `build_tapAdj.sh` / `build_tapAdj/` until 2026-09-02) |
 | `build_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` | `mitgcmuv_tap_adj` (adjoint-mode viscosity boost, every call checkpointed — the list is not equivalent under the boost; see "Profiling and checkpoint tuning") |
-| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (scheme 33 forward, scheme 30 in the adjoint sweep: `code_tap/variants/approxAdvection/` ahead of `code_tap/`, every call checkpointed because the switch is a run-time branch; since 2026-09-09, see "Scheme 30 or scheme 33" below) |
+| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (**the default since 2026-09-10**: scheme 33 forward, scheme 30 in the adjoint sweep: `code_tap/variants/approxAdvection/` ahead of `code_tap/`, every call checkpointed because the switch is a run-time branch; see "Scheme 30 or scheme 33" below) |
 | `build_tapAdj_profile.sh` | `build_tapAdj_profile/` | `mitgcmuv_tap_adj` (diagnostic: ckpAll + Tapenade checkpointing profiler) |
 | `build_tapAdj_hooksInTree.sh` | `build_tapAdj_hooksInTree/` | `mitgcmuv_tap_adj` (validation of the **in-tree** form of the hooks: built against a git copy of checkpoint69m outside this repository, `~/MITgcm_c69m_tapenade_hooks/MITgcm`, in which the files of `mods_tapenade_hooks/` are applied to the tree, with the shared directory left out; run 31107 bitwise identical to the default's 31101 on 2026-09-05 — see "The same mechanism from inside the tree" below) |
 
@@ -167,7 +167,11 @@ directory.
 ```bash
 cd MITgcm_c69m/mysetups/DINO_1deg/scripts
 
-# nocheckpoint — the default since 2026-09-02
+# approxAdv — the default since 2026-09-10 (scheme 33 forward, scheme 30 adjoint sweep)
+ln -sfn build_tapAdj_approxAdv.sh  build_tapAdj.sh
+ln -sfn submit_tapAdj_approxAdv.sh submit_tapAdj.sh
+
+# nocheckpoint — the default from 2026-09-02 to 2026-09-10 (exact adjoint; use with a scheme-30 namelist)
 ln -sfn build_tapAdj_nocheckpoint.sh  build_tapAdj.sh
 ln -sfn submit_tapAdj_nocheckpoint.sh submit_tapAdj.sh
 
@@ -644,14 +648,45 @@ and all with the reference viscosity + `viscAhReMax=2.`:
   the backward sweep), so 1.5× the default's reverse-sweep time; with the
   switch off it reproduces the `ckpAll` adjoint to the last digit (31179).
 
-So the choice is between two stable, validated configurations: **scheme 30
-in both** (the live `input*/data`: exact adjoint of a smooth model, the
+So the choice was between two stable, validated configurations: **scheme 30
+in both** (the live `input*/data` from 2026-09-09 to 2026-09-10: exact adjoint of a smooth model, the
 default build's speed, ECCO's forward choice; equatorial cells stronger and
 deeper, AMOC drifting weaker by ~1.5 Sv per decade relative to 33) and
 **scheme 33 forward with the approximate adjoint** (DINO's monotone family,
 1.5× slower adjoint, a gradient that is a 3 % approximation and cannot be
 finite-difference-verified at all). What is not available is scheme 33 with
-an exact, long-stable adjoint.
+an exact, long-stable adjoint. **Decided 2026-09-10: scheme 33 in the forward
+model with the approximate adjoint**, because the sensitivity pathways are what
+matters and they are set by the realistic trajectory and a well-posed transport
+operator; the live `input*/data` carry scheme 33, the live `input_tap/data.autodiff`
+the switch, and `build_tapAdj.sh`/`submit_tapAdj.sh` point at the approxAdv pair.
+**And one more change the campaign forced the same day: the vertical tracer
+advection is explicit** (`tempImplVertAdv = saltImplVertAdv = .FALSE.` in the
+live `input*/data`, the MITgcm default; this setup had run it implicitly since
+its import). Two of the seven kappa-ensemble legs under the new configuration
+(8× and 16×, runs 31191 and 31193) blew up within two years with no
+precursor in any diagnostic: the pressure-solver residual goes from 2 to 1e31
+in three time steps. The crash is deterministic (31198 reproduces it to the
+step), and a restart six steps before it with a snapshot every step (31199)
+shows the temperature of one channel cell at 1200 m, 53° S, jumping by 110 K
+in a single step while salinity and the velocities stay normal: the column is
+convectively homogenised (five levels identical to four decimals), the
+flux-limiter ratios of the *implicit* DST3 vertical solve (`gad_dst3fl_impl_r`)
+degenerate there, and the unpivoted pentadiagonal solve returns a ±100 K
+checkerboard. Strong vertical diffusion makes such columns common, which is
+why the high-kappa members found it first; the 2× campaign of 2026-08 never
+did, by luck. Both cures pass the crash step and the day that follows: the
+explicit vertical advection (31200; the vertical CFL here is below 0.05, and
+DINO's own FCT scheme is explicit) and the linear third-order upwind scheme
+kept implicit (31201, ECCO's vertical choice). Production takes the first,
+which keeps the vertical scheme limited and monotone; run 31202 is the 8×
+member's full 10-yr leg with it. Every run of the campaign was resubmitted
+under the corrected namelists: spin-up 31203 (200 yr from rest), the
+reference leg 31205 (10 yr from the year-170 pickup — 31164 ran with the
+implicit form, so it is no longer the reference state) with the production
+adjoint 31206 chained on it, the chained adjoint 31204 on the spin-up, and
+the kappa ensemble 31207–31220; the runs made with the implicit form that
+morning (31180–31196) were cancelled and deleted.
 
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but

@@ -2,9 +2,12 @@
 # Submit the Tapenade ADJOINT with PROFILE-GUIDED -nocheckpoint tuning.
 #                                  build_tapAdj_nocheckpoint/mitgcmuv_tap_adj
 #
-# THE DEFAULT adjoint submit script since 2026-09-02: ./scripts/submit_tapAdj.sh
-# is a symlink to this file (and ./scripts/build_tapAdj.sh to
-# build_tapAdj_nocheckpoint.sh). Identical to submit_tapAdj_ckpAll.sh except
+# THE DEFAULT adjoint submit script from 2026-09-02 to 2026-09-10 (the symlink
+# ./scripts/submit_tapAdj.sh now points at submit_tapAdj_approxAdv.sh). With
+# the live input_tap/data.autodiff this pair silently runs the EXACT adjoint of
+# the flux-limited scheme 33 -- the useApproxAdvectionInAdMode switch is inert
+# in split mode -- which blows up over long windows; use it with a scheme-30
+# namelist or for a deliberate exact-adjoint control. Identical to submit_tapAdj_ckpAll.sh except
 # for the executable it runs: the nocheckpoint build recomputes less and
 # stores more inside each time step (see build_tapAdj_nocheckpoint.sh). Build
 # and submit script are a pair, and the run token check below enforces it.

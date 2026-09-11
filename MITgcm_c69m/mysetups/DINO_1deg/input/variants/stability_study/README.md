@@ -55,3 +55,19 @@ peak levels for the whole decade (\|u\| 0.51–0.52, \|v\| 0.78–0.79, `ke_max`
 replacement for the blanket doubling; its adjoint side is in the adjoint
 half's README (finite, same 30-d growth; it does **not** cure the adjoint's
 own blow-up, which is the flux limiter's).
+
+**The implicit vertical advection blow-up (2026-09-10, later the same day).**
+Two kappa-ensemble legs under the production configuration (8× and 16×, runs
+31191 and 31193) died within two years with nothing in any diagnostic before
+the last day. The tags below reproduced and dissected it; the setup README's
+"Scheme 30 or scheme 33" subsection has the account. All from the year-170
+pickup at reference viscosity + `viscAhReMax=2.`, scheme 33.
+
+| Tag | Setting | Result |
+| --- | --- | --- |
+| `from170yrPk_viscRef_ReMax2_kappa8x_diag` | the 8× member (`kappa_v_ensemble/M5_ReMax2`) with monthly pickups and a daily monitor | 31198: dies at the same step as 31191 (iteration 3020238, day 701.6), deterministic; the daily monitor is unremarkable to the last day |
+| `from170yrPk_viscRef_ReMax2_kappa8x_crashstep` | restart from 31198's pickup at 3020232, six steps before, snapshot and monitor every step (`IMPACTS_PICKUP_RUN_DIR`/`ITER`, which `submit_frd.sh` honours since this day) | 31199: at the sixth step the temperature of one cell (53° S, 22° W, 1220 m) goes from 4.21 to −105.7 °C, the cells below to −5.7 and +97.5, while salinity and the velocities are unchanged; the column above is uniform to four decimals over five levels — the flux-limited implicit vertical solve, not the dynamics |
+| `..._crashstep_explVadv` | the same restart with `tempImplVertAdv=saltImplVertAdv=.FALSE.` | 31200: passes the step and the day, residual and extremes normal — **production since this day** |
+| `..._crashstep_vadv3` | the same restart keeping the implicit solve but with the linear third-order upwind vertical scheme (`tempVertAdvScheme=saltVertAdvScheme=3`) | 31201: passes as well; not adopted (a linear vertical scheme is not monotone) |
+| `from170yrPk_viscRef_ReMax2_kappa8x_explVadv` | the 8× member's full 10-yr leg with explicit vertical advection, daily monitor | 31202: the long test of the fix |
+

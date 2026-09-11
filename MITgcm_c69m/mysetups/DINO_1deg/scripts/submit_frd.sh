@@ -58,9 +58,17 @@ TIME_PARAMS=(monitorFreq)
 # Year-2170 state of the 200-yr spin-up: the start of every kappa_v ensemble
 # member's re-equilibration leg (variants/kappa_v_ensemble/data_M<n> bakes the
 # matching nIter0=2986560). Runs in the staged run directory.
+# IMPACTS_PICKUP_RUN_DIR / IMPACTS_PICKUP_ITER (since 2026-09-10, as in the adjoint
+# scripts) override the run directory the pickup is taken from and its iteration,
+# for a namelist whose nIter0 is another run's pickup (a crash-step restart, a
+# member's own state); the defaults are the 2x spin-up and its year-170 pickup,
+# exactly the two lines that were hard-coded here before. A from-rest namelist
+# (nIter0=0) ignores the staged pickup.
 stage_pickups() {
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0002986560.data pickup.0002986560.data
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0002986560.meta pickup.0002986560.meta
+    local pk_dir="${IMPACTS_PICKUP_RUN_DIR:-$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983}"
+    local pk_it; pk_it=$(printf '%010d' "${IMPACTS_PICKUP_ITER:-2986560}")
+    ln -s "$pk_dir/pickup.$pk_it.data" "pickup.$pk_it.data"
+    ln -s "$pk_dir/pickup.$pk_it.meta" "pickup.$pk_it.meta"
 }
 
 source "$SLURM_SUBMIT_DIR/../../../tools/lib/submit_body.sh"
