@@ -21,9 +21,9 @@ Without a `data.pkg` of their own the GM-free rows would now stage GM/Redi; the
 2026-09-09 `_gmOn` runs staged the K = 1000 `data.gmredi`, not the sibling they
 now carry; and the 2026-09-09 `_gmFwd` and `_approxAdv` runs used builds that
 half-applied or ignored their switches. Runs 31152–31159 were deleted with
-them (provenance in `logs/deleted_run_records/` of the scratch output tree);
-31166–31168, 31176 and 31247–31252, which the stability note's figures and
-`fd_summary.py` read, are still on scratch. The table keeps the removed rows as
+them, and 31166–31168, 31176 and 31247–31252, which the stability note's
+figures and `fd_summary.py` read, later the same day (provenance for all of
+them in `logs/deleted_run_records/` of the scratch output tree). The table keeps the removed rows as
 the record of what their runs showed; the tags still here are
 `from180yrPk_viscRef_ReMax2` and the 2026-09-11 rows.
 
@@ -50,7 +50,7 @@ come from `gad_advection`): runs 31158/31159 are byte-identical to 31140/31152.
 | `M7_lastHalfYr_adv30` | the same with the unlimited DST3 scheme 30 for T and S in both sweeps | 31167: **no blow-up** — rms decays smoothly 1.36e-4 → 8.5e-5 at 170 d (max 3.7e-3); `fc` 0.5125 against 0.5102, a 0.45 % change of the forward |
 | `M7_lastHalfYr_ReMax2` | the same with `viscAhReMax=2.` | 31168: the blow-up at the same lead, halved (1.1e-2 at 140 d); `fc` changes by 0.04 % |
 | `M7_lastHalfYr_approxAdv` | the control's namelist (scheme 33 in the forward sweep) with a `data.autodiff` sibling setting `useApproxAdvectionInAdMode=.TRUE.`, run with `build_tapAdj_approxAdv.sh` / `submit_tapAdj_approxAdv.sh` (2026-09-10): scheme 30 in the adjoint sweep only | 31176 (`ckpAll`, 183 d, 1 h 24): **`fc` byte-identical to the control** (the forward trajectory is untouched) and **no blow-up** — rms(`ADJtheta`) 9.9e-5 at lead 125 d, 8.3e-5 at 175 d, within 1 % of 31167's curve; `adxx_theta`/`adxx_salt` correlate with 31167's at 0.999 (rms difference 4–5 %), `adxx_diffkr` at 0.991 (13 %) |
-| `from180yrPk_viscRef_ReMax2_gmFwd` | the live 2026-09-10 namelist with GM in the forward sweep only: `data.pkg` `useGMRedi=.TRUE.`, the spin-up's `data.gmredi` (K=571, `ldd97`), the live `data.autodiff` (`useGMRediInAdMode=.FALSE.`); `approxAdv` build, from the REF_ReMax2 leg's year-180 pickup (31205); 2026-09-11 | 31234 (30 d, daily dumps): stable, 12 min 44 like the GM-free control 31235; `fc` 0.32230 against 0.35800 without GM; fields within 2.4 % RMS of 31235 (correlation ≥ 0.9997). 31237 (5 yr, 14 h 28): stable; `fc` 0.329392 against 0.335016 (31206); fields 41–43 % RMS from 31206 (`adxx_theta` correlation 0.91, `adxx_diffkr` 0.94) |
+| `from180yrPk_viscRef_ReMax2_gmFwd` | the live 2026-09-10 namelist with GM in the forward sweep only: `data.pkg` `useGMRedi=.TRUE.`, the spin-up's `data.gmredi` (K=571, `ldd97`), the live `data.autodiff` (`useGMRediInAdMode=.FALSE.`); `approxAdv` build, from the REF_ReMax2 leg's year-180 pickup (31205, deleted 2026-09-12); 2026-09-11 | 31234 (30 d, daily dumps): stable, 12 min 44 like the GM-free control 31235; `fc` 0.32230 against 0.35800 without GM; fields within 2.4 % RMS of 31235 (correlation ≥ 0.9997). 31237 (5 yr, 14 h 28): stable; `fc` 0.329392 against 0.335016 (31206); fields 41–43 % RMS from 31206 (`adxx_theta` correlation 0.91, `adxx_diffkr` 0.94) |
 | `from180yrPk_viscRef_ReMax2_gmOn` | the same with GM in both sweeps (a `data.autodiff` sibling with `useGMRediInAdMode=.TRUE.`) | 31236: `fc` bitwise equal to 31234's; **blows up** from one cell (k=7, 88 m, 39.5° S, western boundary) at lead 4 d, e-folding about 4 h, infinite by lead 25 d: GM's own adjoint, not the limiter |
 | `REFp10_ReMax2_gmFwd`, `REFm10_ReMax2_gmFwd` | κ_v +10 % and −10 % with GM in the forward sweep; forward sweep only, cancelled once `fc` is printed | 31238/31239: dJ/dκ_v = −2.001e3 for the GM model (the one-sided differences agree to 0.02 %), against −2.738e3 for the GM-free model (31231/31232) |
 | `thetaPatchFD_gmFwd`, `thetaPatchFD_gmOff` | forward sweeps from copies of the year-180 pickup with Theta raised or lowered in one box (deep North Atlantic 40–50° N below 1.5 km, ±0.016 K; tropics 0–10° N at 0.5–1.5 km, ±0.035 K; upper Southern Ocean 40–60° S above 0.5 km, ±0.5 K), written by `perturb_pickup.py` to scratch `analysis/gm_in_adjoint/perturbed_pickups/`; cancelled once `fc` is printed | GM model 31241–31246, GM-free model 31247–31252: the finite differences in the table below |
@@ -103,9 +103,22 @@ removed on 2026-09-12 (see the top of this README). Of the tags left, every
 which carries none, gives the configuration of its 2026-09-12 runs 31279 and
 31282 but not of 31163 (2026-09-09, GM-free and exact).
 
+The 2026-09-11 rows started from the year-180 pickup of the REF_ReMax2 forward
+leg 31205, which was deleted on 2026-09-12 with the κ_v ensembles (provenance
+in `logs/deleted_run_records/`); their own runs 31234–31239 and 31241–31246 are
+still on scratch. Repeating the runs of `from180yrPk_viscRef_ReMax2_gmFwd`,
+`…_gmOn` or `REFp10/REFm10_ReMax2_gmFwd` first reruns that leg
+(`input/variants/kappa_v_ensemble/data_REF_ReMax2`, 10 yr from the 2× spin-up
+30983's year-170 pickup) and names its run directory in
+`IMPACTS_PICKUP_RUN_DIR`. `thetaPatchFD_gmFwd` reads the perturbed copies of
+31205's pickup, which are still on scratch under
+`analysis/gm_in_adjoint/perturbed_pickups/`.
+
 **GM/Redi in the forward sweep only (2026-09-11).** Adjoint minus finite
 difference, in % of the finite difference (`fd_summary.py` in
-`analyses/DINO_1deg/adjoint/gm_in_adjoint/`):
+`analyses/DINO_1deg/adjoint/gm_in_adjoint/`; 31206, 31231/31232 and
+31247–31252 were deleted on 2026-09-12, so the script no longer reruns and its
+output `fd_summary.md` in scratch `analysis/gm_in_adjoint/` is the record):
 
 | Check | GM model | GM-free model | 31237, GM in the forward sweep (vs GM / vs GM-free) | 31206, production (vs GM / vs GM-free) |
 | --- | --- | --- | --- | --- |
@@ -125,4 +138,5 @@ GM-free one.
 The `M7_*` restarts started from the monthly pickup 3241296 that member M7's
 adjoint 31046 wrote (`IMPACTS_PICKUP_RUN_DIR` at that run,
 `IMPACTS_PICKUP_ITER=3241296`). Their variants were removed on 2026-09-12 (git
-history has them); 31046 is still on scratch.
+history has them), and 31046 and the restarts were deleted later the same day
+(provenance in `logs/deleted_run_records/`).

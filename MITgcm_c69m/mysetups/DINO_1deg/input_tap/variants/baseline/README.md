@@ -5,7 +5,8 @@ sweep** (`data.pkg` `useGMRedi=.TRUE.` with the spin-up's `data.gmredi`,
 `data.autodiff` `useGMRediInAdMode=.FALSE.`; runs named `..._gmFwd`), and
 `data_from180yrPk_viscRef_ReMax2_gmOff` with its `data.pkg` sibling is the
 GM-free configuration it replaced: that of 31206 and of the
-`kappa_v_ensemble_ReMax2` adjoints (see `../stability_study/README.md`,
+`kappa_v_ensemble_ReMax2` adjoints (deleted 2026-09-12; provenance in
+`logs/deleted_run_records/`; see `../stability_study/README.md`,
 "GM/Redi in the forward sweep only"). The paragraphs below describe the earlier
 baselines and are kept as they were written.
 
@@ -34,10 +35,10 @@ member was compared against, and the configuration of the reference chain 28486
 identical). **It was removed on 2026-09-12** (git history has it): with no
 `data.pkg` or `data.autodiff` of its own it staged the live files, GM/Redi in
 the forward sweep and scheme 30 in the adjoint sweep, and no longer gave the
-configuration of its runs. Of those runs 28486, 31022, 31028, 31039, 31137 and
-31140 are still on scratch; 31032, 31052–31054, 31074, 31093 and 31095 were
-deleted the same day (provenance in `logs/deleted_run_records/` of the scratch
-output tree).
+configuration of its runs. Its runs still on scratch that day were deleted with
+it, 31032, 31052–31054, 31074, 31093 and 31095 first and 28486, 31022, 31028,
+31039, 31137 and 31140 in a second pass (provenance in
+`logs/deleted_run_records/` of the scratch output tree).
 
 Since 2026-09-09 the vertical diffusivity is `diffKrT = diffKrS = 1.2E-5` in
 `PARM01` rather than `diffKrFile='dino_diffKr.bin'`; the `diffKr` array the
@@ -48,8 +49,12 @@ viscosity and vertical diffusivity: file or parameter".
 `data_from180yrPk_viscRef_ReMax2_gmOff`, the one record left here, has a
 `data.pkg` sibling and no `data.autodiff`: staged as the submit body stages it
 today, it gives the configuration of 31206 (checked on 2026-09-12 against
-31206's staged namelists; the live `data.autodiff`'s scheme-30 switch is the
-one 31206 ran with). `nIter0=3162240` is year 2180. The adjoint submit
-definitions link the pickup at the staged `nIter0` themselves and default to
-the production spin-up 31203; 31206 started from the REF_ReMax2 leg 31205, so
-name that run in `IMPACTS_PICKUP_RUN_DIR` to repeat it.
+31206's staged namelists, which `logs/deleted_run_records/` keeps; the live
+`data.autodiff`'s scheme-30 switch is the one 31206 ran with). `nIter0=3162240`
+is year 2180. The adjoint submit definitions link the pickup at the staged
+`nIter0` themselves and default to the production spin-up 31203. 31206 started
+from the year-180 pickup of the REF_ReMax2 forward leg 31205, and both were
+deleted on 2026-09-12: to repeat it, first rerun that leg
+(`input/variants/kappa_v_ensemble/data_REF_ReMax2`, 10 yr from the 2× spin-up
+30983's year-170 pickup, the forward definition's default), then name the new
+leg's run directory in `IMPACTS_PICKUP_RUN_DIR`.

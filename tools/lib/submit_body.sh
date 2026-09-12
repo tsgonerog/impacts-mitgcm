@@ -125,8 +125,8 @@ fi
 # (avoids a trailing underscore). Only the LAST component of the tag is used:
 # the group says where the namelist lives in this repository, not anything about
 # the run, and run directories follow <start>_<settings> (see CLAUDE.md). So
-# kappa_v_ensemble/M3 gives "_M3" and baseline/from_rest_visc2x gives
-# "_from_rest_visc2x" -- byte for byte the names these runs had before the
+# kappa_v_ensemble/M3_ReMax2 gives "_M3_ReMax2" and baseline/from_rest_visc2x
+# gives "_from_rest_visc2x", byte for byte the name its runs had before the
 # variants were grouped. Taking the basename also strips the '/', which would
 # otherwise create a nested directory here rather than naming the run. Two groups
 # sharing a member tag give run directories differing only by job id, which is

@@ -3,8 +3,8 @@
 # nIter0=2986560) with the reference viscosity files, viscAhReMax=2. and the flux-limited scheme 33
 # (input/variants/stability_study/data_from170yrPk_viscRef_ReMax2, whose 10-yr run 31164 is the reference
 # member): differs from it only in diffKrT/diffKrS and in pChkptFreq (raised so only the final pickup
-# at 3162240 is written, which the matching adjoint reads). The 2026-08 members data_M1 are the
-# visc2x predecessors.
+# at 3162240 is written, which the matching adjoint reads). The 2026-08 member data_M1, its
+# visc2x predecessor, was removed on 2026-09-12 (git history has it).
 # Since 2026-09-10 (later the same day) the vertical tracer advection is EXPLICIT (tempImplVertAdv=
 # saltImplVertAdv=.FALSE.): the implicit form of the flux-limited DST3 blew up two kappa-ensemble legs
 # (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column

@@ -18,8 +18,9 @@ which stages `variants/<group>/data_<tag>` as `data`.
 ## The two rules
 
 **1. A file is named after the MITgcm file it replaces.** The name is
-`<mitgcm-file>_<tag>` — so `data_M3` replaces `data`, `data.pkg_M3` replaces
-`data.pkg`, `data.autodiff_M3` replaces `data.autodiff`. The part before the
+`<mitgcm-file>_<tag>` — so in `stability_study/`,
+`data_from170yrPk_viscRef_gmOff` replaces `data` and
+`data.pkg_from170yrPk_viscRef_gmOff` replaces `data.pkg`. The part before the
 first underscore tells you which file you are looking at.
 
 **2. Every file sharing a tag inside a group is staged together.** Selecting a
@@ -56,4 +57,4 @@ without KPP.
 
 The run directory is named after the **tag only**, not the group — a run is
 described by its physics, not by where its namelist lives in this repository.
-So `kappa_v_ensemble/M3` produces `..._M3_run<jobid>`.
+So `kappa_v_ensemble/M3_ReMax2` produces `..._M3_ReMax2_run<jobid>`.

@@ -14,51 +14,64 @@ year-180 pickup with the default pair of that day (`approxAdv`, merged into
 `ckpAll` on 2026-09-12). Their variants,
 `input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2`, were removed on
 2026-09-12 (git history has them): with no `data.pkg` of their own they would
-now stage GM/Redi, which those GM-free adjoints did not have. A rerun with
-GM/Redi in the forward sweep recreates them as `M<k>_ReMax2_gmFwd` (DINO
-`TODO.md`). The bare `M<k>` files below are the 2026-08 members at 2× viscosity
-(runs 30996–31002), kept as the record of that campaign.
+now stage GM/Redi, which those GM-free adjoints did not have.
+
+**Both ensembles were deleted on 2026-09-12**, forward legs and adjoints
+(30996–31002, 31039–31046 and 31205–31220), and their analysis suites were
+retired the same day; each run's provenance, and the ensembles' statistics and
+κ gradient tables, are in `logs/deleted_run_records/` of the scratch output
+tree. The 2026-08 members' files, `data_M1`–`data_M7`, were removed the same
+day (history at the end of this README). The ensemble is to be rerun from
+scratch under the cleaned setup from the eight files that remain; the rerun
+first recreates the adjoint variants as `M<k>_ReMax2_gmFwd`, with GM/Redi in
+the forward sweep (DINO `TODO.md`).
 
 Vertical-mixing perturbation ensemble, Part I of the neural-network surrogate
 proposal: **do the adjoint sensitivity patterns depend on the model's vertical
 mixing?**
 
-These seven namelists are the **forward re-equilibration leg**, year 2170 →
-2180, each at its own vertical diffusivity. The adjoint half lived in
-`input_tap/variants/kappa_v_ensemble/` until 2026-09-12 (removed; git history
-has it); its runs, the reference 31039 and the members 31040–31046, are analysed
-in `analyses/DINO_1deg/adjoint/kappa_v_ensemble/`.
+These eight namelists are the **forward re-equilibration leg**, year 2170 →
+2180, each at its own vertical diffusivity; the matching adjoint starts from
+the leg's year-180 pickup.
 
 | Tag | κ_v (m² s⁻¹) | × reference |
 | --- | --- | --- |
-| `M1` | 3.0e-6 | 0.25 |
-| `M2` | 6.0e-6 | 0.5 |
-| `M3` | 2.4e-5 | 2 |
-| `M4` | 4.8e-5 | 4 |
-| `M5` | 9.6e-5 | 8 |
-| `M6` | 1.92e-4 | 16 |
-| `M7` | 3.84e-4 | 32 |
+| `REF_ReMax2` | 1.2e-5 | 1 |
+| `M1_ReMax2` | 3.0e-6 | 0.25 |
+| `M2_ReMax2` | 6.0e-6 | 0.5 |
+| `M3_ReMax2` | 2.4e-5 | 2 |
+| `M4_ReMax2` | 4.8e-5 | 4 |
+| `M5_ReMax2` | 9.6e-5 | 8 |
+| `M6_ReMax2` | 1.92e-4 | 16 |
+| `M7_ReMax2` | 3.84e-4 | 32 |
 
-The reference is 1.2e-5 m² s⁻¹, and the completed 200-year spin-up is the
-control — so the design needs seven new runs, not eight.
+The reference is 1.2e-5 m² s⁻¹. The members start from the 2× spin-up's state
+but run a different configuration, so the reference is a leg of its own,
+`REF_ReMax2`, rather than the spin-up.
 
 ```bash
 cd MITgcm_c69m/mysetups/DINO_1deg
-IMPACTS_TEST_CASE=kappa_v_ensemble/M3 ../../../tools/submit.sh scripts/submit_frd.sh
+IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 ../../../tools/submit.sh scripts/submit_frd.sh
 ```
 
-Each file differs from `../data_from_rest_visc2x` in exactly three settings:
+`data_REF_ReMax2` differs from `../stability_study/data_from170yrPk_viscRef_ReMax2`
+in the first two settings below, and each `data_M<k>_ReMax2` from
+`data_REF_ReMax2` in the third only:
 
-- `nIter0=2986560` — the nearest spin-up checkpoint below year 2170
+- `tempImplVertAdv = saltImplVertAdv = .FALSE.` — explicit vertical tracer
+  advection (setup README, "Scheme 30 or scheme 33")
 - `pChkptFreq=316224000.` — raised so only the final pickup is written. The
   spin-up's own 2,400 monthly restarts are the Axis-2 dataset and must **not**
   be thinned this way
-- `diffKrT` and `diffKrS` — the member's κ (`diffKrFile='dino_diffKr_M<n>.bin'`
-  until 2026-09-09, a field of the same constant)
+- `diffKrT` and `diffKrS` — the member's κ
 
+`nIter0=2986560` is the nearest spin-up checkpoint below year 2170, and
 `nTimeSteps=175680` lands exactly on year 2180, whose pickup the matching
-adjoint run reads. **`nIter0` and the pickup are coupled by hand** — the pickup
-is a hardcoded `ln -s` in `submit_frd.sh`, not an auto-patched parameter.
+adjoint run reads. **`nIter0` and the pickup are coupled by hand**:
+`stage_pickups` in `scripts/submit_frd.sh` links the 2× spin-up 30983's
+`pickup.0002986560` by default, `IMPACTS_PICKUP_RUN_DIR` and
+`IMPACTS_PICKUP_ITER` override it, and nothing reads the iteration from the
+namelist.
 
 Since 2026-09-09 the κ is the `diffKrT`/`diffKrS` pair in `PARM01`. Every
 member value is an exact power-of-two multiple of the reference `1.2E-5`, so
@@ -66,13 +79,19 @@ the double the namelist gives is the one the retired
 `input_binaries/dino_diffKr_M<n>.bin` held (each 2,908,224 bytes of big-endian
 float64 of a single constant), and the `diffKr` array the model builds is the
 same bit for bit (`ini_mixing.F` initialises it from `diffKrNrS(k)`; a file
-only overwrote it with the same values). The runs below read the files; a
-rerun from these namelists reproduces them.
+only overwrote it with the same values).
 
-**Outcome (runs 30996–31002, 2026-08-28/29).** All seven forward legs completed
-and are healthy; each wrote its year-2180 pickup and its matching adjoint ran
-from it. Results live in `analyses/DINO_1deg/adjoint/kappa_v_ensemble/`
-and in the surrogate proposal's Part I §Results — including the caveat that
-four of the seven *adjoint* legs blow up (see
-`analyses/DINO_1deg/adjoint/kappa_v_ensemble/README.md`; the adjoint-side
-variant README was removed with its variants on 2026-09-12).
+**History: the 2026-08 members (files removed 2026-09-12).** `data_M1`–`data_M7`
+were `../baseline/data_from_rest_visc2x` (2× viscosity, implicit vertical
+advection) with `nIter0`, `pChkptFreq` and the member's κ changed, the κ read
+from `dino_diffKr_M<n>.bin` until 2026-09-09; the 2× spin-up 30983 was their
+control, so that design needed seven runs. All seven forward legs (runs
+30996–31002, 2026-08-28/29) completed and were healthy; each wrote its
+year-2180 pickup and its matching adjoint ran from it. The results were
+analysed in `analyses/DINO_1deg/adjoint/kappa_v_ensemble/` (retired
+2026-09-12, with its `README.md`) and are in the surrogate proposal's Part I
+§Results, including the caveat that four of the seven *adjoint* legs blow up
+(the adjoint-side variant README was removed with its variants on 2026-09-12).
+The runs were deleted on 2026-09-12; `logs/deleted_run_records/` keeps their
+provenance and the ensemble's statistics tables. The files were removed the
+same day (git history has them).

@@ -230,7 +230,10 @@ GM off, scheme 33 in both sweeps, implicit vertical advection); records in
 2026-09-12, since it no longer stages the configuration these runs used, and
 runs 31032 and 31052–31054 were deleted with it; their build records, staged
 namelists and the 27 profile tables of 31053 are in the output tree's
-`logs/deleted_run_records/`.
+`logs/deleted_run_records/`. The 5-year runs compared below, 31039–31046, were
+deleted later that day with the κ_v ensemble (records in the same place), so
+none of this section's runs is left on scratch; the reports in
+`analyses/DINO_1deg/adjoint/tapenade_profiling/` are the record.
 
 **Profile (run 31053, 30 days, rank 0; 809 s of adjoint).** Peak tape 923 MB
 per process. 156 checkpoint locations, 116 callees. Checkpointing costs
@@ -280,8 +283,9 @@ than the reverse-sweep factor only because the binomial re-runs of plain
 forward steps inside the reverse sweep are untouched by `-nocheckpoint`.
 
 **The whole κ_v ensemble, 5 years × 8 (31060–31067 vs 31039–31046,
-2026-09-02/03):** the reference and the seven members of
-`analyses/DINO_1deg/adjoint/kappa_v_ensemble/`, four of which blow up,
+2026-09-02/03):** the reference and the seven members analysed in
+`analyses/DINO_1deg/adjoint/kappa_v_ensemble/` (retired 2026-09-12, when
+31039–31046 were deleted), four of which blow up,
 rerun with the tuned build, eight jobs at once on separate nodes as before.
 Every pair bitwise identical (`fc`; 32/32 `adxx_*`; 4 393/4 393 `ADJ*`; the
 `%MON` stream byte-identical; `tools/compare_adj_runs.sh` EQUIVALENT), the

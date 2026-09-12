@@ -8,18 +8,27 @@
   (`IMPACTS_PICKUP_RUN_DIR` at
   `runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203`,
   `IMPACTS_PICKUP_ITER=3162240`); about 14.5 h. It replaces 31204 (GM off,
-  cancelled) and measures what the ensemble legs' 2× tropical thermocline does
-  to the pathways, against 31206.
+  cancelled). It was also to measure, against 31206, what the ensemble legs' 2×
+  tropical thermocline does to the pathways; 31206 and its leg 31205 were
+  deleted on 2026-09-12 (entry below), so that comparison needs a reference
+  adjoint of the rerun ensemble, if its legs again start from the 2× state
+  (next item).
 - [ ] **κ_v ensemble under the current setup** (kept on the list 2026-09-11, to
-  start after the cleanup): the ensemble adjoints 31206–31220 are GM-free in both
-  sweeps. Rerun them with GM in the forward sweep (about 14.5 h each). Decide
-  first whether the forward legs start again from the 2× spin-up's year-170 state,
-  as 31205–31219 did, or from 31203's own state. Their adjoint variants were
-  removed on 2026-09-12 (entry below), so the rerun first recreates them as
+  start after the cleanup; rewritten 2026-09-12): both earlier ensembles, the
+  2026-08 one at 2× viscosity (legs 30996–31002, adjoints 31039–31046) and the
+  2026-09-10 one (legs 31205–31219, odd; GM-free adjoints 31206–31220, even),
+  were deleted on 2026-09-12 with their analysis suites (entries below). Rerun
+  the ensemble from scratch under the cleaned setup, forward legs and adjoints,
+  with GM in the adjoint's forward sweep (about 14.5 h per adjoint). Only
+  `input/variants/kappa_v_ensemble/data_REF_ReMax2` and `data_M<k>_ReMax2`
+  remain for the forward legs. Decide first whether the legs start again from
+  the 2× spin-up 30983's year-170 state, as both ensembles did (the forward
+  definition's default pickup), or from 31203's own state. The adjoint
+  variants were removed on 2026-09-12, so the rerun first recreates them as
   `kappa_v_ensemble/M<k>_ReMax2_gmFwd`: the live `input_tap/data` with
   `diffKrT`/`diffKrS` set to the member's κ, the values in the forward variants
-  `input/variants/kappa_v_ensemble/data_M<k>_ReMax2`. The `_gmFwd` goes into the
-  tag because runs named by a variant tag carry no GM token.
+  `data_M<k>_ReMax2`. The `_gmFwd` goes into the tag because runs named by a
+  variant tag carry no GM token.
 - [ ] **Decide whether the default adjoint pair becomes `_nocheckpoint`**
   (2026-09-12). Under the live switches the nocheckpoint build now gives the
   `approxAdv` adjoint bit for bit at 1.41× on 30 d (31276 vs 31269), which by
@@ -33,6 +42,40 @@
   no run of it with implicit vertical advection has been compared.) Repointing
   is `ln -sfn` of the two symlinks (setup README, "Switching the default
   adjoint").
+- [x] **Both κ_v ensembles and the remaining runs of the removed variant
+  records deleted** (2026-09-12, after the entry below, at the user's request:
+  both ensembles are to be rerun under the cleaned setup, and the other runs
+  belonged to variants that no longer reproduce them). (1) Scratch, adjoint:
+  28486, 31022, 31028, 31039–31046, 31137, 31140, 31166–31168, 31176, 31206,
+  31208–31220 (even), 31231, 31232 and 31247–31252; forward: the ensemble legs
+  30996–31002, 31205 and 31207–31219 (odd). The campaign directories
+  `runs/adjoint/{kappa_v_ensemble,kappa_v_ensemble_ReMax2_approxAdv,sensitivity}/`,
+  `runs/forward/{kappa_v_ensemble,kappa_v_ensemble_ReMax2_approxAdv}/` and
+  `analysis/{kappa_v_ensemble,kappa_v_ensemble_ReMax2_approxAdv}/` went with
+  them. Each run's `build_info.txt`, `run_timing.txt`, staged namelists,
+  comparison reports and first `fc` line are in `logs/deleted_run_records/` of
+  the scratch output tree, whose `analysis_tables_of_deleted_campaigns/` keeps
+  the ensembles' statistics tables and the κ_v gradient and finite-difference
+  tables. Still on scratch: 31163, 31171, 31172, 31177, 31179, 31234–31239,
+  31241–31246, the spin-ups 30983 and 31203, the forward stability study (31193
+  and 31202 included) and the rest of `toolchain_validation/`. (2) Retired,
+  their runs being deleted: the suites
+  `analyses/DINO_1deg/adjoint/kappa_v_ensemble/`,
+  `…/kappa_v_ensemble_ReMax2_approxAdv/` and `…/scidac_poster_aug2026/`, and
+  the notebooks `…/sensitivity_5yr_from180yrPk_visc2x.ipynb` and
+  `…/sensitivity_180d_vs_5yr_from180yrPk_visc2x.ipynb`. (3) Kept records whose
+  runs started from 31205's year-180 pickup: in `input_tap/variants/`,
+  `stability_study/` `from180yrPk_viscRef_ReMax2_gmFwd`, `…_gmOn`,
+  `REFm10/REFp10_ReMax2_gmFwd` and `thetaPatchFD_gmFwd`, and
+  `baseline/from180yrPk_viscRef_ReMax2_gmOff` (its run 31206 deleted).
+  `thetaPatchFD_gmFwd` read perturbed copies of that pickup, which are still on
+  scratch under `analysis/gm_in_adjoint/perturbed_pickups/`; repeating any of
+  the other runs first reruns the REF_ReMax2 forward leg
+  (`input/variants/kappa_v_ensemble/data_REF_ReMax2`, 10 yr from 30983's
+  year-170 pickup, the forward definition's default). (4) The 2026-08 forward
+  variants `input/variants/kappa_v_ensemble/data_M1`–`data_M7` (2× viscosity,
+  implicit vertical advection) were removed as well (git history has them);
+  only `REF_ReMax2` and `M<k>_ReMax2` remain there for the rerun.
 - [x] **Unused controls commented out; variants that no longer reproduce their
   runs removed** (2026-09-12, after the entry below). (1) `input_tap/data.ctrl`:
   the six controls whose gradients were identically zero in every adjoint run
@@ -74,9 +117,10 @@
   31152–31159 and 31178. Each keeps its `build_info.txt`, `run_timing.txt`,
   staged namelists, comparison reports, first `fc` line and, where present, its
   grdchk lines and profile tables in `logs/deleted_run_records/` of the scratch
-  output tree. Still on scratch, pending a decision because analyses or the
-  stability note read them: 28486, 31022, 31028, 31039–31046, 31137, 31140,
-  31166–31168, 31176, 31208–31220 (even), 31231, 31232 and 31247–31252.
+  output tree. Still on scratch at the time, pending a decision because
+  analyses or the stability note read them: 28486, 31022, 31028, 31039–31046,
+  31137, 31140, 31166–31168, 31176, 31208–31220 (even), 31231, 31232 and
+  31247–31252; they were deleted later the same day (entry above).
 - [x] **KPP and the C-D scheme out of DINO; the `approxAdv` build merged into
   `ckpAll`** (2026-09-12, after the setup review below). (1) Configuration:
   `kpp` and `cd_code` are compiled neither in the forward model nor in the
@@ -180,7 +224,9 @@
   although superseded: the 2× spin-up 30983 (the κ_v legs' year-170 start and
   the submit scripts' default pickup), the 2026-08 κ_v ensemble (its suite and
   the project notes read it), 28486 (the poster) and the stability, scheme and
-  GM studies behind the production configuration.
+  GM studies behind the production configuration. (The ensemble and 28486 were
+  deleted, and the suite and the poster retired, on 2026-09-12; entry at the
+  top.)
 - [x] ~~**Decide whether production adjoints run GM/Redi in the forward sweep**~~
   **Adopted for production on 2026-09-11.** The live `input_tap/data.pkg` sets
   `useGMRedi=.TRUE.`, `input_tap/data.gmredi` is a copy of `input/data.gmredi`
@@ -243,8 +289,10 @@
   the long test of the fix. Cancelled: 31169 (scheme-30 spin-up, at year 35;
   diagnostics kept under `stability_study/`, pickups deleted) and 31173. **Results
   (2026-09-10 evening; notebooks under
-  `analyses/DINO_1deg/adjoint/kappa_v_ensemble_ReMax2_approxAdv/`, runs filed
-  under `runs/{forward,adjoint}/kappa_v_ensemble_ReMax2_approxAdv/`):** all
+  `analyses/DINO_1deg/adjoint/kappa_v_ensemble_ReMax2_approxAdv/` (retired
+  2026-09-12), runs filed under
+  `runs/{forward,adjoint}/kappa_v_ensemble_ReMax2_approxAdv/` (deleted
+  2026-09-12; provenance in `logs/deleted_run_records/`)):** all
   eight legs ran 10 yr; the reference AMOC holds 4.7 Sv at 26° N, the response
   to κ_v is U-shaped (5.3 Sv at 0.25×, 4.0 at 2×, 9.0 at 32×) and so is the
   cost (0.39, 0.25, 0.49). The production adjoint 31206 is finite and smooth
@@ -284,7 +332,11 @@
   the committed `submit_frd.sh` defaults, same executable as 31203) is done:
   all 601 diagnostic and pickup files and all 6 050 `%MON` values byte-identical
   to 31203's first 10 years (1 h 37 min); the run was deleted, CLAUDE.md's
-  verification item 1 records it.
+  verification item 1 records it. **2026-09-12:** the reference leg 31205, the
+  production adjoint 31206, the ensemble 31207–31220 and the κ_v finite
+  differences 31231/31232 were deleted and the campaign's notebooks retired
+  (entry at the top); what is left of this item is the first two entries of
+  this file.
 
 - [x] ~~**Scheme 30 or scheme 33 for production**~~ (study done 2026-09-10,
   decided the same day: **scheme 33 forward, scheme 30 adjoint sweep**; the
@@ -625,8 +677,8 @@
   specific past run — the `compare_30d_adjViscBoost_run31025_…md` filename,
   the `runs/adjoint/adjViscBoost/` campaign directory, the 31053 rows in the
   profiling README, the 28453/28461 labels in
-  `sensitivity_5yr_from180yrPk_visc2x.ipynb` — were deliberately left on the
-  old tokens. Both build directories were rebuilt under their new names
+  `sensitivity_5yr_from180yrPk_visc2x.ipynb` (retired 2026-09-12) — were
+  deliberately left on the old tokens. Both build directories were rebuilt under their new names
   (they are not relocatable: `genmake2` bakes the absolute path into the
   `Makefile`) and pass every hook, dump-call and variant-source assertion.
   `build_tapAdj_tapProfile/` and `build_tapAdj_adjViscBoost/` were deleted
@@ -661,7 +713,8 @@
   (1.45–1.65× per run, 1.54× on the reverse sweep, forward sweep unchanged).
   The executable rebuilt on 2026-09-02 also reproduces 31055 bitwise. Report
   and script in `analyses/DINO_1deg/adjoint/tapenade_profiling/`; the
-  ensemble analysis keeps reading 31039–31046 (the sets are interchangeable).
+  ensemble analysis kept reading 31039–31046 (the sets are interchangeable)
+  until those runs were deleted and the analysis retired on 2026-09-12.
 
 - [x] ~~**Scratch layout: separate runs from analysis, executables and logs**~~
   (added and **done 2026-09-03**). `/scratch2/<user>/DINO_1deg_outputs/` was a
@@ -685,7 +738,10 @@
   (first working boost: run 31025 vs
   31026 — `fc` bit-identical, adjoints damped). Pair
   `build_tapAdj_adjVisc.sh` with `submit_tapAdj_adjVisc.sh` and the
-  member test case.
+  member test case. (2026-09-12: the members' adjoint variants were removed
+  and the 2026-08 ensemble's runs deleted, entries at the top; a retry now
+  applies to members of the rerun ensemble that blow up, with their variants
+  recreated first.)
 
 - [x] ~~Rebuild `build_tapAdj_adjVisc/` (and `build_tapAdj_rawTapenade/`
   if still wanted) so they pick up the ADEXCH fix.~~ Done 2026-08-31 in the

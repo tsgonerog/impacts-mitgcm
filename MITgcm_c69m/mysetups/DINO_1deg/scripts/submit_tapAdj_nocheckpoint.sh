@@ -70,9 +70,10 @@ TIME_PARAMS=(monitorFreq adjMonitorFreq adjDumpFreq)
 # its run instead. IMPACTS_PICKUP_ITER overrides the iteration. See link_pickup
 # in scripts/setup_params.sh (since 2026-09-12; until then the 2x spin-up
 # 30983's year-180 pickup was hard-coded here). A variant that starts from another
-# run's state names that run, as the stability study's rows do with the REF_ReMax2 leg:
+# run's state names that run (the stability study's rows started from the
+# REF_ReMax2 forward leg, which has to be rerun first since 2026-09-12):
 #     IMPACTS_TEST_CASE=stability_study/from180yrPk_viscRef_ReMax2_gmFwd \
-#     IMPACTS_PICKUP_RUN_DIR=<run directory of the REF_ReMax2 leg, 31205> \
+#     IMPACTS_PICKUP_RUN_DIR=<run directory holding pickup.<nIter0>> \
 #         ../../../tools/submit.sh scripts/<this script>
 stage_pickups() {
     link_pickup

@@ -80,8 +80,8 @@ IMPACTS_DURATION_DAYS=30 IMPACTS_ADJ_MONITOR_FREQ_DAYS=1 \
 # a different namelist variant
 IMPACTS_TEST_CASE=scheme_tests/from_rest_viscRef_adv30 ../../../tools/submit.sh scripts/submit_frd.sh
 
-# one member of a grouped experiment (variants/kappa_v_ensemble/data_M3)
-IMPACTS_TEST_CASE=kappa_v_ensemble/M3 ../../../tools/submit.sh scripts/submit_frd.sh
+# one member of a grouped experiment (variants/kappa_v_ensemble/data_M3_ReMax2)
+IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 ../../../tools/submit.sh scripts/submit_frd.sh
 ```
 
 | Variable | Patches | Default (`frd` / `tapAdj`) |
@@ -521,8 +521,10 @@ and [`variants/README.md`](input_tap/variants/README.md) indexes them.
 Two rules make the contents legible:
 
 **1. A file is named after the MITgcm file it replaces** — `<mitgcm-file>_<tag>`.
-So `data_M3` replaces `data`, `data.pkg_M3` replaces `data.pkg`,
-`data.autodiff_M3` replaces `data.autodiff`. Whatever precedes the first
+So in `input_tap/variants/stability_study/`,
+`data_from180yrPk_viscRef_ReMax2_gmOn` replaces `data`, and the siblings with
+the same tag, `data.pkg_…`, `data.gmredi_…` and `data.autodiff_…`, replace
+`data.pkg`, `data.gmredi` and `data.autodiff`. Whatever precedes the first
 underscore is the file you are overriding.
 
 **2. Everything sharing a tag inside a group is staged together.** Selecting a
@@ -557,7 +559,7 @@ configuration.
 
 **The run directory is named after the tag only, never the group.** A run is
 described by its physics, not by where its namelist sits in this repository, so
-`kappa_v_ensemble/M3` gives `..._M3_run<jobid>` and `baseline/from_rest_visc2x`
+`kappa_v_ensemble/M3_ReMax2` gives `..._M3_ReMax2_run<jobid>` and `baseline/from_rest_visc2x`
 gives `..._from_rest_visc2x_run<jobid>` — the same tag these runs had before
 the variants were grouped (the `...` is `DINO_1deg_<run_token>_<duration>`, see
 "Run").
@@ -800,8 +802,11 @@ only place the two differ), its tracers inside the forcing range with none of
 the 2× run's monthly salinity spikes above 37.0. The ensemble's year-180 state
 (the reference leg 31205) is 0.40 K rms from the spin-up's own year 180 and
 keeps the 2× state's thick tropical thermocline; the DINO `TODO.md` entry has
-the numbers. The production adjoint from the spin-up's own year 180, still to
-run, will show what that does to the pathways.
+the numbers. The legs and adjoints 31205–31220 were deleted on 2026-09-12, to
+be rerun under the cleaned setup (provenance in `logs/deleted_run_records/` of
+the scratch output tree); the production adjoint from the spin-up's own year
+180 is still to run, and what the thicker thermocline does to the pathways
+waits for it and the rerun (DINO `TODO.md`).
 
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but
@@ -1110,7 +1115,8 @@ not a namelist setting. Indices are located with
 
 Two verified subtleties of what `fc` actually measures (2026-08-30; full
 statement in the root `CLAUDE.md` and in
-`analyses/DINO_1deg/adjoint/kappa_v_ensemble/ensemble_common.py`):
+`analyses/DINO_1deg/adjoint/kappa_v_ensemble/ensemble_common.py`, retired
+2026-09-12):
 `pkg/cost` averages only the **final 30 days** of the run (`lastinterval`
 default, not overridden in `data.cost`), and the per-level wet-count
 normalisation is computed **per MPI tile**, so `fc` depends on the domain

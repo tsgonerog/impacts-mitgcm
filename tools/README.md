@@ -331,26 +331,28 @@ even when an earlier one fails.
 ```bash
 R=/scratch2/$USER/DINO_1deg_outputs/runs/adjoint
 
-# the comparison that established 30995 reproduces the May baseline exactly
-# (2026-08-28; 30995 was deleted after the 2026-09-01 rerun — the rerun's own
-#  validation reports sit in each 31039-31046 run directory as
-#  comparison_vs_*.txt, ADJ* differing seam-only there by design)
+# the comparison that established the -nocheckpoint list of 2026-09-12 reproduces
+# the checkpoint-everything adjoint under the live adjoint-mode switches (5 days
+# from the production spin-up's year-180 pickup; that report was written under
+# the output tree's logs/validate_20260912_phaseD2/, not into 31277's directory)
 tools/compare_adj_runs.sh \
-  "$R/sensitivity/DINO_1deg_tapAdj_ckpAll_5yr_from180yrPk_visc2x_run28486" \
-  "$R/DINO_1deg_tapAdj_5yr_from180yrPk_visc2x_run30995"   # 30995: gone
+  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_approxAdv_5d_from180yrPk_viscRef_ReMax2_gmFwd_run31259" \
+  "$R/toolchain_validation/DINO_1deg_tapAdj_nocheckpoint_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31277"
 echo "verdict: $?"          # 0 = equivalent
-#   EQUIVALENT: all 8116 sensitivity fields bit-identical, fc identical to every
-#   printed digit (3.30992121938681E-01), 18801 %MON lines byte-identical.
-#   Its report went with the deleted directory; the surviving reports are the
-#   rerun ones described above
+#   EQUIVALENT: all 186 sensitivity fields bit-identical, fc identical to every
+#   printed digit (5.80622166457875E-02), 390 %MON lines byte-identical; the
+#   eight build_info.txt fields that differ are reported, not failed
 
-# the 2026-09-02 ensemble rerun with the -nocheckpoint build: one call per pair,
-# each report landing in the new run directory as comparison_vs_<ckpAll run>.txt
-# (all eight EQUIVALENT -- 8850 sensitivity fields bit-identical, fc and the
-#  18801 %MON lines identical; 31060-31067 against 31039-31046)
+# the rebuild after the build consolidation of 2026-09-12: one call per pair,
+# each report landing in the new run directory as comparison_vs_<reference run>.txt
+# (31281 vs 31259, 31282 vs 31279, 31284 vs 31278, 31285 vs 31277, 31286 vs 31271
+#  and 31287 vs 31281: every sensitivity field, fc and the %MON stream identical
+#  in all six; 31287 reads EQUIVALENT, the other five NOT CLEAN only because the
+#  staged data and data.autodiff differ between the runs -- read the sections,
+#  not just the verdict line)
 tools/compare_adj_runs.sh \
-  "$R/kappa_v_ensemble/DINO_1deg_tapAdj_ckpAll_5yr_M3_run31042" \
-  "$R/kappa_v_ensemble/DINO_1deg_tapAdj_nocheckpoint_5yr_M3_run31063"   # 31063: gone
+  "$R/toolchain_validation/DINO_1deg_tapAdj_nocheckpoint_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31277" \
+  "$R/toolchain_validation/DINO_1deg_tapAdj_nocheckpoint_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31285"
 
 # submit and compare unattended, from the setup directory
 cd MITgcm_c69m/mysetups/DINO_1deg
@@ -363,9 +365,9 @@ nohup ../../../tools/compare_adj_runs.sh --wait "$jid" \
 #   run does not — a fresh run lands directly in runs/adjoint/ and is filed later
 
 # print only, keep the listings for a closer look (still in the setup directory)
-../../../tools/compare_adj_runs.sh --no-report --work /tmp/cmp_31032 \
-  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_30d_from180yrPk_visc2x_run31022" \
-  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_30d_from180yrPk_visc2x_run31032"
+../../../tools/compare_adj_runs.sh --no-report --work /tmp/cmp_31276 \
+  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_approxAdv_30d_from180yrPk_viscRef_ReMax2_gmFwd_run31269" \
+  "$R/toolchain_validation/DINO_1deg_tapAdj_nocheckpoint_30d_from180yrPk_viscRef_ReMax2_gmFwd_run31276"
 ```
 
 A cleaner way to arrange the second one, without a background process holding
@@ -373,10 +375,11 @@ the terminal, is a SLURM dependency — put the `compare_adj_runs.sh` call in a
 small job script and submit it `--dependency=afterany:$jid`. The job-chaining
 recipe in the project notes covers the pattern in full.
 
-Two things about DINO runs that bear on how you read a comparison: pre-31022
-`ADJ*` dumps carry a tile-edge artifact (mask ~2 cells around `i=17|18`,
-`34|35`, every `j` multiple of 22, and the periodic seam) that never affected
-`fc` or `adxx_*`; and `fc` itself is decomposition-dependent, so only compare
+Two things about DINO runs that bear on how you read a comparison: `ADJ*`
+dumps written before job 31022 carry a tile-edge artifact (mask ~2 cells around
+`i=17|18`, `34|35`, every `j` multiple of 22, and the periodic seam) that never
+affected `fc` or `adxx_*` (no such run is left on scratch since 2026-09-12, but
+older reports and figures show it); and `fc` itself is decomposition-dependent, so only compare
 runs built with the same `SIZE.h`.
 
 ---

@@ -8,8 +8,11 @@
 > with the variant record they ran (`baseline/from180yrPk_visc2x`, which no
 > longer stages their configuration); their build records, staged namelists and
 > all 27 profile tables are in the output tree's `logs/deleted_run_records/`.
-> The `ckpAll` half of every other pair survives under
-> `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`, as does 31056. Re-running `compare_adjoint_runs.py` on a deleted pair is not possible;
+> Later the same day the κ_v ensemble's `ckpAll` runs 31039–31046 were deleted
+> too, to be rerun under the cleaned setup. Of the older pairs only the boosted
+> 31025 and 31056 survive under
+> `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`, beside the runs of
+> 2026-09-11 and 2026-09-12 in the table below. Re-running `compare_adjoint_runs.py` on a deleted pair is not possible;
 > re-establishing the result means re-running the adjoint.
 
 Scripts and records, no notebook. The question was: which of the routines the
@@ -36,7 +39,7 @@ default DINO adjoint from 2026-09-02 to 2026-09-10.
 | 31052 | `build_tapAdj_ckpAll` (plain; `build_tapAdj` until 2026-09-02) | 30 d | c2-1 | 0:13:13 | fresh plain reference; bitwise identical to 31032 (0:13:31); deleted 2026-09-12 |
 | 31053 | `build_tapAdj_profile` (`build_tapAdj_tapProfile` until 2026-09-05) | 30 d | c2-3 | 0:13:29 | the profile (`tapenade_profile.0000`–`.0026.txt`); deleted 2026-09-12, the tables kept in `logs/deleted_run_records/` |
 | 31054 | `build_tapAdj_nocheckpoint` | 30 d | c2-1 | **0:08:47** | validation against 31052; deleted 2026-09-12 |
-| 31039 | `build_tapAdj_ckpAll` (plain; `build_tapAdj` until 2026-09-02) | 5 yr | — | 14:05:45 | production-length reference (2026-09-01) |
+| 31039 | `build_tapAdj_ckpAll` (plain; `build_tapAdj` until 2026-09-02) | 5 yr | — | 14:05:45 | production-length reference (2026-09-01); deleted 2026-09-12 |
 | 31055 | `build_tapAdj_nocheckpoint` | 5 yr | c2-1 | **9:35:58** | production-length validation against 31039 |
 | 31060–31067 | `build_tapAdj_nocheckpoint` | 5 yr × 8 | c2-4, c3-1, c7-4, c8-1–c8-4, c9-1 | **9:30:47–9:44:50** | the κ_v ensemble (REF + M1–M7) rerun on 2026-09-02, validation against its 2026-09-01 `ckpAll` runs 31039–31046 (14:02:37–15:39:13) |
 | 31025 | `build_tapAdj_adjVisc` (ckpAll + boost) | 30 d | — | 0:13:19 | boosted reference (from rest, live `input_tap/data`) |
@@ -63,7 +66,7 @@ default DINO adjoint from 2026-09-02 to 2026-09-10.
 | `profile_run31268_ranked.md` | its parsed, ranked table (118 callees) and the ≥ 1 s proposal the 2026-09-12 list started from |
 | `compare_30d_run31052_vs_nocheckpoint_run31054.md` | the 30-day validation report |
 | `compare_5yr_run31039_vs_nocheckpoint_run31055.md` | the 5-year validation report |
-| `compare_ensemble_ckpAll_vs_nocheckpoint.py` | drives the same comparison over the eight κ_v-ensemble pairs (31039–31046 vs 31060–31067) plus two reference cross-checks; adds the forward/reverse sweep split from the `ADJtheta` write times, a blow-up reproduction check (non-finite counts, onset dump) and the verdict of `tools/compare_adj_runs.sh` |
+| `compare_ensemble_ckpAll_vs_nocheckpoint.py` | drives the same comparison over the eight κ_v-ensemble pairs (31039–31046 vs 31060–31067) plus two reference cross-checks (both halves of every pair are deleted now; the script is the record of the method); adds the forward/reverse sweep split from the `ADJtheta` write times, a blow-up reproduction check (non-finite counts, onset dump) and the verdict of `tools/compare_adj_runs.sh` |
 | `compare_5yr_kappa_ensemble_ckpAll_vs_nocheckpoint.md` and the directory of the same name | the ensemble validation: summary table, one report per pair |
 | `compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md` | the **negative** result: the same script on the boosted pair, with a preamble giving the mechanism (joint-mode recomputation after the mode-switch hook vs split-mode tapes before it) |
 
@@ -148,7 +151,7 @@ of the `ADJtheta` dumps relative to each run's start.
 
 Report: `compare_5yr_kappa_ensemble_ckpAll_vs_nocheckpoint.md`, one file per
 pair in the directory of the same name. The eight adjoints of
-`../kappa_v_ensemble/` — the reference and the seven κ_v members, four of
+`../kappa_v_ensemble/` (retired 2026-09-12) — the reference and the seven κ_v members, four of
 which blow up — were rerun on 2026-09-02 with the `-nocheckpoint` build: same
 namelists, same pickups, eight jobs at once on eight separate nodes, as on
 2026-09-01. Members went in through temporary copies of
@@ -184,8 +187,8 @@ Two cross-checks sit in the same report: 31039 vs 31055 recomputed (the table
 above), and 31055 vs 31060 — the executable rebuilt on 2026-09-02 after the
 `build_info.txt` change (same source; a 32-byte `.rodata` shift, every function
 the same size) reproduces the 2026-09-01 one bitwise, at 9:35:58 on c2-1 vs
-9:44:50 on c2-4. The ensemble analysis keeps reading 31039–31046; the two sets
-are interchangeable.
+9:44:50 on c2-4. The ensemble analysis read 31039–31046; the two sets were
+interchangeable, and both are deleted since 2026-09-12.
 
 ## The re-profile of 2026-09-12 (run 31268)
 

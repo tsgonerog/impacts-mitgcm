@@ -19,17 +19,17 @@ analyses/
 ├── DINO_1deg/                        primary configuration (51 x 198 x 36)
 │   ├── grid_and_cost_sections.ipynb      locates the cost-function section indices
 │   ├── first_look_at_output.ipynb        entry point for reading a DINO run
+│   ├── stability_study_viscosity_restarts_from170yrPk.ipynb  why the reference viscosity is unstable
 │   ├── forward/
 │   │   ├── viscosity_binaries_construction.ipynb   how dino_viscAhD*.bin is built
 │   │   ├── spinup_200yr_from_rest_visc2x.ipynb     the 200-year spin-up
 │   │   ├── spinup_200yr_from_rest_viscRef_ReMax2.ipynb  the 200-year spin-up under the 2026-09-10 production configuration, against the 2× one
-│   │   └── moc_amoc_animation_200yr_visc2x.ipynb   MOC + AMOC frames from it
+│   │   ├── moc_amoc_animation_200yr_visc2x.ipynb   MOC + AMOC frames from it
+│   │   ├── diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb  diffKrT/diffKrS in place of diffKrFile
+│   │   └── advection_scheme_30_vs_33_from170yrPk.ipynb  scheme 30 against scheme 33
 │   └── adjoint/
-│       ├── sensitivity_5yr_from180yrPk_visc2x.ipynb          one 5-year adjoint
-│       ├── sensitivity_180d_vs_5yr_from180yrPk_visc2x.ipynb  matched-lead comparison
-│       ├── kappa_v_ensemble/            the κ_v perturbation ensemble (7 notebooks)
 │       ├── tapenade_profiling/          checkpoint profile + -nocheckpoint validation
-│       └── scidac_poster_aug2026/       the SciDAC PI meeting poster
+│       └── gm_in_adjoint/               GM/Redi in the adjoint's forward sweep only (scripts)
 ├── SOMA_1deg/                        secondary configuration (62 x 62 x 31)
 │   └── adjoint_sensitivity_control_set.ipynb
 ├── barotropic_gyre/                  the tutorial gyre with a passive temperature (62 x 62 x 1)
@@ -43,9 +43,8 @@ analyses/
     └── strip_animation_outputs.py    keeps notebooks under GitHub's size limit
 ```
 
-Three directories carry their own `README.md` — `adjoint/kappa_v_ensemble/`,
-`adjoint/tapenade_profiling/` and `adjoint/scidac_poster_aug2026/`. Read those
-for the run tables and the reading order inside each.
+Two directories carry their own `README.md` — `adjoint/tapenade_profiling/`
+and `adjoint/gm_in_adjoint/`. Read those for the run tables inside each.
 
 ## Scratch layout
 
@@ -58,25 +57,20 @@ job produced it:
 │   ├── forward/
 │   │   ├── spinup_200yr_visc2x/                the 2× 200-year spin-up (30983)
 │   │   ├── spinup_200yr_viscRef_ReMax2/        the production configuration's spin-up (31203)
-│   │   ├── kappa_v_ensemble/                   the 2026-08 κ_v legs (30996–31002)
-│   │   ├── kappa_v_ensemble_ReMax2_approxAdv/  the 2026-09-10 κ_v legs (31205–31219)
 │   │   ├── stability_study/                    viscosity, advection-scheme and vertical-advection restarts
-│   │   └── toolchain_validation/               forward bitwise checks (31100, 31139, 31142)
+│   │   └── toolchain_validation/               forward bitwise checks (31100, 31139, 31142, 31267, 31280)
 │   └── adjoint/
-│       ├── kappa_v_ensemble/                   2026-08 reference + M1–M7, 5 yr (31039–31046)
-│       ├── kappa_v_ensemble_ReMax2_approxAdv/  2026-09-10 adjoints (31206–31220) and the κ_v FD sweeps
-│       ├── stability_study/                    30-d and 183-d stability tests, the GM/Redi tests
+│       ├── stability_study/                    30-d stability tests (31163, 31171) and the GM/Redi test (31234–31239, 31241–31246)
 │       ├── checkpointing_study/                the boosted -nocheckpoint test 31056 and the 2026-09-12 profile 31268 (31052–31054 deleted 2026-09-12)
 │       ├── adjViscBoost/                       boosted run and its plain control (31025, 31026)
-│       ├── toolchain_validation/               build, hook and script checks; 31259, the current setup's smoke test
-│       ├── gradient_check/                     grdchk runs (31172, 31177, 31179; 31037 and 31178 deleted 2026-09-12)
-│       └── sensitivity/                        the 2× science runs (28486, 31028)
+│       ├── toolchain_validation/               build, hook and script checks; 31281, the default build's 5-day run of the live namelist
+│       └── gradient_check/                     grdchk runs (31172, 31177, 31179; 31037 and 31178 deleted 2026-09-12)
 ├── analysis/        multi-run analysis products, one directory per campaign:
-│                    kappa_v_ensemble/, kappa_v_ensemble_ReMax2_approxAdv/,
 │                    spinup_200yr_viscRef_ReMax2/, stability_study/, gm_in_adjoint/
 ├── executables/     adjoint binaries kept for provenance, named for their commit
 └── logs/            build logs, validation_reports/ for reruns deleted as duplicates, and
-                     deleted_run_records/ for runs deleted with their variant records (2026-09-12)
+                     deleted_run_records/ for the runs deleted on 2026-09-12, with the
+                     tables of the deleted κ_v campaigns in analysis_tables_of_deleted_campaigns/
 
 /scratch2/<user>/SOMA_1deg_outputs/
 ├── runs/{forward,adjoint}/          five validation runs, no campaign level yet
@@ -99,8 +93,9 @@ job produced it:
 - **Single-run output stays with its run.** A notebook that reads one run
   writes its `figures/` and `animations/` inside that run directory, so
   deleting a run takes its figures with it and nothing is orphaned.
-- **Multi-run output goes to `analysis/<campaign>/`**, which is why the κ_v
-  suite writes there rather than into any one of its nine runs.
+- **Multi-run output goes to `analysis/<campaign>/`**, which is why the
+  stability-study notebooks and the GM/Redi test scripts write there rather
+  than into any one of their runs.
 - `executables/` and `logs/` hold things that are neither, and are named for
   what they are rather than for a job.
 
@@ -158,7 +153,7 @@ notebooks that read them are gone.
 `grid_and_cost_sections.ipynb` is the one other parts of the repo point at — it
 is how `isecbeg/isecend/jsec` in `code_tap/cost_atlantic_heat.F` were chosen,
 and both `README.md` and `CLAUDE.md` cite it by name. It reads grid only, from
-the 30-day adjoint 31022.
+the 5-day adjoint 31281 (from 31022 until that run was deleted on 2026-09-12).
 
 `stability_study_viscosity_restarts_from170yrPk.ipynb` (2026-09-09) is the
 record of why the reference DINO viscosity is unstable here and what else
@@ -168,8 +163,10 @@ pickup under `input/variants/stability_study/` (31143–31151, 31160, 31161,
 `input_tap/variants/stability_study/` (31152–31159, 31163; the variants of
 31152–31159 were removed and those runs deleted on 2026-09-12) and the 183-d
 restarts of kappa member M7's blown 5-yr adjoint (31166–31168 against 31046;
-their variants were removed the same day, the runs kept).
-Figures go to `analysis/stability_study/figures/`.
+their variants were removed the same day, and the runs, with 31046 and 31140,
+were deleted later that day). The cells that read those deleted runs no longer
+re-execute; their recorded outputs stay. Figures go to
+`analysis/stability_study/figures/`.
 
 `first_look_at_output.ipynb` is the entry point for reading any DINO run:
 `dynDiag` through `xmitgcm`, nothing configuration-specific. It reads the
@@ -181,48 +178,19 @@ Figures go to `analysis/stability_study/figures/`.
 | --- | --- | --- |
 | `viscosity_binaries_construction.ipynb` | 30983 | builds and verifies `dino_viscAhD.bin` against `dxC * 0.27 / 2` (exact: `max\|diff\| = 0`), and scales it to the `_2p50`/`_3p00`/`_5p00` variants. Also carries the retired `viscAhGrid` comparison results |
 | `spinup_200yr_from_rest_visc2x.ipynb` | 30983 | the 200-year spin-up that completed: MOC in depth and density space, barotropic streamfunction, AMOC timeseries. Writes everything into `figures/` |
-| `spinup_200yr_from_rest_viscRef_ReMax2.ipynb` | 31203 vs 30983, with 31205 and 31256 | the 200-year spin-up from rest under the 2026-09-10 production configuration (reference viscosity + `viscAhReMax=2.`, scheme 33 with explicit vertical advection, GM on), completed 2026-09-11: `%MON` statistics over 200 yr, the overturning history (AMOC at 26/41/55° N, deep, tropical and Deacon cells) against the 2× spin-up, decade-mean MOC for years 170–180 and 190–200, zonal-mean T/S and MLD for years 190–200, and the year-180 state against the reference kappa leg's (the state the ensemble and 31206 used: 0.40 K rms apart, the 2× state's thick tropical thermocline inherited). Its last cell is the forward reproducibility check, 31256 against the first 10 years. Figures to `analysis/spinup_200yr_viscRef_ReMax2/figures/` |
+| `spinup_200yr_from_rest_viscRef_ReMax2.ipynb` | 31203 vs 30983, with 31205 and 31256 (both since deleted; the cells that read them keep their recorded outputs) | the 200-year spin-up from rest under the 2026-09-10 production configuration (reference viscosity + `viscAhReMax=2.`, scheme 33 with explicit vertical advection, GM on), completed 2026-09-11: `%MON` statistics over 200 yr, the overturning history (AMOC at 26/41/55° N, deep, tropical and Deacon cells) against the 2× spin-up, decade-mean MOC for years 170–180 and 190–200, zonal-mean T/S and MLD for years 190–200, and the year-180 state against the reference kappa leg's (the state the ensemble and 31206 used: 0.40 K rms apart, the 2× state's thick tropical thermocline inherited). Its last cell is the forward reproducibility check, 31256 against the first 10 years. Figures to `analysis/spinup_200yr_viscRef_ReMax2/figures/` |
 | `moc_amoc_animation_200yr_visc2x.ipynb` | 30983 | renders the MOC + AMOC-timeseries frames into `moc_anim/` and `moc_anim_jpg_std2/` |
-| `diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb` | 31142 vs 30983 (and 31139 vs 31100, 31140 vs 31137, 31141 vs 31138) | the 2026-09-09 review of file-based mixing inputs: `diffKrT`/`diffKrS` in place of `diffKrFile` — 1 yr restarted from the spin-up's year 170 against the spin-up's own year 171 (dynDiag bitwise, MOC and 26°N AMOC overlaid), the 30-day forward and adjoint bitwise pairs, why no `viscAhGrid` reproduces the viscosity file (∝ cos²φ against cos φ), and what the stale `outAd*` values changed in the adjoint-viscosity boost. Writes into 31142's `figures/` |
+| `diffkr_as_parameter_validation_from170yrPk_visc2x.ipynb` | 31142 vs 30983 (and 31139 vs 31100, 31140 vs 31137, 31141 vs 31138; 31137 and 31140 deleted 2026-09-12, the cells that read them keep their recorded outputs) | the 2026-09-09 review of file-based mixing inputs: `diffKrT`/`diffKrS` in place of `diffKrFile` — 1 yr restarted from the spin-up's year 170 against the spin-up's own year 171 (dynDiag bitwise, MOC and 26°N AMOC overlaid), the 30-day forward and adjoint bitwise pairs, why no `viscAhGrid` reproduces the viscosity file (∝ cos²φ against cos φ), and what the stale `outAd*` values changed in the adjoint-viscosity boost. Writes into 31142's `figures/` |
 | `advection_scheme_30_vs_33_from170yrPk.ipynb` | 31174 vs 31160 (2 yr), 31175 vs 31164 (10 yr) | the 2026-09-10 scheme question: one-setting twins from the year-170 pickup at reference viscosity + `viscAhReMax=2.` with `tempAdvScheme=saltAdvScheme` 30 against 33 — depth-space MOC and per-latitude cell metrics, tracer excursions outside the limited run's range, `MXLDEPTH` statistics, zonal-mean T/S/ρ/w differences. Finds the mid-latitude cells no deeper (weaker by 1.1–1.6 Sv after 10 yr), the equatorial pair stronger and deeper under 30, negligible over/undershoots. Figures to `analysis/stability_study/figures/`; the adjoint side is in the setup README's "Scheme 30 or scheme 33" |
 
 ### adjoint/
 
-`kappa_v_ensemble_ReMax2_approxAdv/` (2026-09-10) is the vertical-diffusivity
-ensemble rerun under the production configuration of that day (scheme 33
-forward with explicit vertical advection, approximate adjoint, reference
-viscosity + `viscAhReMax=2.`): runs 31205–31220, its own README gives the
-reading order. `kappa_v_ensemble/` stays the record of the 2026-08 campaign.
-
-All read `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`.
-
-| Notebook | Run | Start (`nIter0`) | Viscosity / mods |
-| --- | --- | --- | --- |
-| `sensitivity_5yr_from180yrPk_visc2x.ipynb` | 28486 | 180-year pickup (3162240) | `viscAhD` = `viscAhZ` = 2× reference. Also carries the results of the three retired companion 5-year adjoints |
-| `sensitivity_180d_vs_5yr_from180yrPk_visc2x.ipynb` | 31028 vs 31039 | 180-year pickup (3162240) | `visc2x`, Tapenade-native-hook builds; matched-lead comparison against the 5-yr reference 31039 (the 2026-09-01 seam-clean rerun of 30995; seam mask retained for metric continuity). Figures/animations go to 31028's run directory |
-
-Settings in this table were read back from each run's own staged `data`
-namelist, not from the run-directory tag.
-
-`kappa_v_ensemble/` is a seven-notebook suite (2026-08-30; re-executed
-2026-09-01 on the hook-build adjoint rerun) analysing the vertical-diffusivity
-perturbation ensemble of the neural-network surrogate proposal,
-Part I: the reference adjoint 31039 (fc/adxx bit-identical to 30995 and 28486;
-seam-clean `ADJ*` + new `ADJetan`) against members M1–M7 (runs 31040–31046,
-reruns of 31003–31009, κ_v scaled 0.25×–32×), plus the internal-variability
-noise floor reconstructed from spin-up 30983's 2,402 pickups. It has its own
-`README.md` (run table, reading order, conventions); shared code lives in
-`ensemble_common.py`, and `build_cache.py` / `build_jproxy.py` must be run once
-before re-executing the notebooks — they write the intermediates the notebooks
-read. Unlike the single-run notebooks, this suite spans nine runs, so everything
-it generates goes to the sibling scratch directory
-`/scratch2/<user>/DINO_1deg_outputs/analysis/kappa_v_ensemble/`
-(`cache/`, `figures/`, `animations/`, `stats/`) rather than into any one run
-directory. All eight adjoints ran a third time on 2026-09-02 with the
-`-nocheckpoint` build (31060–31067): bitwise identical to 31039–31046 in `fc`,
-`adxx_*` and `ADJ*`, so the suite still reads the 2026-09-01 set. Those
-`-nocheckpoint` reruns were themselves deleted in the 2026-09-03 consolidation
-once the comparison reports had recorded the result.
+The adjoint notebooks that read the 2× science runs and both κ_v ensembles —
+`sensitivity_5yr_from180yrPk_visc2x.ipynb`,
+`sensitivity_180d_vs_5yr_from180yrPk_visc2x.ipynb`, the `kappa_v_ensemble/` and
+`kappa_v_ensemble_ReMax2_approxAdv/` suites and `scidac_poster_aug2026/` — were
+retired on 2026-09-12 with their runs (see "Retired analyses" below). What
+remains under `adjoint/` is scripts and records.
 
 `tapenade_profiling/` (2026-09-01, extended 2026-09-12) is scripts and records
 rather than a notebook: the Tapenade checkpointing profile of the adjoint (run
@@ -252,8 +220,9 @@ every sensitivity field at order one, so that build stays
 checkpoint-everything.
 
 Several runs named in those comparison reports (31055, 31060–31067) were
-deleted in the 2026-09-03 consolidation. The reports are the record; the
-`ckpAll` half of every pair survives.
+deleted in the 2026-09-03 consolidation, and the `ckpAll` halves (31039–31046,
+31052) followed on 2026-09-12, so `compare_ensemble_ckpAll_vs_nocheckpoint.py`
+can no longer run. The reports are the record.
 
 `gm_in_adjoint/` (2026-09-11) is scripts rather than notebooks: the test of
 running GM/Redi in the adjoint's forward sweep only. `compare_gm_adjoints.py`
@@ -261,16 +230,11 @@ compares the `ADJ*` dumps and `adxx_*` gradients of runs against a reference by
 lead, `forward_drift.py` compares two forward sweeps' monthly `dynDiag`,
 `perturb_pickup.py` writes pickups with Theta perturbed in a box, and
 `fd_summary.py` sets both adjoints (31206, 31237) against the finite
-differences of both models. Its `README.md` has the run table; the runs are
-filed under `runs/adjoint/stability_study/`, the outputs under
-`analysis/gm_in_adjoint/`.
-
-`scidac_poster_aug2026/` is the poster prepared for the SciDAC PI meeting in
-August 2026 — `adj_field_animations.ipynb` animates the 3-D and 2-D `ADJ*`
-fields of run 28486, `poster_panel_frames.ipynb` is the trimmed version that
-writes the nine `poster_frames/*.png` panels of the 3 × 3 sensitivity grid. It
-has its own `README.md`, including the seam caveat that applies to 28486's
-dumps.
+differences of both models; its GM-free half (31206, 31231/31232, 31247–31252)
+was deleted on 2026-09-12, so the script no longer re-runs and
+`analysis/gm_in_adjoint/fd_summary.md` is the record. Its `README.md` has the
+run table; the runs are filed under `runs/adjoint/stability_study/`, the
+outputs under `analysis/gm_in_adjoint/`.
 
 ### Where the outputs go
 
@@ -280,7 +244,7 @@ self-contained and deleting a run takes its figures with it:
 
 ```
 <run>/
-├── figures/       PNGs, and poster_frames/ for the SciDAC panels
+├── figures/       PNGs
 └── animations/    gif + html exports, and the frame directories
 ```
 
@@ -289,12 +253,12 @@ Notebooks derive those paths from the `run_dir` they already define
 so the output follows the run automatically if it is ever moved again. Nothing
 needs editing in two places.
 
-The one deliberate exception is `kappa_v_ensemble/`, which reads nine runs and
-therefore writes everything to the sibling directory
-`/scratch2/<user>/DINO_1deg_outputs/analysis/kappa_v_ensemble/` instead
-of into any one run (details in that suite's own `README.md`). Its two
-publication figures are additionally kept with the project notes, as LaTeX
-sources for the `kappa_ensemble_results` brief. Since the 2026-09-04 split
+The deliberate exceptions are the notebooks and scripts that read several runs
+(the stability study, the GM/Redi test), which write to
+`/scratch2/<user>/DINO_1deg_outputs/analysis/<campaign>/` instead of into any
+one run; the retired `kappa_v_ensemble/` suite did the same. Its two
+publication figures are kept with the project notes, as LaTeX sources for the
+`kappa_ensemble_results` brief. Since the 2026-09-04 split
 those live in a separate repository, so **no project-authored image is tracked
 here** — the only images in this repository are the vendored MITgcm
 documentation figures under `MITgcm_c69m/MITgcm/doc/`.
@@ -304,7 +268,6 @@ Current locations:
 | Output | Lives in |
 | --- | --- |
 | 200-year spin-up figures, `moc.gif`, `moc_anim*/` | `DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/` |
-| `ADJ*` gif/html, `adj_*_z14/`, `poster_frames/` | `DINO_1deg_outputs/runs/adjoint/sensitivity/DINO_1deg_tapAdj_ckpAll_5yr_from180yrPk_visc2x_run28486/` |
 
 The `.gitignore` rules for `analyses/**/*.{png,jpg,gif,html}` are only a safety
 net against a cell being re-run with a repo-local output path.
@@ -365,18 +328,28 @@ from rest with `from_rest_visc2x`, and diff against 30983.
 
 ## Retired analyses
 
-Thirteen notebooks were moved to `~/trash/Proj_ImPACTS/analyses/` on 2026-09-03
-because every run they read had been deleted. Their durable findings were
-transferred into the notebooks that remain before the move — the retired
-notebook is not the record any more, the receiving notebook is.
+A notebook is moved to `~/trash/Proj_ImPACTS/analyses/` once every run it reads
+has been deleted. Thirteen went on 2026-09-03; their durable findings were
+transferred into the notebooks that remain before the move, so for those the
+receiving notebook is the record. The rows marked 2026-09-12 went when both κ_v
+ensembles (to be rerun under the cleaned setup) and the remaining runs of the
+removed adjoint variant records were deleted. Those notebooks keep their
+executed outputs in `~/trash/`, every run they read keeps its provenance in the
+output tree's `logs/deleted_run_records/`, and the ensembles' tables are in its
+`analysis_tables_of_deleted_campaigns/`.
 
 | Retired | Runs | Findings went to |
 | --- | --- | --- |
 | `02_forward/00_archive/` — two crashed 200-yr attempts | 19369, 28452 | `forward/spinup_200yr_from_rest_visc2x.ipynb` |
 | `02_forward/01_viscosity_study/` — three `viscAhGrid` comparisons | 28402, 28447, 28448, 28451 | `forward/viscosity_binaries_construction.ipynb` |
 | `03_adjoint/00_archive/serial_*` — five serial exploratory runs | 18222, 18232, 22038, 22039, 24020 | nothing unique; the runs were already gone before this cleanup |
-| `03_adjoint/02_`, `03_`, `04_` — three 5-yr adjoints | 24493, 28461, 28453 | `adjoint/sensitivity_5yr_from180yrPk_visc2x.ipynb` |
+| `03_adjoint/02_`, `03_`, `04_` — three 5-yr adjoints | 24493, 28461, 28453 | `adjoint/sensitivity_5yr_from180yrPk_visc2x.ipynb` (itself retired 2026-09-12, below) |
 | `SOMA_1deg/01_`, `02_`, `03_` | `v4soma_*`, `v4StP_srl_*`, `pd_v4StP_srl_*` | `SOMA_1deg/adjoint_sensitivity_control_set.ipynb` |
+| (2026-09-12) `DINO_1deg/adjoint/kappa_v_ensemble/` — seven notebooks, `ensemble_common.py`, `build_cache.py`, `build_jproxy.py` | 31039–31046, 30996–31002, 31022, 28486 | `CLAUDE.md`, "Verifying correctness", item 4; the DINO setup `README.md`; the `kappa_ensemble_results` brief in the project notes (`directions/nn_surrogate/`) |
+| (2026-09-12) `DINO_1deg/adjoint/kappa_v_ensemble_ReMax2_approxAdv/` — `ensemble_adjoints`, `forward_legs`, `production_adjoint_stability_and_pathways` | 31205–31220, 31231, 31232 | the DINO setup `README.md` and `TODO.md` |
+| (2026-09-12) `DINO_1deg/adjoint/scidac_poster_aug2026/` — `adj_field_animations`, `poster_panel_frames` | 28486 | the poster itself; no document in this repository |
+| (2026-09-12) `DINO_1deg/adjoint/sensitivity_5yr_from180yrPk_visc2x.ipynb` | 28486 | `CLAUDE.md`, "Verifying correctness", items 3 and 4 (the committed grdchk point, 30995 ≡ 28486) |
+| (2026-09-12) `DINO_1deg/adjoint/sensitivity_180d_vs_5yr_from180yrPk_visc2x.ipynb` | 31028, 31039 | no other document; its executed outputs are the record |
 
 `~/trash/Proj_ImPACTS/analyses/README.md` lists them file by file, with the
 path each had before the move.
