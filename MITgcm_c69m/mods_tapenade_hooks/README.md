@@ -321,3 +321,12 @@ are; whether the four unreachable stubs of `dummy_tap.F` are removed, as
 here, or kept; the `_TAP` suffix of the new routine names; and whether the
 package-specific dumps of `ADDUMMY_IN_STEPPING` should follow in the same
 change or a later one.
+
+One related gap stays out of the series on purpose: the approximate-advection
+switch does not reach implicit vertical advection (`gad_implicit_r.F`), under
+any AD tool. DINO carries a local fix in
+`mysetups/DINO_1deg/code_tap/variants/approxAdvection/`; because under
+`ALLOW_AUTODIFF` it would change TAF adjoints as well, and no verification
+experiment combines scheme 33, implicit vertical advection and the switch, it
+goes to the maintainers as a question first (the issue text is drafted in the
+project notes).

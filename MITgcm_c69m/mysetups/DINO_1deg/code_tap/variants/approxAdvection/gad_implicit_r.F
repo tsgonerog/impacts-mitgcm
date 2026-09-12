@@ -6,9 +6,12 @@ C
 C     code_tap/variants/approxAdvection/gad_implicit_r.F (2026-09-09): the
 C     vendored pkg/generic_advdiff/gad_implicit_r.F plus the
 C     useApproxAdvectionInAdMode replacement that gad_advection.F makes for the
-C     horizontal fluxes, here for the implicit vertical advection (DINO runs
-C     tempImplVertAdv/saltImplVertAdv), which the vendored file selects from
-C     its scheme argument alone. The argument is renamed advectionSchArg and a
+C     horizontal fluxes, here for the implicit vertical advection, which the
+C     vendored file selects from its scheme argument alone. DINO ran
+C     tempImplVertAdv/saltImplVertAdv until 2026-09-10 and advects
+C     explicitly since, so the replacement is dormant in production; it
+C     stays here, not in mods_tapenade_hooks/, because under ALLOW_AUTODIFF
+C     it changes TAF adjoints too (a question for upstream, see the README). The argument is renamed advectionSchArg and a
 C     local advectionScheme carries the scheme actually used, as in
 C     gad_advection.F; everything after that point is the vendored code.
 C     See the README beside this file.

@@ -56,3 +56,17 @@ measures the difference (its finite differences are of the scheme-33 forward).
 After `make`, the build script checks that the compiled `gad_advection.f`,
 `gad_implicit_r.f` and their generated `_b.f` carry the switch's name, which
 no vendored preprocessed form does.
+
+**Why `gad_implicit_r.F` stays here.** Unlike the `gad_advection.F` guard, it
+is not proposal material yet. It fills a real gap: with scheme 33, implicit
+vertical advection and the switch on, the tree linearises the horizontal
+fluxes about scheme 30 and the vertical ones about the flux limiter, with any
+AD tool. But under `ALLOW_AUTODIFF` the change alters TAF adjoints as well for
+that combination, no verification experiment of the tree combines the three,
+and TAF cannot be run here, so whether the omission is deliberate is a
+question for the MITgcm maintainers rather than a patch. The question is
+written up in the project notes
+(`references/tapenade_hooks/upstream_issue_draft_approx_advection_implicit_vertical.md`,
+not yet posted). If the change is taken upstream, the copy here is deleted and
+the file joins `mods_tapenade_hooks/`; until then it stays, dormant in
+production, for any namelist that returns to implicit vertical advection.
