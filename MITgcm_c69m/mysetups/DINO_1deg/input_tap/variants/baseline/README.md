@@ -44,3 +44,10 @@ link the pickup at the staged `nIter0` themselves and default to the production
 spin-up 31203, which they refuse for a `visc2x` namelist: a run of
 `data_from180yrPk_visc2x` needs `IMPACTS_PICKUP_RUN_DIR` pointing at the 2×
 spin-up 30983.
+
+Neither record has a `data.autodiff` sibling, and `data_from180yrPk_visc2x` has
+no `data.pkg` either, so a run of it today stages the live files: GM/Redi in the
+forward sweep (since 2026-09-11) and scheme 30 in the adjoint sweep (every DINO
+adjoint build since 2026-09-12), which is not the configuration of 31039.
+`data_from180yrPk_viscRef_ReMax2_gmOff`, with its `data.pkg` sibling, still gives
+the configuration of 31206.

@@ -8,7 +8,12 @@ ways to set it. These variants explore both, all from rest.
 | `from_rest_viscD2x_Zref` | `viscAhDfile` at 2× but `viscAhZfile` left at the reference field — a **mixed** setting. This is the configuration whose 200-year spin-up crashed at 126.3 years |
 | `from_rest_viscGrid1p8e-2_A4Grid1p0e-2` | the scalar `viscAhGrid=1.8E-2` in `PARM01` with biharmonic `viscA4Grid=1.0E-2`, `PARM05` files commented out |
 | `..._C4Leith1p5` | as above plus Leith |
-| `..._CDscheme` | as above plus the C-D scheme |
+
+A fourth tag, `..._CDscheme` (as above plus the C-D scheme for the Coriolis
+terms, `useCDscheme=.TRUE.`, `tauCD=321428.`; forward only), was deleted on
+2026-09-12, when `cd_code` stopped being compiled into `code/`; git history has
+it. Its 200-year spin-up from May 2026, run 28489, was never analysed and was
+deleted on 2026-09-03.
 
 Read `p` as the decimal point: `1p8e-2` is `1.8E-2`. `analyses/README.md`
 carries the token vocabulary.

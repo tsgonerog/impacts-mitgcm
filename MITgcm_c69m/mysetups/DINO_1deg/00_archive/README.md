@@ -72,8 +72,11 @@ which still documents the dead-end `adcommon.h` approach it replaced.
 | `data.autodiff_aste_90x150x60` | ASTE adjoint-mode viscosity namelist | Superseded by the DINO-tuned copy — see lineage below |
 
 **Lineage worth knowing.** `data.autodiff_aste_90x150x60` is the direct ancestor
-of the live `input_tap/variants/adjointViscosity/data.autodiff_adjointViscosity`, which
-`submit_tapAdj_adjVisc.sh` swaps in. The diff is the whole derivation:
+of `input_tap/variants/adjointViscosity/data.autodiff_adjointViscosity`, which
+`submit_tapAdj_adjVisc.sh` swapped in until 2026-09-12 (git history has it);
+since then the variant is `data.autodiff_additions`, the boost's lines only,
+added to the staged `data.autodiff`. The diff against the full file is the
+whole derivation:
 
 - the entire `SEAICE*` block commented out (DINO has no sea ice)
 - `useGMRediInAdMode` `.TRUE.` → `.FALSE.`
@@ -86,7 +89,8 @@ thing in this archive.
 
 ## `scripts/`
 
-Seven superseded build and submit scripts. The `tapAdj_` / `frd_` filename
+Six superseded build and submit scripts (a seventh, the KPP debug run, was
+deleted on 2026-09-12 with KPP; git history has it). The `tapAdj_` / `frd_` filename
 prefixes carry the adjoint/forward distinction, so they are not split into
 subdirectories.
 
@@ -94,7 +98,7 @@ subdirectories.
 | --- | --- |
 | `tapAdj_build_serial_patched.sh`, `tapAdj_build_serial_noTpatched.sh` | **DINO is MPI-only now.** The `code_tap/SIZE.h_serial` they staged was deleted on 2026-09-02 (git history has it); `code_tap/SIZE.h` is the 27-rank decomposition. |
 | `tapAdj_submit_serial_patched_on_sverdrup.sh` | Serial counterpart of the above |
-| `frd_submit_mpi_on_sv_debug_{tr5,adv30_from_start,kppON,viscAhD_2p50}.sh` | One-off forward debug runs (job names `debug_tr5`, `debug_tr6`, `debug_tr7`, `debug_tr12`). Their settings now live as namelists in `input/variants/`, selected by `test_cases`. |
+| `frd_submit_mpi_on_sv_debug_{tr5,adv30_from_start,viscAhD_2p50}.sh` | One-off forward debug runs (job names `debug_tr5`, `debug_tr6`, `debug_tr12`). Their settings now live as namelists in `input/variants/`, selected by `test_cases`. |
 
 These predate `tools/machine_env.sh`, so they carry hardcoded sverdrup paths and
 were not ported — see `PORTING.md`. Their pickup paths also point at run

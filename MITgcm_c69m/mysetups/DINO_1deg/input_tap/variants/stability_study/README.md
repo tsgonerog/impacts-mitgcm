@@ -5,7 +5,7 @@ Started 2026-09-09 on branch `dino-stability-study`; the forward half is
 All `from180yrPk_*` files are `baseline/data_from180yrPk_visc2x` with the lines
 their headers name changed; the `_gm*` tags carry `data.pkg`, `data.gmredi`
 (the spin-up's, K = 571 with the ldd97 taper — the live `input_tap/data.gmredi`
-is a different file, K = 1000 with dm95) and, for `_gmOn`, a `data.autodiff`
+was a different file until 2026-09-11, K = 1000 with dm95) and, for `_gmOn`, a `data.autodiff`
 sibling with `useGMRediInAdMode=.TRUE.`. Growth is read from the `ADJ*`
 dumps (there is no adjoint monitor stream): wet-RMS of `ADJtheta` per dump.
 
@@ -58,8 +58,31 @@ smooth model, the live `input*/data`) and scheme 33 forward with scheme 30 in
 the adjoint sweep (the approximate adjoint, ECCO's `useApproxAdvectionInAdMode`
 practice, 1.5× slower because it must be a `ckpAll` build); which forward
 scheme to run was a physics choice, see the setup README's "Scheme 30 or
-scheme 33" — decided 2026-09-10 for the second route, now the default pair. What scheme 33 cannot have is a finite-difference-verifiable
+scheme 33" — decided 2026-09-10 for the second route, the default pair from then on. What scheme 33 cannot have is a finite-difference-verifiable
 adjoint at this viscosity: `grdchk_repair/` runs 31177–31179.
+
+**Since 2026-09-12 every DINO adjoint build takes the second route.** The
+widened guard is `mods_tapenade_hooks/gad_advection.F` (patch `0003` of the
+upstream proposal) and the implicit-vertical swap `code_tap/gad_implicit_r.F`,
+so the `approxAdv` build was merged into `ckpAll`, the default pair: 31263
+against 31259 (5 d, the live namelist) is EQUIVALENT. The `-nocheckpoint` list
+of that day keeps the routines recorded before the switch checkpointed and
+gives the same adjoint 1.41× faster (31276 against 31269, 30 d,
+`from180yrPk_viscRef_ReMax2_gmFwd`). The submit body refuses an adjoint
+namelist without the switches its settings need, so the rows with GM/Redi in
+both sweeps (`*_gmOn`) run only when the exact adjoint is asked for:
+
+```bash
+IMPACTS_ALLOW_EXACT_ADJOINT=1 IMPACTS_TEST_CASE=stability_study/from180yrPk_viscRef_ReMax2_gmOn \
+IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh
+```
+
+A row without its own `data.pkg` or `data.autodiff` stages the live file, so it
+no longer reproduces a run made before that file changed (GM/Redi in the
+forward sweep since 2026-09-11; scheme 30 in the adjoint sweep of every build
+since 2026-09-12). Every GM-free row above is such a run, the `M7_*` restarts
+included: the command at the end of this README now runs the M7 control with
+GM/Redi in the forward sweep and scheme 30 in the adjoint sweep.
 
 **GM/Redi in the forward sweep only (2026-09-11).** Adjoint minus finite
 difference, in % of the finite difference (`fd_summary.py` in

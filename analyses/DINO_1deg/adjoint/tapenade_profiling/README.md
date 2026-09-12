@@ -43,6 +43,9 @@ default DINO adjoint from 2026-09-02 to 2026-09-10.
 | 31259 | `build_tapAdj_approxAdv` | 5 d | — | 0:02:11 | reference: the live namelist from the production spin-up's year-180 pickup (2026-09-11) |
 | 31277 | `build_tapAdj_nocheckpoint`, list of 2026-09-12 | 5 d | — | 0:01:40 | validation against 31259: EQUIVALENT |
 | 31278 | `build_tapAdj_hooksInTree`, the same list | 5 d | — | 0:01:41 | the in-tree hooks against 31277: EQUIVALENT |
+| 31285 | `build_tapAdj_nocheckpoint`, rebuilt after the build consolidation of 2026-09-12 | 5 d | — | 0:01:23 | against 31277: every sensitivity file, `fc` and `%MON` identical |
+| 31287 | `build_tapAdj_profile`, rebuilt the same way | 5 d | — | 0:02:03 | against the `ckpAll` run 31281: EQUIVALENT |
+| 31284 | `build_tapAdj_hooksInTree`, rebuilt the same way | 5 d | — | 0:01:35 | against 31278: every sensitivity file, `fc` and `%MON` identical |
 
 ## Files
 
@@ -218,6 +221,12 @@ section 4, has the rule and the check; this is the record.
   namelist): EQUIVALENT, 1:40 against 2:11. 31278 (the in-tree hooks) against
   31277: EQUIVALENT. The driver logs and comparison reports are in
   `/scratch2/<user>/DINO_1deg_outputs/logs/validate_20260912_phaseD2/`.
+- **After the build consolidation** later on 2026-09-12 (the `approxAdv` build
+  merged into `ckpAll`; `code_tap/gad_implicit_r.F` in every DINO adjoint
+  build), the list, profile and in-tree builds were rebuilt and run 5 days:
+  31285 against 31277, 31287 against the `ckpAll` run 31281 and 31284 against
+  31278, each identical in every sensitivity file, `fc` and `%MON`; the
+  comparison reports are in the run directories.
 
 ## Re-running
 
@@ -234,7 +243,6 @@ python3 ../../../tools/tapenade_profiling/check_nocheckpoint_switches.py build_t
 # drop the Tapenade externals (cg2d, exch2_*_cube, the dummy_in_stepping_* hooks) from
 # switch_safe.txt, annotate it into code_tap/tap_nocheckpoint.txt, then
 ./scripts/build_tapAdj_nocheckpoint.sh && IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj_nocheckpoint.sh
-#   the reference run: the same namelist with build_tapAdj_approxAdv.sh / submit_tapAdj_approxAdv.sh
-#   (build_tapAdj_ckpAll.sh / submit_tapAdj_ckpAll.sh when implicit vertical advection is off anyway)
+#   the reference run: the same namelist with build_tapAdj_ckpAll.sh / submit_tapAdj_ckpAll.sh
 ../../../tools/compare_adj_runs.sh <reference run dir> <nocheckpoint run dir>
 ```

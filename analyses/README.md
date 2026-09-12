@@ -136,10 +136,10 @@ that field doubled. That is DINO's own law, A_h = ½·U_v·Δx with `rn_Uv = 0.2
 | `ReMax2` | `viscAhReMax=2.` on top, the grid-Reynolds floor; with `viscRef` this is the production viscosity since 2026-09-09 |
 | `adv30` | `tempAdvScheme=saltAdvScheme=30`, the unlimited DST3, whose adjoint does not blow up; production in both sweeps from 2026-09-09 to 2026-09-10. No token means scheme 33, the flux-limited DST3 of the forward model since 2026-09-10 |
 | `viscGrid<v>` | scalar `viscAhGrid` in `PARM01` instead, `PARM05` files commented out; `viscGrid1p8e-2` is `viscAhGrid=1.8E-2` |
-| `adjVisc` | adjoint-mode viscosity inflation: `viscFacInAd = 10.` against `viscFacInFw = 1.`, from `data.autodiff_adjointViscosity`. Needs the matching build *and* submit script |
-| `ckpAll` / `nocheckpoint` | which Tapenade checkpointing the adjoint was built with; `nocheckpoint` is bitwise identical to `ckpAll` except under an adjoint-mode switch (`adjVisc`, `approxAdv`, GM in the forward sweep only), and was the DINO default from 2026-09-02 to 2026-09-10 |
-| `approxAdv` | the `ckpAll` build with `code_tap/variants/approxAdvection/`: scheme 33 in the forward sweep, scheme 30 in the adjoint sweep through `useApproxAdvectionInAdMode`; the DINO default adjoint since 2026-09-10 |
-| `gmFwd` | GM/Redi on in the adjoint's forward sweep and off in its adjoint sweep (`useGMRedi=.TRUE.`, `useGMRediInAdMode=.FALSE.`); the live `input_tap/` namelist since 2026-09-11, in the `approxAdv` or `ckpAll` build only |
+| `adjVisc` | adjoint-mode viscosity inflation: `viscFacInAd = 10.` against `viscFacInFw = 1.`, from `input_tap/variants/adjointViscosity/data.autodiff_additions`, which the submit script adds to the staged `data.autodiff` (a whole replacement file, `data.autodiff_adjointViscosity`, until 2026-09-12). Needs the matching build *and* submit script |
+| `ckpAll` / `nocheckpoint` | which Tapenade checkpointing the adjoint was built with; `nocheckpoint` is bitwise identical to `ckpAll` except under an adjoint-mode switch its routine list is not safe for (the list of 2026-09-02 under `adjVisc`, `approxAdv` or GM in the forward sweep only; the list of 2026-09-12 is checked safe), and was the DINO default from 2026-09-02 to 2026-09-10; `ckpAll` is the default since 2026-09-12 |
+| `approxAdv` | scheme 33 in the forward sweep, scheme 30 in the adjoint sweep through `useApproxAdvectionInAdMode`. Since 2026-09-12 a settings token of the run name, appended in any DINO adjoint build when the staged `data.autodiff` sets the switch and `data` uses scheme 33; from 2026-09-10 to 2026-09-12 part of the run token `tapAdj_ckpAll_approxAdv`, the `ckpAll` build with `code_tap/variants/approxAdvection/` and then the DINO default |
+| `gmFwd` | GM/Redi on in the adjoint's forward sweep and off in its adjoint sweep (`useGMRedi=.TRUE.`, `useGMRediInAdMode=.FALSE.`); the live `input_tap/` namelist since 2026-09-11, in a build that checkpoints every call, or a `nocheckpoint` build whose `build_info.txt` records its list as safe under the switches |
 
 Reading `p` as the decimal point keeps the tokens shell-safe: `1p135e-2` is
 `1.135E-2`. Every notebook repeats its setting in full in a banner directly
@@ -238,9 +238,9 @@ run and 37.8 h saved of 114.6 h. Its `README.md` has the run table; two of its
 scripts (`parse_tapenade_profile.py`, `compare_adjoint_runs.py`) are general
 enough to reuse on any pair of runs, and
 `compare_ensemble_ckpAll_vs_nocheckpoint.py` drives the pairwise comparison over
-the ensemble. Since 2026-09-02 that tuned build is the DINO default
-(`build_tapAdj.sh` is a symlink to `build_tapAdj_nocheckpoint.sh`; the plain
-build lives on as `build_tapAdj_ckpAll.sh`), and the directory also records the
+the ensemble. From 2026-09-02 to 2026-09-10 that tuned build was the DINO default
+(`build_tapAdj.sh` pointed at `build_tapAdj_nocheckpoint.sh`; since 2026-09-12
+it points at the plain `build_tapAdj_ckpAll.sh`), and the directory also records the
 one negative result,
 `compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md`: under the
 adjoint-mode viscosity boost the same list leaves `fc` identical but changes

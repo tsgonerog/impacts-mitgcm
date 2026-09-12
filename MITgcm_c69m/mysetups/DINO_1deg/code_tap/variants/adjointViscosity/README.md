@@ -2,7 +2,9 @@
 
 The four files here are the **source half** of the adjoint-mode viscosity
 configuration;
-the namelist half is `input_tap/variants/adjointViscosity/data.autodiff_adjointViscosity`.
+the namelist half is `input_tap/variants/adjointViscosity/data.autodiff_additions`,
+the lines `submit_tapAdj_adjVisc.sh` adds to the staged `data.autodiff` (a
+complete `data.autodiff_adjointViscosity` until 2026-09-12).
 `build_tapAdj_adjVisc.sh` compiles them by listing this directory *first*
 in `genmake2 -mods`:
 
@@ -24,8 +26,8 @@ checks that the compiled `autodiff_*.f` really came from here.
 | --- | --- | --- |
 | `AUTODIFF_PARAMS.h` | `../../../../../MITgcm/pkg/autodiff/AUTODIFF_PARAMS.h` | declares `inAd*`/`outAd*` (`viscA4Grid`, `viscAhGrid`, `viscArNr`, `diffKh*`, `diffK4*`, `SEAICEadjMODE`) and adds them to the common blocks |
 | `autodiff_readparms.F` | `../../../../../MITgcm/pkg/autodiff/autodiff_readparms.F` | reads them from `AUTODIFF_PARM01`, defaults them to `UNSET_RL`, echoes them to STDOUT |
-| `autodiff_inadmode_set_ad.F` | `../../../../../MITgcm/pkg/autodiff/autodiff_inadmode_set_ad.F` | the `inAd*` apply block, run at the start of each backward step through `AUTODIFF_INADMODE_SET_B` in `../../dummy_tap.F` |
-| `autodiff_inadmode_unset_ad.F` | `../../../../../MITgcm/pkg/autodiff/autodiff_inadmode_unset_ad.F` | the `outAd*` restore block, run at the end of each backward step through `AUTODIFF_INADMODE_UNSET_B` in `../../dummy_tap.F`, so checkpoint re-forwards use forward physics |
+| `autodiff_inadmode_set_ad.F` | `../../../../../MITgcm/pkg/autodiff/autodiff_inadmode_set_ad.F` | the `inAd*` apply block, run at the start of each backward step through `AUTODIFF_INADMODE_SET_TAP_B` in `../../../../../mods_tapenade_hooks/dummy_tap.F` |
+| `autodiff_inadmode_unset_ad.F` | `../../../../../MITgcm/pkg/autodiff/autodiff_inadmode_unset_ad.F` | the `outAd*` restore block, run at the end of each backward step through `AUTODIFF_INADMODE_UNSET_TAP_B` in `../../../../../mods_tapenade_hooks/dummy_tap.F`, so checkpoint re-forwards use forward physics |
 
 Each file is the upstream c69m file plus its block, in the same additive
 layout as every other shadow in `code_tap/`. The three `.F` files carry a
@@ -55,10 +57,12 @@ the 2026-09-09 fix of its stale `outAd*` values.
 Two rules:
 
 - **The build and the submit script are a pair.** This directory only makes
-  the parameters exist; `submit_tapAdj_adjVisc.sh` swaps in the namelist
-  that gives them values. Either half alone silently runs plain physics.
-- **The boost stays a checkpoint-everything build.** The default build's
-  `-nocheckpoint` list changes the boosted adjoint at order one (run 31056 vs
+  the parameters exist; `submit_tapAdj_adjVisc.sh` adds the lines that give
+  them values to the staged `data.autodiff`. Either half alone would run plain
+  physics, which is why each submit script refuses a build of another run
+  token.
+- **The boost stays a checkpoint-everything build.** The `-nocheckpoint`
+  list of 2026-09-02 changed the boosted adjoint at order one (run 31056 vs
   31025, 2026-09-02) — see `../../../README.md`, "Profiling and checkpoint
   tuning".
 

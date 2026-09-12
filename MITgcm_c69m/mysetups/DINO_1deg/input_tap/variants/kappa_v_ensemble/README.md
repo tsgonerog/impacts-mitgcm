@@ -3,8 +3,9 @@
 **Since 2026-09-10 the members are `M<k>_ReMax2`** (runs 31208, 31210, 31212,
 31214, 31216, 31218, 31220; the first submission 31184–31196 was cancelled with
 its forward legs): the live `input_tap/data` (scheme 33 in the forward
-sweep, reference viscosity + `viscAhReMax=2.`; the live `data.autodiff` switches
-the adjoint sweep to scheme 30 through the approxAdv build) with `diffKrT/S` set
+sweep, reference viscosity + `viscAhReMax=2.`, GM/Redi off; the live `data.autodiff`
+switched the adjoint sweep to scheme 30, which the approxAdv build honoured and,
+since 2026-09-12, every DINO adjoint build does) with `diffKrT/S` set
 to the member's κ, each started from the year-180 pickup its own forward leg
 (`../../../input/variants/kappa_v_ensemble/data_M<k>_ReMax2`, runs 31207–31219
 odd) wrote:
@@ -16,7 +17,10 @@ IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 ../../../tools/submit.sh scripts/su
 
 The reference member's adjoint is the live namelist from the `REF_ReMax2` leg's
 pickup (31205 → run 31206). The bare `M<k>` files below are the 2026-08 members (2× viscosity,
-exact adjoint of scheme 33, runs 31039–31046), kept as the record.
+exact adjoint of scheme 33, runs 31039–31046), kept as the record. Neither set
+has a `data.pkg` or `data.autodiff` sibling, so a rerun stages the live ones:
+its forward sweep carries GM/Redi (since 2026-09-11), and a bare `M<k>` member
+also gets scheme 30 in the adjoint sweep. Neither set reproduces its runs.
 
 Vertical-mixing perturbation ensemble, Part I of the neural-network surrogate
 proposal. These seven

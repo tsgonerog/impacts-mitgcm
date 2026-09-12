@@ -53,9 +53,27 @@ flux-limited forward cannot be gradient-checked at 1e-3 K** — and that the
 production choice of scheme 30 is what makes the model differentiable at
 that amplitude, not a mask over it.
 
-Run it as
+**Since 2026-09-12 every DINO adjoint build honours `useApproxAdvectionInAdMode`**
+(the `approxAdv` build was merged into `ckpAll`, the default pair), so the last
+column above records what the runs used, not what a rerun needs. A tag without
+a `data.autodiff` sibling stages the live one, which sets the switch:
+`adv33_grdchkON` now gives the approximate adjoint of 31177 rather than the
+exact one of 31178, and a rerun of `from180yrPk_visc2x_grdchkON` is approximate
+too (31037 was exact). `approxAdv_grdchkON` and `adv30_grdchkON` run as they
+are. The exact scheme-33 check is `approxAdvOff_grdchkON`, whose sibling turns
+the switch off (31179, the same gradients as 31178); the submit body refuses
+it unless the exact adjoint is asked for.
 
-    IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_visc2x_grdchkON \
+Every run here started from the 2× spin-up 30983's year-180 pickup. Since
+2026-09-12 the adjoint submit definitions default to the production spin-up
+31203 instead (and refuse it for a `visc2x` namelist), so name 30983 to repeat
+one:
+
+    P=$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983
+    IMPACTS_PICKUP_RUN_DIR=$P IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_visc2x_grdchkON \
+    IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh
+    IMPACTS_ALLOW_EXACT_ADJOINT=1 IMPACTS_PICKUP_RUN_DIR=$P \
+    IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_viscRef_ReMax2_approxAdvOff_grdchkON \
     IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh
 
 Each of the 4 checked points costs two extra 30-day forward integrations.

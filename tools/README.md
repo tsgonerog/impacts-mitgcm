@@ -198,7 +198,8 @@ echo "M3: forward $fwd -> adjoint $adj"
 The DINO adjoint requests `-n 27` because `code_tap/SIZE.h` sets `nPx=3, nPy=9`;
 changing the decomposition means changing both. `IMPACTS_TEST_CASE` uses
 `${VAR-default}`, so an explicit empty value (`IMPACTS_TEST_CASE=`) selects the
-live `input_tap/data` rather than the committed variant.
+live `input_tap/data` rather than the definition's committed default (which is
+itself empty in every submit definition today, so there the two coincide).
 
 Output lands in two places: `logs/<job-name>.<job-id>.out` in the setup
 directory (stdout and stderr merged — a full `set -x` trace of staging, which is
@@ -347,14 +348,13 @@ tools/compare_adj_runs.sh \
 
 # submit and compare unattended, from the setup directory
 cd MITgcm_c69m/mysetups/DINO_1deg
-jid=$(IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh --parsable | tail -1)
+jid=$(IMPACTS_DURATION_DAYS=5 ../../../tools/submit.sh scripts/submit_tapAdj.sh --parsable | tail -1)
 nohup ../../../tools/compare_adj_runs.sh --wait "$jid" \
-  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_30d_from180yrPk_visc2x_run31022" \
-  "$R/DINO_1deg_tapAdj_nocheckpoint_30d_from180yrPk_visc2x_run$jid" &
-#   note the asymmetry: the reference sits in a campaign directory, the new run
-#   does not — a fresh run lands directly in runs/adjoint/ and is filed later
-#   (submit_tapAdj.sh is the nocheckpoint default since 2026-09-02; its output
-#    is bitwise identical to the ckpAll runs, so this comparison still holds)
+  "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31281" \
+  "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run$jid" &
+#   31281 is the default (ckpAll) build's 5-day run of the live namelist, of
+#   2026-09-12; a fresh run lands directly in runs/adjoint/ and is filed into a
+#   campaign directory later, and the reference path changes when it is
 
 # print only, keep the listings for a closer look (still in the setup directory)
 ../../../tools/compare_adj_runs.sh --no-report --work /tmp/cmp_31032 \
@@ -395,6 +395,8 @@ Exit status is **1 only if something would actually break a push or a run**
 | side effects you did not author | a modified `*/mysetups/*/input*/data*` — submit scripts now patch the staged copy in the run directory, so a modified namelist should only ever be one you edited by hand | note |
 | derived output | `*.png/jpg/gif/html` staged under `analyses/` — figures belong in the scratch run directory | **FAIL** |
 | | staged blobs over 10 MB (GitHub hard-fails at 100 MB) | note |
+| copies of tree files | `mods_tapenade_hooks/check_against_tree.sh --check`: the directory keeps the shape of an upstream change, and `patches/` is current and applies to the vendored tree | **FAIL** |
+| | `tools/check_variant_shadows.sh`: every copy of a tree file in `code_tap/variants/*/` and `tools/tapenade_profiling/mods_profile/`, and each file a setup's `code_tap/TREE_BASE.txt` lists (since 2026-09-12), still matches the tree blob recorded for it | **FAIL** |
 | notebook scratch paths | every `/scratch*/...` path a notebook builds still exists on disk, reassembling literals split across lines first | note |
 
 That last check currently reports ~32 unresolved paths in 13 notebooks — mostly
@@ -411,7 +413,7 @@ building any variant the check should report nothing:
 ```bash
 cd MITgcm_c69m/mysetups/DINO_1deg
 ./scripts/build_tapAdj_adjVisc.sh
-./scripts/build_tapAdj.sh            # symlink -> _nocheckpoint
+./scripts/build_tapAdj.sh            # symlink -> _ckpAll
 
 cd ../../..
 ./tools/pre_push_check.sh            # a diff here is yours, or a regression
@@ -468,8 +470,8 @@ command line, at submission time.** There is no config file for them. Every
 occurrence in a script is a *read with a default*, never an assignment:
 
 ```bash
-# MITgcm_c69m/mysetups/DINO_1deg/scripts/submit_tapAdj.sh -> submit_tapAdj_nocheckpoint.sh
-test_cases="${IMPACTS_TEST_CASE-baseline/from180yrPk_visc2x}"
+# MITgcm_c69m/mysetups/DINO_1deg/scripts/submit_tapAdj.sh -> submit_tapAdj_ckpAll.sh
+test_cases="${IMPACTS_TEST_CASE-}"
 duration_days="${IMPACTS_DURATION_DAYS:-1830}"
 monitorFreq_days="${IMPACTS_MONITOR_FREQ_DAYS:-5}"
 adjMonitorFreq_days="${IMPACTS_ADJ_MONITOR_FREQ_DAYS:-5}"
@@ -491,6 +493,8 @@ example showing the command line to type. The one real assignment anywhere is
 | `IMPACTS_DURATION_DAYS` | setup submit scripts | Run length in days (DINO patches `nTimeSteps` at dT 1800; SOMA patches `endTime` at dT 1200) |
 | `IMPACTS_MONITOR_FREQ_DAYS` | setup submit scripts | Monitor frequency |
 | `IMPACTS_ADJ_MONITOR_FREQ_DAYS`, `IMPACTS_ADJ_DUMP_FREQ_DAYS` | adjoint submit scripts | Adjoint monitor and `ADJ*` dump frequency |
+| `IMPACTS_PICKUP_RUN_DIR`, `IMPACTS_PICKUP_ITER` | DINO adjoint submit scripts (`link_pickup` in `scripts/setup_params.sh`) | The run directory to link the pickup from, instead of the production spin-up 31203, and its iteration, instead of the staged namelist's `nIter0` |
+| `IMPACTS_ALLOW_EXACT_ADJOINT` | DINO adjoint submit scripts (`check_staged_namelists` in `scripts/setup_params.sh`) | `1` accepts a staged `data.autodiff` without the adjoint-mode switches DINO's adjoint otherwise requires (`useGMRediInAdMode=.FALSE.` with GM/Redi on, `useApproxAdvectionInAdMode=.TRUE.` with scheme 33); since 2026-09-12 |
 
 The committed default beside each read is the cheap regression configuration,
 not the production one; each setup's own README tabulates the defaults and the
@@ -530,7 +534,7 @@ is already sbatch's default — these overrides depend on it.
   `*_days` variable in the submitting shell became a namelist key.
 - **`-` versus `:-` is deliberate.** `IMPACTS_TEST_CASE` uses `${VAR-default}`,
   so an explicitly empty `IMPACTS_TEST_CASE=` selects the live `input*/data`;
-  `:-` would swallow that and hand you the committed variant instead. The
+  `:-` would swallow that and hand you the committed default instead. The
   duration and frequency variables use `:-`, where unset and empty should mean
   the same thing.
 
@@ -544,9 +548,13 @@ Exporting one of those is the trap above; exporting one of the former is the
 intended use.
 
 `nIter0` is in neither family. The start iteration is baked into whichever
-`data_<tag>` the test case selects, and the matching pickup is a hardcoded
-`ln -s` in the same submit script's `stage_pickups`. Changing the duration is
-safe; changing the starting point means editing both by hand.
+`data_<tag>` the test case selects. DINO's adjoint definitions link the
+matching pickup themselves (since 2026-09-12: `stage_pickups` calls
+`link_pickup`, which reads `nIter0` from the staged namelist and takes the
+pickup from `IMPACTS_PICKUP_RUN_DIR`, or from the production spin-up when that
+is unset). DINO's forward definition and the gyre's adjoint definition still
+carry a hardcoded `ln -s` in `stage_pickups`, so for those, changing the
+starting point means editing both by hand. Changing the duration is safe.
 
 ---
 
@@ -559,8 +567,8 @@ files, which do the work identically for every variant of every setup:
 
 | | Sourced by | Does |
 | --- | --- | --- |
-| [`lib/build_body.sh`](lib/build_body.sh) | every `scripts/build_*.sh` | machine profile and optfile check, `make CLEAN`, stock `genmake2` from the definition's `-mods` / `-adof` / `-tap_extra`, `make depend`, `make -j 8`, the generated-hook and dump-call assertions (adjoint), the definition's own checks, `build_info.txt` |
-| [`lib/submit_body.sh`](lib/submit_body.sh) | every `scripts/submit_*.sh` | namelist variant resolution, the `build_info.txt` checksum and run-token guard, run-directory naming, staging, sibling overrides, the definition's extra staging, the time-stepping patch of the staged copy, executable and record copy, pickups, the run, `run_timing.txt`, the definition's epilogue |
+| [`lib/build_body.sh`](lib/build_body.sh) | every `scripts/build_*.sh` | machine profile and optfile check, `make CLEAN`, stock `genmake2` from the definition's `-mods` / `-adof` / `-tap_extra`, `make depend`, `make -j 8`, the generated-hook, dump-call and compiled-name assertions (adjoint), the definition's own checks, `build_info.txt` |
+| [`lib/submit_body.sh`](lib/submit_body.sh) | every `scripts/submit_*.sh` | namelist variant resolution, the `build_info.txt` checksum and run-token guard, run-directory naming, staging, sibling overrides, the definition's extra staging, the setup's check of the staged namelists and the guards on the adjoint-mode switches, the time-stepping patch of the staged copy, executable and record copy, pickups, the run, `run_timing.txt`, the definition's epilogue |
 
 What a definition supplies is documented in each body's header. The short
 version: a build definition sets `SETUP_DIR`, `BUILD_DIR`, `BUILD_MODE`
@@ -573,8 +581,9 @@ sets `BUILD_DIR`, `RUN_MODE`, `PARALLEL`, `EXPECT_RUN_TOKEN`, `test_cases`,
 `duration_days`, the `*Freq_days` and the explicit `TIME_PARAMS` list, and may
 define `stage_extra`, `stage_pickups` and `post_run`. The per-setup constants
 both bodies read — `DELTA_T`, `DURATION_KEY` (`nTimeSteps` or `endTime`),
-`DAYS_PER_YEAR`, `HOOK_CHECKS`, `DUMP_CALLS`, and an optional
-`run_suffix_from_namelist` — live in the setup's `scripts/setup_params.sh`.
+`DAYS_PER_YEAR`, `HOOK_CHECKS`, `DUMP_CALLS`, and the optional
+`COMPILED_NAME_CHECKS`, `run_suffix_from_namelist` and `check_staged_namelists`
+— live in the setup's `scripts/setup_params.sh`.
 
 Both files are libraries: no execute bit, and each refuses to run unless
 sourced. Three things follow from the split:
@@ -596,7 +605,8 @@ sourced. Three things follow from the split:
 Adding a variant is one new definition file per side (build and submit) in
 the setup's `scripts/`. Adding a setup is a `scripts/setup_params.sh` plus its
 definitions; SOMA is the second consumer, with `DURATION_KEY=endTime`, a
-360-day year, a serial adjoint and two hook checks against DINO's four.
+360-day year, a serial adjoint and the same seven hook checks as DINO (and no
+`COMPILED_NAME_CHECKS`, `run_suffix_from_namelist` or `check_staged_namelists`).
 
 ---
 
@@ -612,21 +622,22 @@ source tools/machine_env.sh && impacts_check_env
 
 # 1. build the adjoint (the build script sources machine_env.sh itself)
 cd MITgcm_c69m/mysetups/DINO_1deg
-./scripts/build_tapAdj.sh               # -> build_tapAdj_nocheckpoint/mitgcmuv_tap_adj (symlink to the default variant)
+./scripts/build_tapAdj.sh               # -> build_tapAdj_ckpAll/mitgcmuv_tap_adj (symlink to the default variant)
 
-# 2. submit a cheap 30-day regression adjoint from the 180-yr pickup
-jid=$(IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh --parsable | tail -1)
+# 2. submit a cheap 5-day regression adjoint of the live namelist, from the 180-yr pickup
+jid=$(IMPACTS_DURATION_DAYS=5 ../../../tools/submit.sh scripts/submit_tapAdj.sh --parsable | tail -1)
 echo "submitted $jid"
 
 # 3. when it lands, bit-compare it against a run you trust
 R=$SCRATCH_ROOT/DINO_1deg_outputs/runs/adjoint
 ../../../tools/compare_adj_runs.sh --wait "$jid" \
-  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_30d_from180yrPk_visc2x_run31022" \
-  "$R/DINO_1deg_tapAdj_nocheckpoint_30d_from180yrPk_visc2x_run$jid"
-#   -> writes comparison_vs_..._run31022.txt into the new run directory,
+  "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31281" \
+  "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run$jid"
+#   -> writes comparison_vs_..._run31281.txt into the new run directory,
 #      which lands unfiled in runs/adjoint/ — move it into a campaign later
-#      (the run_token in the name comes from build_info.txt; the default
-#       build is nocheckpoint, bitwise identical to the ckpAll reference)
+#      (the run_token in the name comes from build_info.txt, the settings
+#       tokens after the duration from the staged namelist; 31281 is the
+#       default build's run of 2026-09-12, unfiled when this was written)
 #      exit 0 = every ADJ*/adxx* bit-identical, fc and %MON identical
 
 # 4. before pushing, check what in the tree is actually yours

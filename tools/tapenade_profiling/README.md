@@ -16,11 +16,11 @@ setup.
 | the plain adjoint, every call checkpointed | `build_tapAdj_ckpAll.sh` + `submit_tapAdj_ckpAll.sh` | none (Tapenade's default; was `build_tapAdj.sh` until 2026-09-02) |
 
 The first is a diagnostic. The second gives the plain adjoint, faster. It was
-**DINO's default adjoint from 2026-09-02 to 2026-09-10** (the default is now the
-`approxAdv` pair), and on 2026-09-12 its list was derived again for the current
-configuration and checked against the adjoint-mode switches (section 4). The
-plain build lives on as the `ckpAll` pair, the profiler's base and the timing
-baseline. `build_tapAdj_adjVisc.sh` does **not** carry the list: under the
+**DINO's default adjoint from 2026-09-02 to 2026-09-10** (then the `approxAdv`
+pair, and since 2026-09-12 the `ckpAll` pair), and on 2026-09-12 its list was
+derived again for the current configuration and checked against the
+adjoint-mode switches (section 4). The plain build, the `ckpAll` pair, is also
+the profiler's base and the timing baseline. `build_tapAdj_adjVisc.sh` does **not** carry the list: under the
 adjoint-mode viscosity boost the 2026-09-02 list was not equivalent to joint
 mode (run 31056 vs 31025 — `fc` identical, every sensitivity field different
 at order one; sections 2 and 4), so the boosted adjoint stays a `ckpAll` build.
@@ -391,6 +391,12 @@ pair is the test the rule needed: `temp_integrate`, `salt_integrate`,
 `gad_advection` and `gad_calc_rhs` read `useGMRedi` or the scheme switch and are
 split, below the checkpointed `thermodynamics`. The speed-up is smaller than
 2026-09-01's 1.50× by the 51 s the three checkpointed routines keep.
+
+After the builds were consolidated later on 2026-09-12 (the `approxAdv` build
+merged into `ckpAll`, and every DINO adjoint build compiles
+`code_tap/gad_implicit_r.F`), this build and the in-tree one were rebuilt:
+31285 against 31277 and 31284 against 31278, 5 days each, identical in every
+sensitivity file, `fc` and the `%MON` stream.
 
 ---
 

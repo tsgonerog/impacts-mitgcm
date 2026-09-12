@@ -27,7 +27,7 @@ per-machine sbatch flags.
 ### Adjoint model
 
 ```bash
-./scripts/build_tapAdj.sh                                # -> build_tapAdj_approxAdv/mitgcmuv_tap_adj (since 2026-09-10)
+./scripts/build_tapAdj.sh                                # -> build_tapAdj_ckpAll/mitgcmuv_tap_adj (since 2026-09-12)
 ../../../tools/submit.sh scripts/submit_tapAdj.sh        # 5 yr from the 180 yr pickup; scheme 33 forward sweep, scheme 30 adjoint sweep
 ```
 
@@ -39,11 +39,15 @@ holding anything else, so mixing them fails loudly instead of running a
 configuration you did not intend; the two tables below give the pairing.
 
 **The two unmarked adjoint names in `scripts/` are symlinks** (since 2026-09-02)
-to the default adjoint pair: since 2026-09-10 `build_tapAdj_approxAdv.sh` /
-`submit_tapAdj_approxAdv.sh` (scheme 33 in the forward sweep, scheme 30 in the
-adjoint sweep, every call checkpointed), from 2026-09-02 to 2026-09-10 the
-profile-guided `-nocheckpoint` pair. Repointing the two symlinks is how the
-default changes; every real script carries a token saying what it builds.
+to the default adjoint pair: since 2026-09-12 `build_tapAdj_ckpAll.sh` /
+`submit_tapAdj_ckpAll.sh` (every call checkpointed), from 2026-09-10 to
+2026-09-12 the `approxAdv` pair, which merged into it that day, and from
+2026-09-02 to 2026-09-10 the profile-guided `-nocheckpoint` pair. Which adjoint
+a run computes is set by `input_tap/data.autodiff`, not by the build: every
+adjoint build compiles the same scheme replacement, and the live switches keep
+scheme 33 in the forward sweep, scheme 30 in the adjoint sweep, and GM/Redi in
+the forward sweep only. Repointing the two symlinks is how the default changes;
+every real script carries a token saying what it builds.
 
 Always submit through `tools/submit.sh`, never bare `sbatch`: the wrapper adds
 the account, QOS, constraint and walltime flags that differ per machine and
@@ -110,13 +114,24 @@ which a change of starting point must follow by hand.
 | Script | Build directory | Executable |
 | --- | --- | --- |
 | `build_frd.sh` | `build_frd/` | `mitgcmuv` (forward only) |
-| `build_tapAdj.sh` → `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` — **the default** (symlink; `_approxAdv` since 2026-09-10, `_nocheckpoint` from 2026-09-02) |
+| `build_tapAdj.sh` → `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` — **the default** (symlink; `_ckpAll` since 2026-09-12, `_approxAdv` from 2026-09-10, `_nocheckpoint` from 2026-09-02) |
 | `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`: the `ckpAll` adjoint with less recomputation; the list re-derived on 2026-09-12 and checked against the adjoint-mode switches, see below; the default from 2026-09-02 to 2026-09-10) |
-| `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` (reference: every call checkpointed; was `build_tapAdj.sh` / `build_tapAdj/` until 2026-09-02) |
+| `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` (**the default since 2026-09-12**: every call checkpointed, Tapenade's default; also the reference for the other builds; was `build_tapAdj.sh` / `build_tapAdj/` until 2026-09-02) |
 | `build_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` | `mitgcmuv_tap_adj` (adjoint-mode viscosity boost, every call checkpointed — the list is not equivalent under the boost; see "Profiling and checkpoint tuning") |
-| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (**the default since 2026-09-10**: scheme 33 forward, scheme 30 in the adjoint sweep, every call checkpointed; `code_tap/variants/approxAdvection/` ahead of `code_tap/` adds the swap for implicit vertical advection, which the other adjoint builds lack — the horizontal and explicit vertical swap is in `mods_tapenade_hooks/` for every adjoint build since 2026-09-12; see "Scheme 30 or scheme 33" below) |
 | `build_tapAdj_profile.sh` | `build_tapAdj_profile/` | `mitgcmuv_tap_adj` (diagnostic: ckpAll + Tapenade checkpointing profiler) |
 | `build_tapAdj_hooksInTree.sh` | `build_tapAdj_hooksInTree/` | `mitgcmuv_tap_adj` (validation of the **in-tree** form of the hooks: built against a git copy of checkpoint69m outside this repository, `~/MITgcm_c69m_tapenade_hooks/MITgcm`, in which the files of `mods_tapenade_hooks/` are applied to the tree, with the shared directory left out; run 31107 bitwise identical to the default's 31101 on 2026-09-05 — see "The same mechanism from inside the tree" below) |
+
+`build_tapAdj_approxAdv.sh` / `submit_tapAdj_approxAdv.sh`, the default from
+2026-09-10 to 2026-09-12, were the `ckpAll` pair plus
+`code_tap/variants/approxAdvection/` as a first `-mods` directory, which held
+the MITgcm files carrying the `useApproxAdvectionInAdMode` replacement:
+`gad_implicit_r.F` and, until earlier on 2026-09-12, `gad_advection.F`. Once
+`gad_advection.F` was in `mods_tapenade_hooks/` and `gad_implicit_r.F` in
+`code_tap/`, every adjoint build compiled the same replacement (31281 against
+31259 on the live namelist; 31282 against 31279 with implicit vertical
+advection), so the scripts, the variant directory and the build directory were
+removed that day. Git history has the scripts, run 31279 keeps a copy of the
+executable, and the runs keep `tapAdj_ckpAll_approxAdv` in their names.
 
 The **unmarked** adjoint names are symlinks to the current default pair; every
 real adjoint script carries a token — `_<ckp>` (`nocheckpoint` / `ckpAll`) or
@@ -132,7 +147,7 @@ uses **stock** `genmake2` and the tree's stock Tapenade options: since the
 2026-08-31 dump-hook redesign no generated file is post-edited, and since
 2026-09-07 no hook file lives in this setup at all. The `ADJ*` dump calls, the
 `ADJetan` dump and the two adjoint-mode switches are generated by Tapenade
-from the seven files of `../../mods_tapenade_hooks/`, a directory shared with
+from the hook files of `../../mods_tapenade_hooks/` (seven of its eight), a directory shared with
 SOMA that the build body lists first in `-mods` and whose `flow_tap` it hands
 to Tapenade as a second external library through `-tap_extra` (its `README.md`
 maps each file to its place in the MITgcm tree; see "How the Tapenade hooks
@@ -145,7 +160,16 @@ argument count the hand-written routines declare (a scalar field hook 7, a
 vector pair 11, the etaN dump and the mode switches 5 each), that the compiled
 `dummy_tap.f` carries its five `ADJ*` dump calls, and that the compiled
 hook sources link into the shared directory; it fails loudly otherwise — F77
-would silently misalign a mismatch.
+would silently misalign a mismatch. Since 2026-09-12 it also fails a DINO
+adjoint build whose compiled `gad_advection.f`, `gad_advection_b.f`,
+`gad_implicit_r.f` or `gad_implicit_r_b.f` lacks `useApproxAdvectionInAdMode`
+(`COMPILED_NAME_CHECKS` in `scripts/setup_params.sh`): the shared directory's
+eighth file, `gad_advection.F`, supplies the scheme replacement for the
+horizontal and explicit vertical fluxes, and `code_tap/gad_implicit_r.F` for
+implicit vertical advection. `build_info.txt` records the latter as
+`approx_advection_implicit_vertical=yes`, which the submit body requires before
+it runs a namelist that sets the switch and advects tracers implicitly in the
+vertical.
 
 There is no `rawTapenade` control build any more: raw Tapenade output *is* the
 working configuration. (Since 2026-08-31 the same is true of SOMA, whose
@@ -167,22 +191,19 @@ shows `build_tapAdj.sh -> …`). Running `./scripts/build_tapAdj.sh` runs the
 target definition, which uses *its own* build directory, job name and run
 token — so repointing the link is the whole change. Always move the pair together; a build link on one variant and a
 submit link on another builds one executable and runs a different build
-directory.
+directory. The `approxAdv` pair, the default from 2026-09-10 to 2026-09-12, no
+longer exists (see "Build" above).
 
 ```bash
 cd MITgcm_c69m/mysetups/DINO_1deg/scripts
 
-# approxAdv — the default since 2026-09-10 (scheme 33 forward, scheme 30 adjoint sweep)
-ln -sfn build_tapAdj_approxAdv.sh  build_tapAdj.sh
-ln -sfn submit_tapAdj_approxAdv.sh submit_tapAdj.sh
+# checkpoint everything — the default since 2026-09-12 (and until 2026-09-02)
+ln -sfn build_tapAdj_ckpAll.sh  build_tapAdj.sh
+ln -sfn submit_tapAdj_ckpAll.sh submit_tapAdj.sh
 
 # nocheckpoint — the default from 2026-09-02 to 2026-09-10 (the ckpAll adjoint with less recomputation)
 ln -sfn build_tapAdj_nocheckpoint.sh  build_tapAdj.sh
 ln -sfn submit_tapAdj_nocheckpoint.sh submit_tapAdj.sh
-
-# checkpoint everything — the reference (the default until 2026-09-02)
-ln -sfn build_tapAdj_ckpAll.sh  build_tapAdj.sh
-ln -sfn submit_tapAdj_ckpAll.sh submit_tapAdj.sh
 
 # profiler — a diagnostic (30-day default, 2 % slower, writes tapenade_profile.*.txt)
 ln -sfn build_tapAdj_profile.sh  build_tapAdj.sh
@@ -235,13 +256,15 @@ three scripts (`parse_tapenade_profile.py`, `compare_adjoint_runs.py`,
 `compare_ensemble_ckpAll_vs_nocheckpoint.py`).
 
 **From 2026-09-02 to 2026-09-10 it was the default adjoint** (`build_tapAdj.sh`
-and `submit_tapAdj.sh` pointed at the `_nocheckpoint` pair; the default is now
-the `approxAdv` pair), and the checkpoint-everything build is
-`build_tapAdj_ckpAll.sh` / `submit_tapAdj_ckpAll.sh` (until then it *was*
-`build_tapAdj.sh`). The `ckpAll` pair stays for three reasons: the profiler
-must see every checkpoint (a profile of the tuned build would only show the
+and `submit_tapAdj.sh` pointed at the `_nocheckpoint` pair; then at the
+`approxAdv` pair, and since 2026-09-12 at the `ckpAll` pair), and the
+checkpoint-everything build is `build_tapAdj_ckpAll.sh` /
+`submit_tapAdj_ckpAll.sh` (until 2026-09-02 it *was* `build_tapAdj.sh`). The
+`ckpAll` pair would be kept even if it were not the default: the profiler must
+see every checkpoint (a profile of the tuned build would only show the
 residual), it is the fallback if a configuration change invalidates the list,
-and it is the timing baseline. The list is a profile of **one** configuration
+and it is the timing baseline. Whether the default returns to the
+`_nocheckpoint` pair is an open decision (`TODO.md`). The list is a profile of **one** configuration
 (since 2026-09-12 the live namelists — GM/Redi in the forward sweep, the
 approximate-advection switch, explicit vertical advection — with 27 ranks and
 this package set); the build's `_FWD` check catches a name that vanished, not a
@@ -265,8 +288,11 @@ live switches:** 31276 against the `approxAdv` build's 31269 (30 d,
 `stability_study/from180yrPk_viscRef_ReMax2_gmFwd`, same node) — all 786
 sensitivity files, `fc` and `%MON` identical, 8:24 against 11:53 (1.41×);
 31277 against 31259 (5 d, the live namelist) identical; the in-tree hooks'
-31278 against 31277 identical. The build has no swap for implicit vertical
-advection, which only the `approxAdv` build carries.
+31278 against 31277 identical. Since 2026-09-12 the build also compiles the
+replacement for implicit vertical advection (`code_tap/gad_implicit_r.F`), and
+its switch check, run on that build, still records the list as safe; the live
+namelist advects explicitly, and no run with implicit vertical advection has
+been compared in this build.
 
 The profiling build is a diagnostic — same numbers, 2 % slower — and compiles
 the plain sources without the list.
@@ -280,8 +306,7 @@ Commands are in **Quick start** above; this section covers what the scripts do.
 | Submit script | Uses build directory |
 | --- | --- |
 | `submit_frd.sh` | `build_frd/` |
-| `submit_tapAdj.sh` → `submit_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` (the default; a symlink since 2026-09-02, to `_approxAdv` since 2026-09-10) |
-| `submit_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` |
+| `submit_tapAdj.sh` → `submit_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` (the default; a symlink since 2026-09-02, to `_ckpAll` since 2026-09-12, to `_approxAdv` from 2026-09-10) |
 | `submit_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` |
 | `submit_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` (was `submit_tapAdj.sh` until 2026-09-02) |
 | `submit_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` |
@@ -319,10 +344,10 @@ with `<ckp>` = `nocheckpoint` | `ckpAll` and `<variant>` = `adjVisc` |
 `profile` when present. Both variant tokens were shortened on 2026-09-05
 (from `adjViscBoost` and `tapProfile`); runs made before that keep the older
 spellings on scratch and in their own `build_info.txt`, and were deliberately
-not renamed. So the default gives
-`DINO_1deg_tapAdj_nocheckpoint_5yr_from180yrPk_visc2x_run<jobid>`, the boost
-`DINO_1deg_tapAdj_ckpAll_adjVisc_…`, the reference
-`DINO_1deg_tapAdj_ckpAll_…` and the profiler `DINO_1deg_tapAdj_ckpAll_profile_…`;
+not renamed. So the default pair on the live namelist gives
+`DINO_1deg_tapAdj_ckpAll_5yr_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run<jobid>`,
+the split-mode build `DINO_1deg_tapAdj_nocheckpoint_…`, the boost
+`DINO_1deg_tapAdj_ckpAll_adjVisc_…` and the profiler `DINO_1deg_tapAdj_ckpAll_profile_…`;
 a forward run is `DINO_1deg_frd_…` under `runs/forward/`, its token `frd`.
 The `#SBATCH -J` name only names the log file. `<tag>` is the last
 component of `IMPACTS_TEST_CASE`; when that is **empty** (the live
@@ -330,9 +355,15 @@ component of `IMPACTS_TEST_CASE`; when that is **empty** (the live
 `<start>_<viscosity>` tokens from the namelist instead — `nIter0` →
 `from_rest` / `from<N>yrPk`, `viscAhDfile`/`viscAhZfile` → `viscRef` / `visc2x`
 / `viscD2x_Zref`, a scalar `viscAhGrid` → `viscGrid<value>`, anything else →
-`liveData` — so a run of the live namelist is named
-`…_30d_from_rest_viscRef_run<jobid>` rather than `…_30d_run<jobid>`, with the
-same vocabulary as the tagged variants (root README, "Namelist variants"). On
+`liveData`; then `_ReMax<v>` for `viscAhReMax`, `_adv<n>` for a
+`tempAdvScheme` other than 33, `_gmFwd` when `data.pkg` turns GM/Redi on while
+`data.autodiff` keeps it out of the adjoint sweep (since 2026-09-11), and
+`_approxAdv` when `data.autodiff` sets `useApproxAdvectionInAdMode` with scheme
+33 (since 2026-09-12; from 2026-09-10 the `approxAdv` build's run token said
+it) — so a 5-day run of the live namelist is named
+`…_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run<jobid>` rather than
+`…_5d_run<jobid>`, with the same vocabulary as the tagged variants (root
+README, "Namelist variants"). On
 2026-09-02 every existing adjoint run directory on scratch was renamed to this
 scheme: all runs
 up to 31053 were checkpoint-everything builds (checked with `nm` on each run's
@@ -355,6 +386,23 @@ delete the log of a *running* job: SLURM holds the file open, so the job keeps
 writing to the unlinked inode, which loses the trace without freeing the space
 until the job exits.
 
+**The submit body refuses an adjoint namelist without DINO's adjoint-mode
+switches** (since 2026-09-12). Once the namelists are staged it calls
+`check_staged_namelists` (`scripts/setup_params.sh`), which requires
+`useGMRediInAdMode=.FALSE.` in `data.autodiff` when `data.pkg` turns GM/Redi
+on, and `useApproxAdvectionInAdMode=.TRUE.` when `data` sets `tempAdvScheme` or
+`saltAdvScheme` to 33. DINO's adjoint is the approximate one by design, and
+since every adjoint build honours both switches, no build name can say which
+adjoint a run computes. An exact adjoint is a deliberate choice,
+`IMPACTS_ALLOW_EXACT_ADJOINT=1`; of the committed variants,
+`stability_study/from180yrPk_{visc2x,viscRef,viscRef_ReMax2}_gmOn` and
+`grdchk_repair/from180yrPk_viscRef_ReMax2_approxAdvOff_grdchkON` need it (run
+31283, the `viscRef_gmOn` record without it, was refused before the model
+started). The exact scheme-33 adjoint of the gradient check (31178, 31179) is
+now the `approxAdvOff` record with the override: `adv33` has no
+`data.autodiff` of its own, so it takes the live file's switch and gives the
+approximate adjoint in every build.
+
 `adjVisc` runs the adjoint with **larger viscosity and diffusivity than the
 forward** — the standard trick for stopping a long adjoint from blowing up.
 `viscFacInAd = 10.` against `viscFacInFw = 1.`, `inAdviscArNr = 2.E-3` against a
@@ -365,9 +413,17 @@ regional setup.
 It is a **build and a namelist variant**. The build compiles
 `code_tap/variants/adjointViscosity/` ahead of `code_tap/` (a second `-mods`
 directory, listed first — see the README there), which is what provides the
-`inAd*`/`outAd*` parameters at all; the submit script swaps
-`data.autodiff_adjointViscosity` in at run time, which is what sets them. **The two must be used together** — pairing the
-plain submit script with this build silently runs the ordinary configuration.
+`inAd*`/`outAd*` parameters at all; the submit script inserts the lines of
+`input_tap/variants/adjointViscosity/data.autodiff_additions` into the staged
+`data.autodiff`, before the end of `&AUTODIFF_PARM01`, which is what sets them.
+It refuses a staged `data.autodiff` that already sets one of those keys, and
+the adjoint-mode switches stay the staged namelist's, so the boosted adjoint is
+approximate in the same way as every other (since 2026-09-12; until then the
+script replaced the file with a full copy, `data.autodiff_adjointViscosity`,
+whose switches had to be kept in step by hand — 31286 with the additions
+reproduces 31271 with the copy in every sensitivity file). **The two must be
+used together** — every other submit script refuses this build's run token,
+and without the additions the `inAd*`/`outAd*` values are unset.
 
 **What the switches can reach (reviewed 2026-09-09).** The stock `viscFacInAd`
 multiplies **only** the `PARM05` `viscAh[D/Z]file` fields
@@ -387,7 +443,8 @@ step, so each must equal the forward namelist's value: until 2026-09-09
 namelists; the production namelists set no `viscAhGrid`) and `outAddiffKhT/S`
 were `0` (forward: `500`), so every boosted run up to 31138 replayed the
 forward with an extra `1.8E-2·L²/(4Δt)` of viscosity and no lateral tracer
-diffusion. Fixed in `data.autodiff_adjointViscosity`; run 31141 against 31138
+diffusion. Fixed in `data.autodiff_adjointViscosity` (whose boost lines are
+`data.autodiff_additions` since 2026-09-12); run 31141 against 31138
 (30 d from rest, same executable) measures what that changed — see `TODO.md`.
 Vertical diffusivity cannot be boosted through any `inAd*` scalar: under
 `ALLOW_3D_DIFFKR` the run-time diffusivity is the 3-D `diffKr` array
@@ -427,7 +484,7 @@ variable in your shell would silently become a namelist key.
 | `input*/variants/` | alternative namelists, grouped by purpose, each group with its own `README.md`; the submit script stages the selected `data_<tag>` plus any sibling sharing its tag |
 | `input_binaries/` | **untracked, 179 MB.** Produced outside this repo, except that `scripts/gen_viscAhD.py` regenerates every `dino_viscAhD*.bin` byte for byte (since 2026-09-09) and `dino_diffKr*.bin` are no longer read by any namelist |
 | `input_adj_binaries/` | **untracked.** `ones_64b.bin`, the uniform control weight every `data.ctrl` entry points at |
-| `build_*/` | **gitignored, reproducible.** One per build script: `build_frd/` and `build_tapAdj_{nocheckpoint,ckpAll,adjVisc,profile}/`; each carries the `build_info.txt` the submit body names run directories from |
+| `build_*/` | **gitignored, reproducible.** One per build script: `build_frd/` and `build_tapAdj_{ckpAll,nocheckpoint,adjVisc,profile,hooksInTree}/`; each carries the `build_info.txt` the submit body names run directories from |
 | `00_archive/` | superseded config in `code_tap/`, `input_tap/`, `scripts/`, mirroring the live dirs — nothing live reads it; has its own `README.md` |
 
 ## Namelists and variants
@@ -439,14 +496,14 @@ Alternatives live one level down, **grouped by what they are for**:
 ```
 input_tap/
 ├── data              <- the live namelist
-├── data.autodiff     <- ... and the other ten MITgcm reads
+├── data.autodiff     <- ... and the other nine files staged into every run
 ├── ...
 └── variants/
     ├── README.md                 the rule, and an index of the groups
-    ├── baseline/                 the config the committed default points at
+    ├── baseline/                 earlier baselines, kept as records
     │   └── data_from180yrPk_visc2x
     ├── viscosity_study/
-    ├── adjointViscosity/         data.autodiff_adjointViscosity
+    ├── adjointViscosity/         data.autodiff_additions (the lines the adjVisc submit script adds)
     ├── grdchk_repair/            gradient check on the sensitivity peak (passes; the
     │                             committed data.grdchk's point measures noise)
     └── kappa_v_ensemble/
@@ -471,7 +528,7 @@ tag stages its `data` *and* every sibling `<mitgcm-file>_<tag>` beside it, so on
 variant can change a package flag as well as the namelist:
 
 ```bash
-IMPACTS_TEST_CASE=scheme_tests/from_rest_viscRef_kppON \
+IMPACTS_TEST_CASE=stability_study/from170yrPk_viscRef_gmOff \
     ../../../tools/submit.sh scripts/submit_frd.sh      # stages data AND data.pkg
 ```
 
@@ -483,10 +540,11 @@ IMPACTS_TEST_CASE=kappa_v_ensemble/M3          ../../../tools/submit.sh scripts/
 IMPACTS_TEST_CASE=                             ../../../tools/submit.sh scripts/submit_tapAdj.sh   # live input_tap/data
 ```
 
-or change the committed default, the value `IMPACTS_TEST_CASE` falls back to:
+or change the committed default, the value `IMPACTS_TEST_CASE` falls back to
+(empty in every DINO submit definition, which selects the live `input*/data`):
 
 ```bash
-test_cases="${IMPACTS_TEST_CASE-baseline/from180yrPk_visc2x}"
+test_cases="${IMPACTS_TEST_CASE-}"
 ```
 
 A tag containing `/` resolves as `variants/<group>/data_<tag>`; a bare tag still
@@ -508,8 +566,9 @@ the variants were grouped (the `...` is `DINO_1deg_<run_token>_<duration>`, see
 `input_tap/` are staged into *every* run, so a stray one there becomes part of
 every configuration.
 
-Only the selected variant is copied to scratch, so a run directory contains the
-12 namelists MITgcm reads and nothing else.
+Only the selected variant is copied to scratch, so an adjoint run directory
+holds the 11 namelist files of `input_tap/` (12 until `data.kpp` was deleted on
+2026-09-12) and no others.
 
 ### Lateral viscosity and vertical diffusivity: file or parameter
 
@@ -600,7 +659,7 @@ found:
   build (the tracer-advection routines are in the `-nocheckpoint` list, where
   the forward sweep's taped control flow keeps the limiter) — built and
   validated on 2026-09-10 as `build_tapAdj_approxAdv.sh`, see the next
-  subsection.
+  subsection (since 2026-09-12 every adjoint build carries the change).
 
 ### Scheme 30 or scheme 33: what the tracer advection scheme does to the forward and to the adjoint (2026-09-10)
 
@@ -669,7 +728,10 @@ and all with the reference viscosity + `viscAhReMax=2.`:
   Tapenade** — `code_tap/variants/approxAdvection/` + `build_tapAdj_approxAdv.sh`
   / `submit_tapAdj_approxAdv.sh`, the stock `useApproxAdvectionInAdMode`
   made reachable (its guard is TAF-only, and the implicit vertical advection
-  never had the swap). On the M7 restart (31176 against the control 31166 and
+  never had the swap); since 2026-09-12 every adjoint build carries both
+  changes, the widened guard in `mods_tapenade_hooks/gad_advection.F` and the
+  implicit swap in `code_tap/gad_implicit_r.F`, and the `approxAdv` scripts are
+  gone. On the M7 restart (31176 against the control 31166 and
   the scheme-30 run 31167): `fc` byte-identical to the control, no blow-up,
   the adjoint fields within 1 % of the scheme-30 run's in rms and correlated
   with them at 0.999 (`adxx_theta`, `adxx_salt`; 0.991 for `adxx_diffkr`).
@@ -680,6 +742,9 @@ and all with the reference viscosity + `viscAhReMax=2.`:
   is a run-time branch re-evaluated only where the primal is re-run inside
   the backward sweep), so 1.5× the default's reverse-sweep time; with the
   switch off it reproduces the `ckpAll` adjoint to the last digit (31179).
+  (Since 2026-09-12 the `-nocheckpoint` build takes the switch too, its list
+  keeping checkpointed the routines recorded before the switch acts; see
+  "Profiling and checkpoint tuning".)
 
 So the choice was between two stable, validated configurations: **scheme 30
 in both** (the live `input*/data` from 2026-09-09 to 2026-09-10: exact adjoint of a smooth model, the
@@ -692,7 +757,8 @@ an exact, long-stable adjoint. **Decided 2026-09-10: scheme 33 in the forward
 model with the approximate adjoint**, because the sensitivity pathways are what
 matters and they are set by the realistic trajectory and a well-posed transport
 operator; the live `input*/data` carry scheme 33, the live `input_tap/data.autodiff`
-the switch, and `build_tapAdj.sh`/`submit_tapAdj.sh` point at the approxAdv pair.
+the switch, and `build_tapAdj.sh`/`submit_tapAdj.sh` pointed at the approxAdv pair
+(since 2026-09-12 at the `ckpAll` pair, which compiles the same replacement).
 **And one more change the campaign forced the same day: the vertical tracer
 advection is explicit** (`tempImplVertAdv = saltImplVertAdv = .FALSE.` in the
 live `input*/data`, the MITgcm default; this setup had run it implicitly since
@@ -759,14 +825,18 @@ Four files matter more than the rest when following how a sensitivity is produce
 
 Everything Tapenade-specific is delivered **without touching the vendored
 `MITgcm/` tree**, and since 2026-09-07 the hooks are not in this setup at all:
-they are the seven files of `MITgcm_c69m/mods_tapenade_hooks/`, one directory
+they are seven of the eight files of `MITgcm_c69m/mods_tapenade_hooks/`, one directory
 shared by DINO and SOMA that the build body (`tools/lib/build_body.sh`) lists
 first in `-mods` for every adjoint build. That directory is, file for file,
 the proposal for including the mechanism in MITgcm itself. Its `README.md`
 maps each file to its place in the tree and says what kind of change it is
 (a new file, or an existing file with lines added), and its
 `check_against_tree.sh` verifies that shape and generates the patch series
-in `patches/`. Read that README first; what follows is the setup's side.
+in `patches/`. Read that README first; what follows is the setup's side. The
+eighth file, `gad_advection.F` (since 2026-09-12, patch `0003`), is not a hook:
+it widens the guard of MITgcm's `useApproxAdvectionInAdMode` block from
+`ALLOW_AUTODIFF_TAMC` to `ALLOW_AUTODIFF`, so that the switch acts under
+Tapenade once the mode switches set `inAdMode`.
 
 **The problem being solved.** MITgcm's `ADJ*` dumps and its adjoint-mode
 parameter switching hang off no-op forward hooks (`DUMMY_IN_STEPPING`,
@@ -786,14 +856,15 @@ stock `adjoint_tap` options throughout):
 
 1. **The shared directory comes first in `-mods`.** `genmake2` links a file
    from an earlier `-mods` directory ahead of a same-named file anywhere
-   later, so the directory's four shadows (`forward_step.F`,
-   `integr_continuity.F`, `stubs_tap_adj.F`, `dummy_tap.F`) replace their tree
-   counterparts at build time, and its three new files
+   later, so the directory's five shadows (`forward_step.F`,
+   `integr_continuity.F`, `stubs_tap_adj.F`, `dummy_tap.F`, `gad_advection.F`)
+   replace their tree counterparts at build time, and its three new files
    (`dummy_in_stepping_tap.F`, `tapenade_ad_diff.list`, `flow_tap`) simply
    join the build. Each shadow carries the tree file's name and is the tree
-   file plus added lines — with two exceptions, `stubs_tap_adj.F`, whose five
-   `ADEXCH_*` stubs are replaced by implementations, and `dummy_tap.F`, whose
-   four empty stubs are removed — and the tree file is never edited. The upstream hooks and their TAF adjoints (`dummy_in_stepping.F`,
+   file plus added lines — with three exceptions, `stubs_tap_adj.F`, whose five
+   `ADEXCH_*` stubs are replaced by implementations, `dummy_tap.F`, whose
+   four empty stubs are removed, and `gad_advection.F`, whose one guard is
+   widened — and the tree file is never edited. The upstream hooks and their TAF adjoints (`dummy_in_stepping.F`,
    `addummy_in_stepping.F`, ...) compile untouched from the vendored tree;
    under Tapenade the TAF adjoints are dead code, as in the tree's own
    Tapenade verification builds.
@@ -871,14 +942,16 @@ before that change, and the validation runs of the move are in `TODO.md`.
 **The same mechanism from inside the tree.** To find out whether the
 mechanism can become an upstream change, it was integrated into a git copy of
 checkpoint69m outside this repository — `~/MITgcm_c69m_tapenade_hooks/MITgcm`,
-branch `tapenade-hooks`, four commits on the `checkpoint69m` tag, with the
+branch `tapenade-hooks`, five commits on the `checkpoint69m` tag (the fifth,
+`95ee6a696` of 2026-09-12, widens the `gad_advection.F` guard), with the
 verification results and the write-up beside it (copy of the write-up in the
 project notes, `references/tapenade_hooks/in_tree_integration_20260905.md`).
 `scripts/build_tapAdj_hooksInTree.sh` builds this setup against that tree
 with the shared directory left out (`HOOKS_MODS` empty), after asserting that
-the tree's seven hook files are byte-identical to the directory's; run 31107
-reproduced the default build's run 31101 bitwise (`fc`, 32 `adxx_*`, 73
-`ADJ*`, 441 `%MON` lines, `tools/compare_adj_runs.sh`). Non-Tapenade builds
+the tree's copies of the directory's eight files are byte-identical to it; run
+31107 reproduced the default build's run 31101 bitwise (`fc`, 32 `adxx_*`, 73
+`ADJ*`, 441 `%MON` lines, `tools/compare_adj_runs.sh`), and after the rebuild
+of 2026-09-12 run 31284 reproduces 31278 in every sensitivity file. Non-Tapenade builds
 of that tree preprocess to byte-identical sources, and its eight Tapenade
 verification experiments give the same testreport digits as the pristine
 tree. The vendored tree stays pristine; the `MITGCM_TREE` variable of the
@@ -888,13 +961,15 @@ build body is what points a build elsewhere.
 against the tree files they shadow or join;
 `../../mods_tapenade_hooks/check_against_tree.sh` does that mechanically, and
 its `patches/` are the diffs themselves. What is left in this setup to review
-the same way is the adjoint-viscosity variant:
+the same way is the adjoint-viscosity variant and the setup's own copies of
+tree files:
 
 | Setup file | Upstream counterpart (vimdiff target) | What the diff shows, and why |
 | --- | --- | --- |
 | `code_tap/variants/adjointViscosity/autodiff_inadmode_set_ad.F` | `../../MITgcm/pkg/autodiff/autodiff_inadmode_set_ad.F` | Upstream body + the ASTE-derived `inAd*` apply block (`viscArNr`, `viscAhGrid`, `diffKh*`, … declared in the `AUTODIFF_PARAMS.h` beside it). Compiled only by `build_tapAdj_adjVisc.sh`; a plain build uses the vendored file, unshadowed |
 | `code_tap/variants/adjointViscosity/autodiff_inadmode_unset_ad.F` | `../../MITgcm/pkg/autodiff/autodiff_inadmode_unset_ad.F` | Upstream body + the `outAd*` restore block — this half never existed anywhere before (it was unreachable dead code territory), so expect no ASTE original to diff against |
 | `code_tap/the_main_loop.F` | `../../MITgcm/model/src/the_main_loop.F` | Only the `C$AD BINOMIAL-CKP nTimeSteps+1 98 1` directive and its comment before the time loop, plus a canary in the non-adjoint branch. The tree has no such directive; it is a setup choice (memory), not part of the hooks proposal |
+| `code_tap/gad_implicit_r.F` | `../../MITgcm/pkg/generic_advdiff/gad_implicit_r.F` | The scheme argument renamed `advectionSchArg`, a local `advectionScheme` carrying the scheme used, and the `useApproxAdvectionInAdMode` replacement of scheme 33 by scheme 30 in adjoint mode, as `gad_advection.F` makes it for the horizontal fluxes. Compiled by every adjoint build since 2026-09-12; not proposed as a patch, because under `ALLOW_AUTODIFF` it would change TAF adjoints too |
 
 Two reading rules: every file carries its real MITgcm name and is the only
 copy of itself — the variant shadows sit in `code_tap/variants/adjointViscosity/`
@@ -909,7 +984,12 @@ more; `adcommon.h` archived in `00_archive/code_tap/` — its upstream twin
 Every file here is compiled as-is under its real MITgcm name; no build script
 copies anything into this directory (since 2026-09-02), so a build leaves
 `git status` clean. Since 2026-09-07 nothing here is about the hooks: what
-remains is the configuration of this setup. `variants/adjointViscosity/` is a
+remains is the configuration of this setup and, since 2026-09-12, one source
+change that is not a hook, `gad_implicit_r.F`. The copies of tree files here
+are listed in `TREE_BASE.txt` with the git blob of the tree file each was
+derived from; `tools/check_variant_shadows.sh`, run by
+`tools/pre_push_check.sh`, fails when one of those tree files changes under
+its copy. `variants/adjointViscosity/` is a
 further `-mods` directory that `build_tapAdj_adjVisc.sh` lists ahead of
 `code_tap/`; its README explains. The 2026-09-02 relocation reproduces the
 previous layout's runs bit for bit (31069 vs 31054 for the default build,
@@ -921,11 +1001,12 @@ previous layout's runs bit for bit (31069 vs 31054 for the default build,
 | `cost_atlantic_heat.F` | the cost function |
 | `tap_nocheckpoint.txt` | the routines `build_tapAdj_nocheckpoint.sh` and `build_tapAdj_hooksInTree.sh` pass to Tapenade's `-nocheckpoint` (split `_FWD`/`_BWD` mode instead of checkpointing), each annotated with its gain in profiling run 31268; the header says how the list was derived and why `thermodynamics`, `do_oceanic_phys` and `dynamics` stay checkpointed. `build_tapAdj_adjVisc.sh` deliberately does not use it — see "Profiling and checkpoint tuning" below |
 | `variants/adjointViscosity/` | (named `adjVisc/` until 2026-09-04; the build script, build directory and run token keep the old tag on purpose, because scratch run directories record it) the four ASTE-derived shadows of `pkg/autodiff` (`AUTODIFF_PARAMS.h`, `autodiff_readparms.F`, `autodiff_inadmode_set_ad.F`, `autodiff_inadmode_unset_ad.F`) that declare, read, apply and restore the `inAd*`/`outAd*` parameters; compiled only by `build_tapAdj_adjVisc.sh`, as its first `-mods` directory — see the README inside. A plain build compiles the vendored files |
-| `variants/approxAdvection/` | (since 2026-09-09) the shadow of `pkg/generic_advdiff/gad_implicit_r.F` that adds the `useApproxAdvectionInAdMode` scheme swap to the implicit vertical advection, which the vendored file never covered; compiled only by `build_tapAdj_approxAdv.sh`, as its first `-mods` directory — see the README inside. Until 2026-09-12 it also held the widened guard of `gad_advection.F`, which `mods_tapenade_hooks/` now gives every adjoint build |
+| `gad_implicit_r.F` | (here since 2026-09-12; from 2026-09-09 in `variants/approxAdvection/`, which only `build_tapAdj_approxAdv.sh` compiled) the shadow of `pkg/generic_advdiff/gad_implicit_r.F` that adds the `useApproxAdvectionInAdMode` replacement of scheme 33 by scheme 30 to the implicit vertical advection, which the vendored file never covered under any AD tool; compiled by every adjoint build, and dormant while `tempImplVertAdv`/`saltImplVertAdv` are `.FALSE.` (since 2026-09-10) |
+| `TREE_BASE.txt` | (since 2026-09-12) the tree file and git blob that each copy of a tree file here was derived from — `gad_implicit_r.F`, `the_main_loop.F`, `cost_atlantic_heat.F` — for `tools/check_variant_shadows.sh`; the setup's own headers and `tap_nocheckpoint.txt` are not listed |
 | `SIZE.h` | grid and decomposition (`nPx=3, nPy=9` over `sNx=17, sNy=22`); the one and only copy |
 | `CTRL_SIZE.h` | control-vector dimensions |
 | `DIAGNOSTICS_SIZE.h` | diagnostics buffer sizes |
-| `packages.conf` | which packages compile — drops `cd_code`, adds `tapenade` and the `adjoint` group (`autodiff, ctrl, cost, grdchk`) |
+| `packages.conf` | which packages compile — the forward model's list plus `tapenade` and the `adjoint` group (`autodiff, ctrl, cost, grdchk`); `kpp` (compiled until 2026-09-12) and `cd_code` (never compiled here) are commented out, as in `code/packages.conf`, each with what restoring it takes (see "`code/` and `input/`" below) |
 | `*_OPTIONS.h` | CPP flags per package, each the upstream c69m header with only `#define`/`#undef` toggles changed (vimdiff-clean). `COST_OPTIONS.h` is the one to check: it defines `ALLOW_COST_ATLANTIC_HEAT` and `..._DOMASS` |
 
 **The `ADEXCH_*` implementations moved with the hooks.** Upstream ships the
@@ -938,7 +1019,7 @@ channel (`i∈{1,2,50,51}`, `j≈13–44`), worst on U-grid fields. The
 implementation, with the same `EXCH2_*_CUBE_AD` routines the adjoint dynamics
 already uses, was this setup's `code_tap/stubs_tap_adj.F` from 2026-08-31 to
 2026-09-07 and is now `mods_tapenade_hooks/stubs_tap_adj.F`, the first of the
-two patches there. The dynamics never called the stubs, so this changes
+three patches there. The dynamics never called the stubs, so this changes
 *only* the dumps: validated 2026-08-31 (run 31022 vs 30994), `fc` and all 33
 `adxx_*` files bitwise identical, `ADJ*` differences confined to the seams.
 **`ADJ*` output written before job 31022 still carries the artifact** — treat
@@ -953,7 +1034,7 @@ Beyond the forward set, the adjoint adds four:
 | --- | --- |
 | `data.cost` | `mult_atl` — scales the cost function |
 | `data.ctrl` | which controls are optimised (`xx_theta`, `xx_salt`, `xx_diffkr`, wind stress, heat and freshwater flux) and their weight files — every `xx_*_weight` points at `ones_64b.bin` |
-| `data.autodiff` | checkpointing and adjoint-mode behaviour; `data.autodiff_adjointViscosity` is the inflated-viscosity variant, and a `data.autodiff` sibling with `useApproxAdvectionInAdMode=.TRUE.` (the `*_approxAdv*` tags) is what switches the `approxAdv` build's adjoint sweep to scheme 30 |
+| `data.autodiff` | adjoint-mode behaviour: the live file sets `useGMRediInAdMode=.FALSE.` and `useApproxAdvectionInAdMode=.TRUE.`, which every adjoint build honours and the submit body requires unless `IMPACTS_ALLOW_EXACT_ADJOINT=1` (see "Run"); `useKPPinAdMode` is a comment while KPP is not compiled. `variants/adjointViscosity/data.autodiff_additions` holds the lines the adjoint-viscosity submit script adds to it, and a sibling with `useApproxAdvectionInAdMode=.FALSE.` (the `*_approxAdvOff*` tags) gives the exact scheme-33 adjoint |
 | `data.grdchk` | the finite-difference gradient check: `grdchk_eps`, `grdchkvarname`, and the `iGloPos/jGloPos/kGloPos` point to perturb |
 
 Variants are selected by `test_cases` in a submit script as `<group>/<tag>`; see
@@ -963,9 +1044,59 @@ for the `<start>_<viscosity>` vocabulary.
 ### `code/` and `input/` — the forward model
 
 Much smaller: `SIZE.h`, `packages.conf`, `CPP_OPTIONS.h`, `DIAGNOSTICS_SIZE.h`,
-`GMREDI_OPTIONS.h`, `MOM_COMMON_OPTIONS.h`.
-`input/` holds `data` and the standard `data.pkg`, `data.diagnostics`,
-`data.exch2`; its alternatives live in `input/variants/<group>/`.
+`GMREDI_OPTIONS.h`, `MOM_COMMON_OPTIONS.h`. Since 2026-09-12 the three option
+headers are copies of `code_tap/`'s, so the forward model and the adjoint's
+forward sweep compile the same options; until then they were older headers
+that differed in a few toggles (`ALLOW_SRCG`, `DISABLE_SIGMA_CODE`,
+`GM_VISBECK_VARIABLE_K`, `GM_BOLUS_BVP`, the `GM_EXCLUDE_*` flags), none of
+which the live namelist exercises: the forward run 31280 (61 d from rest, with
+the new headers and without `kpp` and `cd_code`) is byte-identical to 31267,
+built before, in all 116 `.data`/`.meta` files and 237 `%MON` lines.
+`input/` holds `data` and the standard `data.pkg`, `data.gmredi`,
+`data.diagnostics`, `data.exch2` and `eedata`; its alternatives live in
+`input/variants/<group>/`.
+
+**Neither `kpp` nor `cd_code` is compiled since 2026-09-12**, here or in the
+adjoint. Both stay in `code/packages.conf` and `code_tap/packages.conf` as
+commented lines, each with a note on what restoring it takes.
+
+*KPP.* `useKPP` was `.FALSE.` in every DINO namelist, and no run on scratch
+used KPP. Its one variant (`scheme_tests/from_rest_viscRef_kppON`, `data` and
+`data.pkg`), `input/data.kpp`, `input_tap/data.kpp` and the archived script
+`00_archive/scripts/frd_submit_mpi_on_sv_debug_kppON.sh` were deleted (git
+history has them). The `useKPP` and `useMNC` lines of both `data.pkg` files and
+of the variant namelists are comments, because a flag set `.TRUE.` for a
+package that is not compiled stops the model at start-up, and so is
+`useKPPinAdMode` in `input_tap/data.autodiff`. In the adjoint KPP had carried
+four 3-D arrays in each of the 98 binomial snapshots, 85 MB of the drop in
+peak tape per process from 923 MB (profile 31053) to 837 MB (31268), and
+removing it changed no sensitivity (31270 ≡ 31259, 31269 ≡ 31234). To use KPP
+again: uncomment `kpp`, restore `data.kpp`, set `useKPP=.TRUE.` in `data.pkg`
+and comment out `ivdc_kappa` in `data`, since convective adjustment and KPP
+should not both act; for the adjoint, also decide `useKPPinAdMode` and
+re-profile the `-nocheckpoint` list, which was profiled without KPP.
+
+*The C-D scheme* computes the Coriolis terms from a second velocity carried on
+the D-grid, driven by the same tendencies and relaxed toward the C-grid
+velocity over `tauCD` (`pkg/cd_code/cd_code_scheme.F`). It is not a
+velocity-smoothing filter, which is what the comments in `packages.conf` and
+the namelists called it until 2026-09-12. `code/packages.conf` compiled it from
+2026-05-01 to 2026-09-12 for two forward variants that set
+`useCDscheme=.TRUE.`, `scheme_tests/from_rest_viscRef_CDscheme` and
+`viscosity_study/from_rest_viscGrid1p8e-2_A4Grid1p0e-2_CDscheme`, both deleted
+on 2026-09-12; the adjoint never compiled it. No run on scratch used the
+scheme: all 42 forward runs there on 2026-09-12, the spin-ups 30983 and 31203
+among them, log `pkg/cd_code compiled but not used`, and the one run of a C-D
+variant, the 200-year spin-up 28489 of May 2026, was never analysed and was
+deleted on 2026-09-03. With the flag off the package only copied `etaN` into
+its own `etaNm1` and halo-exchanged its own D-grid velocity, which nothing
+outside the package reads (31280 above). To use it: uncomment `cd_code` and
+set `useCDscheme=.TRUE.` (`PARM01`) and `tauCD` (`PARM03`) in `data`; a
+namelist with the flag set stops at start-up if the package is not compiled
+(`model/src/packages_check.F`), and an adjoint started from a pickup also
+needs one written with the scheme on, since a restart reads `pickup_cd.<iter>`
+(`pkg/cd_code/cd_code_ini_vars.F`). SOMA differs: there the adjoint uses the
+scheme and the forward model does not (`../SOMA_1deg/README.md`).
 
 ---
 
@@ -997,9 +1128,11 @@ finite difference measures run-to-run noise, not the perturbation, and fails by
 `iGloPos=2, jGloPos=127, kGloPos=26` with `grdchk_eps` around 1e-3. See
 "Verification status" in the root `README.md`.
 
-KPP is off (`input_tap/data.pkg`), which makes `useKPPinAdMode` in
-`data.autodiff` inert. GM/Redi is on in the forward sweep since 2026-09-11
-(`useGMRedi=.TRUE.` with the spin-up's `data.gmredi`) and kept out of the
-adjoint sweep by `useGMRediInAdMode=.FALSE.`, which is therefore live; only the
-`approxAdv` and `ckpAll` builds may run it, and the submit body refuses the
-`-nocheckpoint` builds.
+KPP is not compiled (see "`code/` and `input/`" above), so `useKPPinAdMode` is
+a comment in `data.autodiff`. GM/Redi is on in the forward sweep since
+2026-09-11 (`useGMRedi=.TRUE.` with the spin-up's `data.gmredi`) and kept out
+of the adjoint sweep by `useGMRediInAdMode=.FALSE.`, which is therefore live:
+every checkpoint-everything build honours it, and the `-nocheckpoint` builds
+since their list of 2026-09-12, which the build records as
+`nocheckpoint_switch_free=yes`; the submit body refuses a list build without
+that record.

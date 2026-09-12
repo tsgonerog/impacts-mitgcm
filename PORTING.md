@@ -87,7 +87,7 @@ on CFS (`/global/cfs/cdirs/<repo>/`), not scratch.
 
 ```bash
 cd MITgcm_c69m/mysetups/DINO_1deg
-./scripts/build_tapAdj.sh        # DINO: a symlink to the default variant, build_tapAdj_nocheckpoint.sh
+./scripts/build_tapAdj.sh        # DINO: a symlink to the default variant, build_tapAdj_ckpAll.sh
 ```
 
 No `export MPI_OPTFILE` needed — the profile supplies it. The build scripts call

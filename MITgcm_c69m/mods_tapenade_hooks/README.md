@@ -223,7 +223,8 @@ and this patch changes nothing, which is why it comes last.
 Everything in a setup's `code_tap/` is now configuration of that setup, not
 proposal material: the option headers, `SIZE.h`, `packages.conf`, the cost
 function with its compiled-in section, the `-nocheckpoint` routine list, the
-variant directories, and `the_main_loop.F` with the `C$AD BINOMIAL-CKP`
+variant directories, DINO's `gad_implicit_r.F` (see the end of this README), and
+`the_main_loop.F` with the `C$AD BINOMIAL-CKP`
 directive for the time loop. That directive is additive as well, but it is a
 separate matter from the hooks: the tree has no such directive anywhere, its
 verification experiments run with every step stored, and the snapshot count
@@ -315,7 +316,7 @@ runs the `--check` form.
 
 Three pull requests, in order: `0001` (implement the `ADEXCH_*` exchanges),
 `0002` (the hooks) and `0003` (the approximate-advection guard, which acts only
-once `0002` sets `inAdMode` under Tapenade). Both were prepared against checkpoint69m; the review of
+once `0002` sets `inAdMode` under Tapenade). All three were prepared against checkpoint69m; the review of
 checkpoint69q on 2026-09-05 found the Tapenade infrastructure unchanged, and
 the OpenAD removal in MITgcm pull request 1029 will touch the same files, so
 rebase after it has landed and regenerate the patches with
@@ -328,8 +329,9 @@ change or a later one.
 
 One related gap stays out of the series on purpose: the approximate-advection
 switch does not reach implicit vertical advection (`gad_implicit_r.F`), under
-any AD tool. DINO carries a local fix in
-`mysetups/DINO_1deg/code_tap/variants/approxAdvection/`; because under
+any AD tool. DINO carries a local fix, `mysetups/DINO_1deg/code_tap/gad_implicit_r.F`
+(in `code_tap/variants/approxAdvection/` from 2026-09-09 to 2026-09-12, and
+since then compiled by every DINO adjoint build); because under
 `ALLOW_AUTODIFF` it would change TAF adjoints as well, and no verification
 experiment combines scheme 33, implicit vertical advection and the switch, it
 goes to the maintainers as a question first (the issue text is drafted in the

@@ -3,7 +3,8 @@
 - [ ] **Production adjoint under the current setup** (kept on the list 2026-09-11,
   to start after the project cleanup): the 5-yr adjoint of the live `input_tap/`
   namelist, GM/Redi in the forward sweep (runs named `_gmFwd`), with the default
-  `approxAdv` pair, from the production spin-up 31203's year-180 pickup
+  pair (`ckpAll` since 2026-09-12, which compiles what the `approxAdv` pair
+  did), from the production spin-up 31203's year-180 pickup
   (`IMPACTS_PICKUP_RUN_DIR` at
   `runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203`,
   `IMPACTS_PICKUP_ITER=3162240`); about 14.5 h. It replaces 31204 (GM off,
@@ -19,11 +20,62 @@
   (2026-09-12). Under the live switches the nocheckpoint build now gives the
   `approxAdv` adjoint bit for bit at 1.41× on 30 d (31276 vs 31269), which by
   the 2026-09-02 ratio of 5-yr to 30-d speed-ups would bring a 5-yr adjoint
-  from about 14.5 h to about 10.5 h. Against it: it has no scheme swap for
-  implicit vertical advection (the live namelist advects explicitly; the submit
-  body refuses the combination), and its list must be re-profiled when the
-  physics or the switches change, which `approxAdv` never needs. Repointing is
-  `ln -sfn` of the two symlinks (setup README, "Switching the default adjoint").
+  from about 14.5 h to about 10.5 h; the `approxAdv` pair has since merged into
+  the default `ckpAll` pair (entry below). Against it: its list must be
+  re-profiled when the physics or the switches change, which `ckpAll` never
+  needs. (The other objection of the morning, that it had no scheme swap for
+  implicit vertical advection, went when `gad_implicit_r.F` moved into
+  `code_tap/`: the build compiles it and still records its list as safe, though
+  no run of it with implicit vertical advection has been compared.) Repointing
+  is `ln -sfn` of the two symlinks (setup README, "Switching the default
+  adjoint").
+- [x] **KPP and the C-D scheme out of DINO; the `approxAdv` build merged into
+  `ckpAll`** (2026-09-12, after the setup review below). (1) Configuration:
+  `kpp` and `cd_code` are compiled neither in the forward model nor in the
+  adjoint, and stay as commented lines in both `packages.conf` files with what
+  restoring each takes; `input/data.kpp`, `input_tap/data.kpp`, the variants
+  `scheme_tests/from_rest_viscRef_kppON` (`data`, `data.pkg`),
+  `scheme_tests/from_rest_viscRef_CDscheme` and
+  `viscosity_study/from_rest_viscGrid1p8e-2_A4Grid1p0e-2_CDscheme`, and
+  `00_archive/scripts/frd_submit_mpi_on_sv_debug_kppON.sh` were deleted (git
+  history has them; no run on scratch used KPP or the scheme); the `useKPP`,
+  `useMNC` and `useKPPinAdMode` lines of the live namelists and of 25 variant
+  files are comments with restore notes; `code/CPP_OPTIONS.h`,
+  `GMREDI_OPTIONS.h` and `MOM_COMMON_OPTIONS.h` are copies of `code_tap/`'s.
+  (2) Builds: `gad_implicit_r.F` moved from `code_tap/variants/approxAdvection/`
+  into `code_tap/`, listed in the new `code_tap/TREE_BASE.txt` that
+  `tools/check_variant_shadows.sh` checks, so the `approxAdv` build compiled
+  what `ckpAll` does; its scripts, variant directory and build directory were
+  removed (run 31279 keeps a copy of its executable), and
+  `build_tapAdj.sh`/`submit_tapAdj.sh` point at the `ckpAll` pair. Every
+  adjoint build fails unless its compiled `gad_advection` and `gad_implicit_r`,
+  primal and adjoint, carry `useApproxAdvectionInAdMode`
+  (`COMPILED_NAME_CHECKS`), and records `approx_advection_implicit_vertical=yes`,
+  on which the submit body's refusal for implicit vertical advection now keys;
+  `check_staged_namelists` refuses an adjoint namelist without
+  `useGMRediInAdMode=.FALSE.` (GM on) or `useApproxAdvectionInAdMode=.TRUE.`
+  (scheme 33) unless `IMPACTS_ALLOW_EXACT_ADJOINT=1`; a run of the live
+  namelist gains `_approxAdv` in its name. (3) `submit_tapAdj_adjVisc.sh`
+  inserts `input_tap/variants/adjointViscosity/data.autodiff_additions` into
+  the staged `data.autodiff` instead of replacing the file with
+  `data.autodiff_adjointViscosity` (deleted), so the boost takes the staged
+  switches. Every DINO build was rebuilt and run once, 5 d from 31203's
+  year-180 pickup unless stated: the forward 31280 (61 d from rest) against
+  31267, byte-identical in all 116 `.data`/`.meta` files and 237 `%MON` lines;
+  `ckpAll` 31281 against the `approxAdv` build's 31259 (live namelist);
+  `ckpAll` 31282 against 31279, the `approxAdv` build run on the same namelist
+  before its removal (`stability_study/from180yrPk_viscRef_ReMax2`, which
+  advects implicitly in the vertical); `nocheckpoint` 31285 against 31277;
+  `adjVisc` 31286 against 31271 (the full copy); `profile` 31287 against
+  31281; `hooksInTree` 31284 against 31278. In each adjoint pair all 186
+  sensitivity files are bit-identical, `fc` matches to every printed digit and
+  the 390 `%MON` lines are byte-identical; `tools/compare_adj_runs.sh` says
+  EQUIVALENT for 31287 and NOT CLEAN for the other five on the staged
+  namelists alone (`data`, `data.autodiff`: comment text and the commented-out
+  lines; in four, `data.kpp` present only in the reference). 31283
+  (`stability_study/from180yrPk_viscRef_gmOn` without the override) was
+  refused before the model started, and its staging directory deleted. The new
+  runs are not yet filed.
 - [x] **Setup review after the configuration changes** (2026-09-12). (1) The
   variant copies of tree files got a drift check: each
   `code_tap/variants/*/` and `tools/tapenade_profiling/mods_profile/` records
@@ -38,6 +90,8 @@
   without it; DINO 31262 and 31263 against 31259, SOMA 31265 against 31097 and
   the gyre 31266 against 31118 are all EQUIVALENT. (3) `gad_implicit_r.F` stays
   in the variant directory; the upstream issue is drafted in the project notes.
+  (Later the same day it moved into `code_tap/` and the `approxAdv` build
+  merged into `ckpAll`: the entry above.)
   Scripts and inputs: `kpp` left `code_tap/packages.conf` (31270 ≡ 31259 and
   31269 ≡ 31234 in every sensitivity file); every adjoint submit definition
   links the pickup at the staged `nIter0` (`link_pickup` in
@@ -117,7 +171,8 @@
   + `viscAhReMax=2.`, GM on, **explicit vertical tracer advection**; the
   adjoint keeps scheme 33 in its forward sweep and linearises about scheme 30
   in the adjoint sweep (`useApproxAdvectionInAdMode` in the live
-  `input_tap/data.autodiff`, the `approxAdv` build, now the default pair), GM
+  `input_tap/data.autodiff`, the `approxAdv` build, then the default pair and
+  merged into `ckpAll` on 2026-09-12), GM
   off (in the forward sweep since 2026-09-11, the entry above). Decided by the user on 2026-09-10 after the scheme study below: the
   pathways matter more than an exact gradient. First submitted 02:35 CDT
   (31180–31196) with the implicit vertical advection this setup had always

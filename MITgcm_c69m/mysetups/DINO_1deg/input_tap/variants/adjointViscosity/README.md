@@ -1,32 +1,50 @@
 # `adjointViscosity/` — inflated viscosity during the adjoint sweep
 
-`data.autodiff_adjointViscosity` sets a **larger viscosity and diffusivity in the
-adjoint sweep than in the forward**: `viscFacInAd = 10.` against
-`viscFacInFw = 1.`, `inAdviscArNr = 2.E-3` against a forward `1.2E-4`, plus
-added `inAddiffKhT/S`. The `outAd*` values restore the forward settings on the
-way out. It is the standard trick for keeping a long adjoint from blowing up,
-and the values were adapted from the ASTE 90×150×60 regional setup.
+`data.autodiff_additions` holds the lines that set a **larger viscosity and
+diffusivity in the adjoint sweep than in the forward**: `viscFacInAd = 10.`
+against `viscFacInFw = 1.`, `inAdviscArNr = 2.E-3` against a forward `1.2E-4`,
+plus `inAddiffKhT/S` (equal to the forward values). The `outAd*` values restore
+the forward settings on the way out. It is the standard trick for keeping a
+long adjoint from blowing up, and the values were adapted from the ASTE
+90×150×60 regional setup.
 
 **This is a build *and* a namelist variant, and the two must be used together.**
 
 | Piece | Supplies |
 | --- | --- |
 | `build_tapAdj_adjVisc.sh` | compiles `code_tap/variants/adjointViscosity/` ahead of `code_tap/` (its first `-mods` directory; see the README there), which is what makes the `inAd*`/`outAd*` parameters exist at all |
-| `submit_tapAdj_adjVisc.sh` | copies this file over `data.autodiff` in the staged run directory, which is what gives them values |
+| `submit_tapAdj_adjVisc.sh` | inserts this file's lines into the staged `data.autodiff`, before the line that closes `&AUTODIFF_PARM01`, which is what gives them values |
 
-Pairing the plain submit script with the adjVisc build, or the reverse,
-silently runs the ordinary configuration.
+Each submit script names the run token of its build (`EXPECT_RUN_TOKEN`, since
+2026-09-05), so pairing the plain submit script with the adjVisc build, or the
+reverse, is refused; before that it silently ran the ordinary configuration.
+
+**The file adds to the staged `data.autodiff`; it does not replace it** (since
+2026-09-12). `stage_extra` in the submit script runs once the namelist and its
+siblings are staged, so the adjoint-mode switches (`useGMRediInAdMode`,
+`useApproxAdvectionInAdMode`) are those of the live `input_tap/data.autodiff`
+or of the chosen variant's sibling, and the boost cannot drift from them. A
+staged `data.autodiff` that already sets one of the file's parameters is
+refused, because a namelist that names a key twice silently takes one of the
+two values. The file is not a namelist by itself and is not selected through
+`IMPACTS_TEST_CASE`; the submit script adds it by name to whichever variant is
+chosen. Until 2026-09-12 the variant was a complete `data.autodiff`,
+`data.autodiff_adjointViscosity`, copied over the staged one, whose switches
+had to be kept in step with the live file by hand (git history has it). Run
+31286 (the additions, rebuilt build) against 31271 (the full copy; both 5 d of
+the live namelist) is identical in all 186 sensitivity files, `fc` and the 390
+`%MON` lines; only the text of the staged `data` and `data.autodiff` differs.
 
 The build checkpoints every call, like `build_tapAdj_ckpAll.sh`, and its run
 directories are named `DINO_1deg_tapAdj_ckpAll_adjVisc_…`. It deliberately
-does **not** carry the default build's `-nocheckpoint` list: tried on
-2026-09-02 (run 31056 vs 31025), the split-mode boost differs at order one in
-every sensitivity field, because joint-mode recomputation happens after the
-mode-switch hook has boosted the viscosities and split-mode tapes were taken
-before — see `../../README.md`, "Profiling and checkpoint tuning".
-
-This file is *not* selected through `IMPACTS_TEST_CASE`; the submit script
-copies it by name, independently of whichever `data` variant is chosen.
+does **not** carry the `-nocheckpoint` list of `build_tapAdj_nocheckpoint.sh`:
+tried on 2026-09-02 (run 31056 vs 31025), the split-mode boost differs at order
+one in every sensitivity field, because joint-mode recomputation happens after
+the mode-switch hook has boosted the viscosities and split-mode tapes were
+taken before — see `../../../README.md`, "Profiling and checkpoint tuning". That
+list split `dynamics` and `thermodynamics`, which are recorded before the boost
+acts; the list of 2026-09-12 keeps both checkpointed, but no build combines it
+with the boost.
 
 ## What each switch reaches, and the 2026-09-09 fix
 

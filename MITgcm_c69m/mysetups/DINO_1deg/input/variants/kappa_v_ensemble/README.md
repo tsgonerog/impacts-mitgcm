@@ -10,7 +10,8 @@ reference viscosity files, `viscAhReMax=2.`, the flux-limited scheme 33 — i.e.
 and the vertical advection (explicit) changed; `REF_ReMax2` is the κ = 1.2e-5
 member, needed because 31164 ran the implicit form. The
 matching adjoints are `../../../input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2`,
-run with the default (approxAdv) pair from each leg's year-180 pickup. The
+run with the default pair of that day (`approxAdv`, merged into `ckpAll` on
+2026-09-12) from each leg's year-180 pickup. The
 bare `M<k>` files below are the 2026-08 members at 2× viscosity (runs
 30996–31002), kept as the record of that campaign.
 
