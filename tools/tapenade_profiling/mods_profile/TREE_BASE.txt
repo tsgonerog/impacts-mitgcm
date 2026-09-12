@@ -1,0 +1,10 @@
+# Tree files the copies in this directory shadow, and the git blob of each tree
+# file they were derived from (checkpoint69m). tools/check_variant_shadows.sh,
+# run by tools/pre_push_check.sh, fails when a tree file changes under its copy:
+# re-derive the copy from the new tree file, then
+#     tools/check_variant_shadows.sh --record <this directory>
+#
+# file                         tree path under MITgcm_c69m/MITgcm            blob
+the_model_main.F               model/src/the_model_main.F                    df3c3ba9c6aca451f09ff5eb947408805f1aa8a6
+adProfile.c                    -   the installed Tapenade 3.16 ADFirstAidKit; the tree's tools/TAP_support/ADFirstAidKit copy is older and API-incompatible
+adProfile.h                    -   the installed Tapenade 3.16 ADFirstAidKit, as adProfile.c

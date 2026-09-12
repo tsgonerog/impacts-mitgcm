@@ -91,6 +91,20 @@ else
 fi
 
 echo
+echo "── setup-local copies of tree files ─────────────────────────────────"
+# The variant directories (code_tap/variants/*/) and the profiler's mods_profile/
+# hold whole copies of tree files. Each lists in TREE_BASE.txt the tree file and
+# git blob it was derived from, so that a checkpoint upgrade cannot leave them
+# silently compiling the old checkpoint's text.
+if out=$(tools/check_variant_shadows.sh 2>&1); then
+    ok "every variant copy names a tree file that has not changed under it"
+else
+    bad "tools/check_variant_shadows.sh failed:"
+    printf "%s\n" "$out" | grep 'FAIL' | sed 's/^/       /'
+    printf "        ${dim}re-derive the copy from the new tree file, then tools/check_variant_shadows.sh --record <dir>${off}\n"
+fi
+
+echo
 echo "── notebook scratch paths ───────────────────────────────────────────"
 python3 - <<'PY'
 import json, glob, re, os, sys

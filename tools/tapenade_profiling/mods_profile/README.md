@@ -10,8 +10,10 @@ A `genmake2 -mods` directory, listed **before** a setup's `code_tap/` by
 
 Nothing here is setup-specific: the same directory serves SOMA (drop `-mpi`
 and use `$SERIAL_OPTFILE`, as its build scripts do). It must contain only
-these sources plus this README — genmake2 treats every `*.[hcF]`/`*.F90`
-file in a `-mods` directory as a source to compile.
+these sources plus this README and `TREE_BASE.txt` — genmake2 treats every
+`*.[hcF]`/`*.F90` file in a `-mods` directory as a source to compile.
+`TREE_BASE.txt` records the tree blob `the_model_main.F` was derived from;
+`tools/check_variant_shadows.sh` fails when that tree file changes.
 
 Keep `adProfile.c` in step with the installed Tapenade: if `tapenade -version`
 changes, re-diff against `$TAPENADE_HOME/ADFirstAidKit/adProfile.c`.

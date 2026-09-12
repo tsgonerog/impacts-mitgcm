@@ -1,0 +1,14 @@
+# Tree files the copies in this directory shadow, and the git blob of each tree
+# file they were last reviewed against (checkpoint69m). The copies came from the
+# ASTE setup rather than from these tree files, so they differ from them by more
+# than a few lines; the blob records the tree version they were checked to be
+# compatible with. tools/check_variant_shadows.sh, run by
+# tools/pre_push_check.sh, fails when a tree file changes: carry the change into
+# the copy, then
+#     tools/check_variant_shadows.sh --record <this directory>
+#
+# file                         tree path under MITgcm_c69m/MITgcm            blob
+AUTODIFF_PARAMS.h              pkg/autodiff/AUTODIFF_PARAMS.h                58a3b4041552408653e56d8caee8cbb4d59d4ba5
+autodiff_readparms.F           pkg/autodiff/autodiff_readparms.F             0a4a6f72bb742f68b391c47fc2205134b1c7dc09
+autodiff_inadmode_set_ad.F     pkg/autodiff/autodiff_inadmode_set_ad.F       b0bc771f23c1e3b19fa423d43b4dc3aa09ea0760
+autodiff_inadmode_unset_ad.F   pkg/autodiff/autodiff_inadmode_unset_ad.F     4706d8eeb94f04c2f9a50fc166d0678be6f64c9e

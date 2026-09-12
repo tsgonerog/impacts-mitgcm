@@ -1,0 +1,9 @@
+# Tree files the copies in this directory shadow, and the git blob of each tree
+# file they were derived from (checkpoint69m). tools/check_variant_shadows.sh,
+# run by tools/pre_push_check.sh, fails when a tree file changes under its copy:
+# re-derive the copy from the new tree file, then
+#     tools/check_variant_shadows.sh --record <this directory>
+#
+# file                         tree path under MITgcm_c69m/MITgcm            blob
+gad_advection.F                pkg/generic_advdiff/gad_advection.F           a735fb6378bbcc4ec25ef60d95d77972343862ac
+gad_implicit_r.F               pkg/generic_advdiff/gad_implicit_r.F          5b82ef13d4720a0d53929a2cb2ad054e809233c7

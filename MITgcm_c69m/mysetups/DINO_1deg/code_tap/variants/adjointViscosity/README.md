@@ -71,3 +71,10 @@ scratch cleanup; the surviving link in the chain is **31075**
 `comparison_vs_…run31070.txt` records 31075 ≡ 31070, and 31025 is still on
 scratch under `runs/adjoint/adjViscBoost/`. So 31025 ≡ 31070 ≡ 31075 is
 reconstructible from what is left.
+
+**Tracking the tree (since 2026-09-12).** `TREE_BASE.txt` names the four
+`pkg/autodiff` files these copies stand in for and the git blob of each that
+they were last checked against. They came from ASTE, not from those blobs, so
+they differ by more than a few lines; `tools/check_variant_shadows.sh` (run by
+`tools/pre_push_check.sh`) fails when any of the four tree files changes, which
+is the moment to carry the change into the copy.

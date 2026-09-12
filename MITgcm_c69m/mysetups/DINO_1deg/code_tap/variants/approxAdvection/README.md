@@ -10,11 +10,16 @@ the adjoint of a flux limiter is not a well-behaved transport operator
 up the long adjoints (`input_tap/variants/stability_study/`, runs 31166/31167,
 2026-09-09). ECCO itself does not need the switch: its v4 forward model runs
 the unlimited scheme 30 outright (`tempAdvScheme=saltAdvScheme=30`, vertical
-scheme 3 implicit, in the ECCOv4 Release 4 `namelist/data`), which is also
-the live `input*/data` here since 2026-09-09; this variant is the route for
-keeping scheme 33 in the forward model instead. The namelist half is the
-`data.autodiff` sibling of whichever variant sets `useApproxAdvectionInAdMode
-= .TRUE.`; the live `input_tap/data.autodiff` does not set it.
+scheme 3 implicit, in the ECCOv4 Release 4 `namelist/data`), as this setup's
+live `input*/data` did from 2026-09-09 to 2026-09-10; this variant is the route
+for keeping scheme 33 in the forward model instead, which the live
+`input*/data` have done since 2026-09-10. The namelist half is
+`useApproxAdvectionInAdMode = .TRUE.` in `data.autodiff`, which the live
+`input_tap/data.autodiff` sets.
+
+`TREE_BASE.txt` lists the tree file and git blob each copy here was derived
+from; `tools/check_variant_shadows.sh` (run by `tools/pre_push_check.sh`)
+fails when either tree file changes under its copy.
 
 `build_tapAdj_approxAdv.sh` compiles these by listing this directory *first*
 in `genmake2 -mods`, exactly as `build_tapAdj_adjVisc.sh` does for
