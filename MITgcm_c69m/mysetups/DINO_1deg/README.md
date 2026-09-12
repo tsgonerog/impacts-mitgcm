@@ -38,13 +38,12 @@ names the `run_token` it expects and the shared body refuses a build directory
 holding anything else, so mixing them fails loudly instead of running a
 configuration you did not intend; the two tables below give the pairing.
 
-**The two unmarked adjoint names in `scripts/` are symlinks** (since 2026-09-02) to
-`build_tapAdj_nocheckpoint.sh` / `submit_tapAdj_nocheckpoint.sh`, the default
-adjoint: Tapenade's profile-guided `-nocheckpoint` build, bitwise identical to
-the checkpoint-everything one and 1.5× faster. The previous default lives on
-as `build_tapAdj_ckpAll.sh` / `submit_tapAdj_ckpAll.sh`. Repointing the two
-symlinks is how the default changes; every real script carries a token saying
-what it builds.
+**The two unmarked adjoint names in `scripts/` are symlinks** (since 2026-09-02)
+to the default adjoint pair: since 2026-09-10 `build_tapAdj_approxAdv.sh` /
+`submit_tapAdj_approxAdv.sh` (scheme 33 in the forward sweep, scheme 30 in the
+adjoint sweep, every call checkpointed), from 2026-09-02 to 2026-09-10 the
+profile-guided `-nocheckpoint` pair. Repointing the two symlinks is how the
+default changes; every real script carries a token saying what it builds.
 
 Always submit through `tools/submit.sh`, never bare `sbatch`: the wrapper adds
 the account, QOS, constraint and walltime flags that differ per machine and
@@ -112,10 +111,10 @@ which a change of starting point must follow by hand.
 | --- | --- | --- |
 | `build_frd.sh` | `build_frd/` | `mitgcmuv` (forward only) |
 | `build_tapAdj.sh` → `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` — **the default** (symlink; `_approxAdv` since 2026-09-10, `_nocheckpoint` from 2026-09-02) |
-| `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`; see below; the default until 2026-09-10 — it cannot honour the adjoint-sweep scheme switch of the live `data.autodiff`) |
+| `build_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` | `mitgcmuv_tap_adj` (profile-guided `-nocheckpoint`: the `ckpAll` adjoint with less recomputation; the list re-derived on 2026-09-12 and checked against the adjoint-mode switches, see below; the default from 2026-09-02 to 2026-09-10) |
 | `build_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` | `mitgcmuv_tap_adj` (reference: every call checkpointed; was `build_tapAdj.sh` / `build_tapAdj/` until 2026-09-02) |
 | `build_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` | `mitgcmuv_tap_adj` (adjoint-mode viscosity boost, every call checkpointed — the list is not equivalent under the boost; see "Profiling and checkpoint tuning") |
-| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (**the default since 2026-09-10**: scheme 33 forward, scheme 30 in the adjoint sweep: `code_tap/variants/approxAdvection/` ahead of `code_tap/`, every call checkpointed because the switch is a run-time branch; see "Scheme 30 or scheme 33" below) |
+| `build_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` | `mitgcmuv_tap_adj` (**the default since 2026-09-10**: scheme 33 forward, scheme 30 in the adjoint sweep, every call checkpointed; `code_tap/variants/approxAdvection/` ahead of `code_tap/` adds the swap for implicit vertical advection, which the other adjoint builds lack — the horizontal and explicit vertical swap is in `mods_tapenade_hooks/` for every adjoint build since 2026-09-12; see "Scheme 30 or scheme 33" below) |
 | `build_tapAdj_profile.sh` | `build_tapAdj_profile/` | `mitgcmuv_tap_adj` (diagnostic: ckpAll + Tapenade checkpointing profiler) |
 | `build_tapAdj_hooksInTree.sh` | `build_tapAdj_hooksInTree/` | `mitgcmuv_tap_adj` (validation of the **in-tree** form of the hooks: built against a git copy of checkpoint69m outside this repository, `~/MITgcm_c69m_tapenade_hooks/MITgcm`, in which the files of `mods_tapenade_hooks/` are applied to the tree, with the shared directory left out; run 31107 bitwise identical to the default's 31101 on 2026-09-05 — see "The same mechanism from inside the tree" below) |
 
@@ -177,7 +176,7 @@ cd MITgcm_c69m/mysetups/DINO_1deg/scripts
 ln -sfn build_tapAdj_approxAdv.sh  build_tapAdj.sh
 ln -sfn submit_tapAdj_approxAdv.sh submit_tapAdj.sh
 
-# nocheckpoint — the default from 2026-09-02 to 2026-09-10 (exact adjoint; use with a scheme-30 namelist)
+# nocheckpoint — the default from 2026-09-02 to 2026-09-10 (the ckpAll adjoint with less recomputation)
 ln -sfn build_tapAdj_nocheckpoint.sh  build_tapAdj.sh
 ln -sfn submit_tapAdj_nocheckpoint.sh submit_tapAdj.sh
 
@@ -258,11 +257,13 @@ Commands are in **Quick start** above; this section covers what the scripts do.
 | Submit script | Uses build directory |
 | --- | --- |
 | `submit_frd.sh` | `build_frd/` |
-| `submit_tapAdj.sh` → `submit_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` (the default; symlink since 2026-09-02) |
+| `submit_tapAdj.sh` → `submit_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` (the default; a symlink since 2026-09-02, to `_approxAdv` since 2026-09-10) |
+| `submit_tapAdj_approxAdv.sh` | `build_tapAdj_approxAdv/` |
 | `submit_tapAdj_nocheckpoint.sh` | `build_tapAdj_nocheckpoint/` |
 | `submit_tapAdj_ckpAll.sh` | `build_tapAdj_ckpAll/` (was `submit_tapAdj.sh` until 2026-09-02) |
 | `submit_tapAdj_adjVisc.sh` | `build_tapAdj_adjVisc/` |
 | `submit_tapAdj_profile.sh` | `build_tapAdj_profile/` (30-day default; writes `tapenade_profile.NNNN.txt`) |
+| `submit_tapAdj_hooksInTree.sh` | `build_tapAdj_hooksInTree/` |
 
 **The run directory is named from the build, not from the submit script.**
 The shared submit body (`tools/lib/submit_body.sh`, which every submit
@@ -895,9 +896,9 @@ previous layout's runs bit for bit (31069 vs 31054 for the default build,
 | --- | --- |
 | `the_main_loop.F` | differentiation head, see above; the shadow of `model/src/the_main_loop.F` whose only addition is the binomial checkpointing directive for the time loop |
 | `cost_atlantic_heat.F` | the cost function |
-| `tap_nocheckpoint.txt` | the routines `build_tapAdj_nocheckpoint.sh` (the default) passes to Tapenade's `-nocheckpoint` — `build_tapAdj_adjVisc.sh` deliberately does not (see "Profiling and checkpoint tuning") (split `_FWD`/`_BWD` mode instead of checkpointing), each annotated with the profiling-run gain that put it there — see "Profiling and checkpoint tuning" below |
+| `tap_nocheckpoint.txt` | the routines `build_tapAdj_nocheckpoint.sh` and `build_tapAdj_hooksInTree.sh` pass to Tapenade's `-nocheckpoint` (split `_FWD`/`_BWD` mode instead of checkpointing), each annotated with its gain in profiling run 31268; the header says how the list was derived and why `thermodynamics`, `do_oceanic_phys` and `dynamics` stay checkpointed. `build_tapAdj_adjVisc.sh` deliberately does not use it — see "Profiling and checkpoint tuning" below |
 | `variants/adjointViscosity/` | (named `adjVisc/` until 2026-09-04; the build script, build directory and run token keep the old tag on purpose, because scratch run directories record it) the four ASTE-derived shadows of `pkg/autodiff` (`AUTODIFF_PARAMS.h`, `autodiff_readparms.F`, `autodiff_inadmode_set_ad.F`, `autodiff_inadmode_unset_ad.F`) that declare, read, apply and restore the `inAd*`/`outAd*` parameters; compiled only by `build_tapAdj_adjVisc.sh`, as its first `-mods` directory — see the README inside. A plain build compiles the vendored files |
-| `variants/approxAdvection/` | (since 2026-09-09) shadows of `pkg/generic_advdiff/gad_advection.F` (the `useApproxAdvectionInAdMode` block's CPP guard widened from `ALLOW_AUTODIFF_TAMC`, TAF only, to `ALLOW_AUTODIFF`) and `gad_implicit_r.F` (the same scheme swap added for the implicit vertical advection, which the vendored file never covered); compiled only by `build_tapAdj_approxAdv.sh`, as its first `-mods` directory — see the README inside |
+| `variants/approxAdvection/` | (since 2026-09-09) the shadow of `pkg/generic_advdiff/gad_implicit_r.F` that adds the `useApproxAdvectionInAdMode` scheme swap to the implicit vertical advection, which the vendored file never covered; compiled only by `build_tapAdj_approxAdv.sh`, as its first `-mods` directory — see the README inside. Until 2026-09-12 it also held the widened guard of `gad_advection.F`, which `mods_tapenade_hooks/` now gives every adjoint build |
 | `SIZE.h` | grid and decomposition (`nPx=3, nPy=9` over `sNx=17, sNy=22`); the one and only copy |
 | `CTRL_SIZE.h` | control-vector dimensions |
 | `DIAGNOSTICS_SIZE.h` | diagnostics buffer sizes |

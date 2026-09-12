@@ -448,15 +448,16 @@ missing. What you do copy from by hand is the rest: the `c69f_originals/`
   `mods_profile/` directory, which supplies the installed Tapenade's
   `adProfile.c` and an instrumented `the_model_main.F`) and how recomputation
   is traded for memory (`build_tapAdj_nocheckpoint.sh`: `-tap_extra
-  '-nocheckpoint "…"'` with the 33-routine list in
-  `code_tap/tap_nocheckpoint.txt` — the DINO default since 2026-09-02, bitwise
-  identical to the checkpoint-everything build and 1.5× faster). On c69m both
+  '-nocheckpoint "…"'` with the list in `code_tap/tap_nocheckpoint.txt`, 28
+  routines since 2026-09-12, which `check_nocheckpoint_switches.py` checks
+  against the adjoint-mode switches — the checkpoint-everything adjoint with
+  less recomputation, and the DINO default from 2026-09-02 to 2026-09-10). On c69m both
   are **flags**, not patched `genmake2` copies — c69m's `genmake2` takes
   `-tap_extra` and passes it straight to Tapenade. The two `c69f_originals/`
   are kept as the record of what was tried and **must not be installed** into
   `MITgcm/tools/`: they are full copies of the *c69f* `genmake2`, ~200 lines
   adrift; the c69f 64-routine list beside them shares 8 routines with the
-  current one. The `use_TapProfile` switch is gone from every build script.
+  2026-09-02 list and 7 with the current one. The `use_TapProfile` switch is gone from every build script.
 
 ---
 

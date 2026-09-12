@@ -18,11 +18,14 @@ this directory holds the evidence.
 
 ## Runs
 
-All 27-rank MPI, `baseline/from180yrPk_visc2x` (the ensemble members: `kappa_v_ensemble/M1`–`M7`), `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`.
+All 27-rank MPI, `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`. The runs of
+2026-09-01 to 2026-09-03 use `baseline/from180yrPk_visc2x` (the ensemble members:
+`kappa_v_ensemble/M1`–`M7`); those of 2026-09-12 the live namelists, GM/Redi in
+the forward sweep and scheme 30 in the adjoint sweep (see the last sections).
 Run directories carry the build token since the 2026-09-02 rename:
 `DINO_1deg_tapAdj_ckpAll_…` for the plain runs, `…_ckpAll_tapProfile_…` for
-31053, `…_nocheckpoint_…` for 31054/31055. The `_nocheckpoint` pair is the
-default DINO adjoint since 2026-09-02 (`build_tapAdj.sh` is a symlink to it).
+31053, `…_nocheckpoint_…` for 31054/31055. The `_nocheckpoint` pair was the
+default DINO adjoint from 2026-09-02 to 2026-09-10.
 
 | Run | Build | Length | Node | Wall time | Role |
 | --- | --- | --- | --- | --- | --- |
@@ -43,13 +46,15 @@ default DINO adjoint since 2026-09-02 (`build_tapAdj.sh` is a symlink to it).
 | `compare_adjoint_runs.py` | compares two run directories: `fc`, every `adxx_*` (float64) and every `ADJ*` dump (float32) with a true bitwise test plus max abs/relative differences, and the `run_timing.txt` speed-up |
 | `tapenade_profile_run31053_rank0000.txt` | rank 0's raw table from run 31053 (the other 26 ranks agree to within 5 % on the total) |
 | `profile_run31053_ranked.md` | the parsed, ranked table (116 callees) |
+| `tapenade_profile_run31268_rank0000.txt` | rank 0's raw table from run 31268, the profile of 2026-09-12 (ranks 14–26 report about 20 % more, almost all of it in the halo exchange) |
+| `profile_run31268_ranked.md` | its parsed, ranked table (118 callees) and the ≥ 1 s proposal the 2026-09-12 list started from |
 | `compare_30d_run31052_vs_nocheckpoint_run31054.md` | the 30-day validation report |
 | `compare_5yr_run31039_vs_nocheckpoint_run31055.md` | the 5-year validation report |
 | `compare_ensemble_ckpAll_vs_nocheckpoint.py` | drives the same comparison over the eight κ_v-ensemble pairs (31039–31046 vs 31060–31067) plus two reference cross-checks; adds the forward/reverse sweep split from the `ADJtheta` write times, a blow-up reproduction check (non-finite counts, onset dump) and the verdict of `tools/compare_adj_runs.sh` |
 | `compare_5yr_kappa_ensemble_ckpAll_vs_nocheckpoint.md` and the directory of the same name | the ensemble validation: summary table, one report per pair |
 | `compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md` | the **negative** result: the same script on the boosted pair, with a preamble giving the mechanism (joint-mode recomputation after the mode-switch hook vs split-mode tapes before it) |
 
-## What the profile showed (run 31053, rank 0)
+## What the 2026-09-01 profile showed (run 31053, rank 0)
 
 - Peak tape **923 MB per process** (27 processes → ~25 GB of a 64 GB node).
 - 156 checkpoint locations, 116 distinct callees. Not checkpointing all of
@@ -80,9 +85,9 @@ default DINO adjoint since 2026-09-02 (`build_tapAdj.sh` is a symlink to it).
 - The profiler truncates gains to whole seconds; 80 callees print 0 s. A
   30-day run (14 min) is the shortest that resolves the ranking.
 
-## The list
+## The 2026-09-02 list
 
-`code_tap/tap_nocheckpoint.txt`: every callee with a measured gain ≥ 1 s that is
+`code_tap/tap_nocheckpoint.txt` until 2026-09-12: every callee with a measured gain ≥ 1 s that is
 not a Tapenade external (`cg2d` and `exch2_rl1_cube` are declared in
 `tools/TAP_support/flow_tap`, the dump and mode-switch hooks in the setup's
 library of the time, `flow_tap_local` — `TAP_*`-named in the profiled build,
@@ -169,16 +174,53 @@ the same size) reproduces the 2026-09-01 one bitwise, at 9:35:58 on c2-1 vs
 9:44:50 on c2-4. The ensemble analysis keeps reading 31039–31046; the two sets
 are interchangeable.
 
+## The re-profile of 2026-09-12 (run 31268)
+
+The configuration had changed under the list: `kpp` out of
+`code_tap/packages.conf`, GM/Redi in the forward sweep and not in the adjoint
+sweep, scheme 33 forward and scheme 30 in the adjoint sweep, explicit vertical
+advection, `viscAhReMax=2.` at the reference viscosity. The 2026-09-02 list no
+longer built (`kpp_calc_dummy`), and it split routines that are recorded before
+the adjoint-mode switches act and read them. `tools/tapenade_profiling/README.md`,
+section 4, has the rule and the check; this is the record.
+
+- **Run 31268** (`build_tapAdj_profile`, 31 d of the live namelists from the
+  production spin-up 31203's year-180 pickup, 0:15:17): its forward sweep wrote
+  the 30.5-d pickup byte-identical to the spin-up's own. Peak tape 837 MB per
+  process, 161 checkpoint locations, 118 callees, 411 s of CPU on rank 0.
+- **Ranks.** Ranks 0–13 report 408–418 s and ranks 14–26 486–499 s; the
+  difference is the halo exchange (`exch_xy_rl` 2–31 s against 80–83 s). The
+  ≥ 1 s candidates from ranks 7, 13, 14, 20 and 26 differ from rank 0's only at
+  the 1 s margin.
+- **The list.** The 34 callees ≥ 1 s (`profile_run31268_ranked.md`), minus the
+  externals `cg2d`, `exch2_rl1_cube` and `dummy_in_stepping_uv_xyz_rl`, minus
+  `thermodynamics` (20 s), `do_oceanic_phys` (19 s) and `dynamics` (12 s), which
+  `check_nocheckpoint_switches.py --filter` keeps checkpointed: 28 routines,
+  354 of the 411 s (82–87 % on the five ranks checked). Against the 2026-09-02
+  list it drops `calc_3d_diffusivity`, `do_fields_blocking_exchanges`,
+  `do_oceanic_phys`, `dynamics`, `gad_dst3fl_adv_x`, `gad_dst3fl_adv_y`,
+  `gad_dst3fl_impl_r`, `gmredi_calc_tensor_dummy`, `kpp_calc_dummy`,
+  `solve_pentadiagonal` and `thermodynamics` (below 1 s here, no longer
+  called, or kept checkpointed) and adds `adams_bashforth2`, `calc_viscosity`,
+  `gad_dst3_adv_r`, `gad_dst3_adv_x`, `solve_tridiagonal` and
+  `tracers_correction_step`.
+
 ## Re-running
+
+From the setup directory:
 
 ```bash
 cd MITgcm_c69m/mysetups/DINO_1deg
 ./scripts/build_tapAdj_profile.sh && ../../../tools/submit.sh scripts/submit_tapAdj_profile.sh
-python3 analyses/DINO_1deg/adjoint/tapenade_profiling/parse_tapenade_profile.py \
-        /scratch2/$USER/DINO_1deg_outputs/runs/adjoint/<profile run>/tapenade_profile.0000.txt --top 40
-# edit code_tap/tap_nocheckpoint.txt, then
+python3 ../../../analyses/DINO_1deg/adjoint/tapenade_profiling/parse_tapenade_profile.py \
+        /scratch2/$USER/DINO_1deg_outputs/runs/adjoint/<profile run>/tapenade_profile.0000.txt \
+        --top 60 --min-gain-s 1 --budget-mb 2000 --list-out candidates.txt
+python3 ../../../tools/tapenade_profiling/check_nocheckpoint_switches.py build_tapAdj_profile \
+        candidates.txt --filter=switch_safe.txt
+# drop the Tapenade externals (cg2d, exch2_*_cube, the dummy_in_stepping_* hooks) from
+# switch_safe.txt, annotate it into code_tap/tap_nocheckpoint.txt, then
 ./scripts/build_tapAdj_nocheckpoint.sh && IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj_nocheckpoint.sh
-#   (or ./scripts/build_tapAdj.sh and scripts/submit_tapAdj.sh -- symlinks to the same pair since 2026-09-02;
-#    the plain reference run comes from build_tapAdj_ckpAll.sh / submit_tapAdj_ckpAll.sh)
-python3 analyses/DINO_1deg/adjoint/tapenade_profiling/compare_adjoint_runs.py <ckpAll run dir> <nocheckpoint run dir>
+#   the reference run: the same namelist with build_tapAdj_approxAdv.sh / submit_tapAdj_approxAdv.sh
+#   (build_tapAdj_ckpAll.sh / submit_tapAdj_ckpAll.sh when implicit vertical advection is off anyway)
+../../../tools/compare_adj_runs.sh <reference run dir> <nocheckpoint run dir>
 ```

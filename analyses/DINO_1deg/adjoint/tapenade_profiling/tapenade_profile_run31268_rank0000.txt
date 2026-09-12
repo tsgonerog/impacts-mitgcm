@@ -1,0 +1,166 @@
+PEAK STACK:836798440 bytes
+SUGGESTED NOCHECKPOINTs:
+ * Peak memory gain:
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call autodiff_inadmode_unset_tap (1488 times), at location#10: line 5222 of file forward_step.f
+  - Time gain - 0.000 s. and peak memory gain -215996b for call calc_3d_diffusivity (1488 times), at location#46: line 3653 of file salt_integrate.f
+  - Time gain - 4.000 s. and peak memory gain -870000b for call calc_adv_flow (53568 times), at location#48: line 3687 of file salt_integrate.f
+  - Time gain -30.000 s. and peak memory gain -8639960b for call calc_phi_hyd (53568 times), at location#85: line 3977 of file dynamics.f
+  - Time gain - 0.000 s. and peak memory gain -176b for call cost_driver (1 times), at location#2: line 5174 of file the_main_loop.f
+  - Time gain - 1.000 s. and peak memory gain -36860b for call ctrl_map_forcing (1488 times), at location#14: line 5264 of file forward_step.f
+  - Time gain - 3.000 s. and peak memory gain -1080000b for call do_stagger_fields_exchanges (1488 times), at location#31: line 5383 of file forward_step.f
+  - Time gain - 0.000 s. and peak memory gain -12000b for call dummy_for_etan_tap (1489 times), at location#75: line 3818 of file integr_continuity.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_uv_xy_rs (1488 times), at location#19: line 2342 of file dummy_in_stepping_tap.f
+  - Time gain - 1.000 s. and peak memory gain -38574980b for call dummy_in_stepping_uv_xyz_rl (1488 times), at location#18: line 2333 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_xy_rs (1488 times), at location#20: line 2346 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_xy_rs (1488 times), at location#21: line 2348 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_xy_rs (1488 times), at location#22: line 2350 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_xyz_rl (1488 times), at location#15: line 2327 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_xyz_rl (1488 times), at location#16: line 2329 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_xyz_rl (1488 times), at location#17: line 2331 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -38574980b for call dummy_in_stepping_xyz_rl (1488 times), at location#23: line 2357 of file dummy_in_stepping_tap.f
+  - Time gain - 0.000 s. and peak memory gain -6000b for call exch_xy_rl (1489 times), at location#76: line 3819 of file integr_continuity.f
+  - Time gain - 2.000 s. and peak memory gain -68b for call gad_calc_rhs (53568 times), at location#50: line 3710 of file salt_integrate.f
+  - Time gain - 0.000 s. and peak memory gain -2322000b for call initialise_varia (1 times), at location#1: line 5108 of file the_main_loop.f
+  - Time gain -17.000 s. and peak memory gain -459904b for call integrate_for_w (53604 times), at location#74: line 3786 of file integr_continuity.f
+  - Time gain - 1.000 s. and peak memory gain -108004b for call load_fields_driver (1488 times), at location#13: line 5254 of file forward_step.f
+  - Time gain -30.000 s. and peak memory gain -209148b for call mom_vecinv (53568 times), at location#86: line 3994 of file dynamics.f
+  - Time gain - 2.000 s. and peak memory gain -12000b for call momentum_correction_step (1488 times), at location#29: line 5356 of file forward_step.f
+  - Time gain -101.000 s. and peak memory gain -31103960b for call timestep (53568 times), at location#87: line 4004 of file dynamics.f
+  - Time gain - 1.000 s. and peak memory gain -432000b for call tracers_correction_step (1488 times), at location#33: line 5403 of file forward_step.f
+  - Time gain - 4.000 s. and peak memory gain -1292628b for call update_surf_dr (1488 times), at location#27: line 5331 of file forward_step.f
+ * Peak memory neutral:
+  - Time gain - 0.000 s. at peak memory cost zero for call active_read_xy (9 times), at location#142: line 2218 of file ctrl_get_gen.f
+  - Time gain - 0.000 s. at peak memory cost zero for call active_read_xy (9 times), at location#144: line 2239 of file ctrl_get_gen.f
+  - Time gain - 0.000 s. at peak memory cost zero for call active_read_xy (9 times), at location#152: line 3991 of file ctrl_map_ini_gentim2d.f
+  - Time gain - 0.000 s. at peak memory cost zero for call active_read_xy (9 times), at location#154: line 4010 of file ctrl_map_ini_gentim2d.f
+  - Time gain - 0.000 s. at peak memory cost zero for call active_read_xyz (3 times), at location#160: line 6733 of file ctrl_map_genarr.f
+  - Time gain - 0.000 s. at peak memory cost zero for call active_write_xy (9 times), at location#153: line 3995 of file ctrl_map_ini_gentim2d.f
+  - Time gain - 0.000 s. at peak memory cost zero for call active_write_xy (9 times), at location#156: line 4052 of file ctrl_map_ini_gentim2d.f
+  - Time gain - 1.000 s. at peak memory cost zero for call adams_bashforth2 (53568 times), at location#92: line 3428 of file timestep.f
+  - Time gain - 1.000 s. at peak memory cost zero for call adams_bashforth2 (53568 times), at location#93: line 3434 of file timestep.f
+  - Time gain - 0.000 s. at peak memory cost zero for call apply_forcing_t (53568 times), at location#63: line 3703 of file temp_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call apply_forcing_u (53568 times), at location#90: line 3383 of file timestep.f
+  - Time gain - 0.000 s. at peak memory cost zero for call apply_forcing_v (53568 times), at location#91: line 3387 of file timestep.f
+  - Time gain - 0.000 s. at peak memory cost zero for call autodiff_inadmode_set_tap (1488 times), at location#36: line 5469 of file forward_step.f
+  - Time gain - 0.000 s. at peak memory cost zero for call calc_3d_diffusivity (1488 times), at location#60: line 3655 of file temp_integrate.f
+  - Time gain - 3.000 s. at peak memory cost zero for call calc_adv_flow (53568 times), at location#62: line 3689 of file temp_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call calc_div_ghat (53568 times), at location#81: line 3681 of file solve_for_pressure.f
+  - Time gain - 0.000 s. at peak memory cost zero for call calc_grad_phi_hyd (53568 times), at location#111: line 3791 of file calc_phi_hyd.f
+  - Time gain - 0.000 s. at peak memory cost zero for call calc_grad_phi_surf (1488 times), at location#79: line 1989 of file momentum_correction_step.f
+  - Time gain - 2.000 s. at peak memory cost zero for call cg2d (1488 times), at location#82: line 3734 of file solve_for_pressure.f
+  - Time gain - 0.000 s. at peak memory cost zero for call correction_step (1488 times), at location#80: line 1996 of file momentum_correction_step.f
+  - Time gain - 0.000 s. at peak memory cost zero for call cost_accumulate_mean (1440 times), at location#37: line 3399 of file cost_tile.f
+  - Time gain - 0.000 s. at peak memory cost zero for call cost_atlantic_heat (1 times), at location#5: line 2102 of file cost_final.f
+  - Time gain - 0.000 s. at peak memory cost zero for call cost_final (1 times), at location#3: line 5179 of file the_main_loop.f
+  - Time gain - 0.000 s. at peak memory cost zero for call cost_init_varia (1 times), at location#146: line 4393 of file initialise_varia.f
+  - Time gain - 0.000 s. at peak memory cost zero for call cost_tile (1488 times), at location#35: line 5439 of file forward_step.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_cost_driver (1 times), at location#7: line 1884 of file cost_driver.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_cost_final (1 times), at location#4: line 2095 of file cost_final.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_get_gen (13392 times), at location#141: line 3491 of file ctrl_map_gentim2d.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_init_variables (1 times), at location#149: line 3116 of file packages_init_variables.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_map_genarr3d (1 times), at location#157: line 4183 of file ctrl_map_ini_genarr.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_map_genarr3d (1 times), at location#158: line 4185 of file ctrl_map_ini_genarr.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_map_genarr3d (1 times), at location#159: line 4187 of file ctrl_map_ini_genarr.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_map_gentim2d (1488 times), at location#139: line 4219 of file load_fields_driver.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_map_ini_genarr (1 times), at location#150: line 2720 of file ctrl_init_variables.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_map_ini_gentim2d (1 times), at location#151: line 2721 of file ctrl_init_variables.f
+  - Time gain - 0.000 s. at peak memory cost zero for call ctrl_swapffields (9 times), at location#143: line 2232 of file ctrl_get_gen.f
+  - Time gain - 0.000 s. at peak memory cost zero for call cycle_tracer (1488 times), at location#53: line 3806 of file salt_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call cycle_tracer (1488 times), at location#67: line 3808 of file temp_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call diags_phi_hyd (53568 times), at location#112: line 3813 of file calc_phi_hyd.f
+  - Time gain - 0.000 s. at peak memory cost zero for call do_atmospheric_phys (1488 times), at location#24: line 5281 of file forward_step.f
+  - Time gain - 0.000 s. at peak memory cost zero for call do_fields_blocking_exchanges (1488 times), at location#34: line 5415 of file forward_step.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_3d_rl (4468 times), at location#41: line 624 of file exch_xyz_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_3d_rl (5962 times), at location#78: line 625 of file exch_xy_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_3d_rl (1488 times), at location#70: line 625 of file exch_3d_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_3d_rs (10416 times), at location#136: line 625 of file exch_xy_rs.f
+  - Time gain - 3.000 s. at peak memory cost zero for call exch2_rl1_cube (11918 times), at location#42: line 876 of file exch2_3d_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_rl1_cube (11918 times), at location#43: line 881 of file exch2_3d_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_rl2_cube (1488 times), at location#72: line 885 of file exch2_uv_3d_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_rl2_cube (1488 times), at location#73: line 889 of file exch2_uv_3d_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_rs1_cube (10416 times), at location#137: line 876 of file exch2_3d_rs.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_rs1_cube (10416 times), at location#138: line 881 of file exch2_3d_rs.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_rs2_cube (1488 times), at location#134: line 885 of file exch2_uv_3d_rs.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_rs2_cube (1488 times), at location#135: line 889 of file exch2_uv_3d_rs.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_uv_3d_rl (1488 times), at location#71: line 647 of file exch_uv_3d_rl.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch2_uv_3d_rs (1488 times), at location#133: line 645 of file exch_uv_xy_rs.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_3d_rl (1488 times), at location#69: line 1951 of file do_stagger_fields_exchanges.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_uv_3d_rl (1488 times), at location#68: line 1948 of file do_stagger_fields_exchanges.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_uv_xy_rs (1488 times), at location#132: line 2571 of file ctrl_map_forcing.f
+  - Time gain - 2.000 s. at peak memory cost zero for call exch_xy_rl (1488 times), at location#122: line 2525 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rl (1488 times), at location#123: line 2526 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rl (1488 times), at location#83: line 3740 of file solve_for_pressure.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rl (9 times), at location#155: line 4050 of file ctrl_map_ini_gentim2d.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rs (1488 times), at location#125: line 2564 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rs (1488 times), at location#126: line 2565 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rs (1488 times), at location#127: line 2566 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rs (1488 times), at location#128: line 2567 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rs (1488 times), at location#129: line 2568 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rs (1488 times), at location#130: line 2569 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xy_rs (1488 times), at location#131: line 2570 of file ctrl_map_forcing.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xyz_rl (1488 times), at location#38: line 2132 of file do_fields_blocking_exchanges.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xyz_rl (1488 times), at location#39: line 2133 of file do_fields_blocking_exchanges.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xyz_rl (1488 times), at location#40: line 2139 of file do_fields_blocking_exchanges.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xyz_rl (1 times), at location#148: line 3821 of file integr_continuity.f
+  - Time gain - 0.000 s. at peak memory cost zero for call exch_xyz_rl (3 times), at location#161: line 6796 of file ctrl_map_genarr.f
+  - Time gain - 0.000 s. at peak memory cost zero for call external_fields_load (1488 times), at location#140: line 4229 of file load_fields_driver.f
+  - Time gain - 0.000 s. at peak memory cost zero for call external_forcing_surf (1488 times), at location#113: line 4326 of file do_oceanic_phys.f
+  - Time gain - 0.000 s. at peak memory cost zero for call find_bulkmod (105648 times), at location#120: line 2138 of file find_rho.f
+  - Time gain - 1.000 s. at peak memory cost zero for call find_rho_2d (53568 times), at location#114: line 4395 of file do_oceanic_phys.f
+  - Time gain - 1.000 s. at peak memory cost zero for call find_rho_2d (52080 times), at location#115: line 4441 of file do_oceanic_phys.f
+  - Time gain - 0.000 s. at peak memory cost zero for call find_rhop0 (105648 times), at location#119: line 2132 of file find_rho.f
+  - Time gain - 0.000 s. at peak memory cost zero for call forcing_surf_relax (1488 times), at location#121: line 3621 of file external_forcing_surf.f
+  - Time gain -75.000 s. at peak memory cost zero for call forward_step (1488 times), at location#9: line 4584 of file main_do_loop.f
+  - Time gain - 2.000 s. at peak memory cost zero for call gad_calc_rhs (53568 times), at location#64: line 3712 of file temp_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call gad_diff_x (107136 times), at location#55: line 3787 of file gad_calc_rhs.f
+  - Time gain - 0.000 s. at peak memory cost zero for call gad_diff_y (107136 times), at location#56: line 3885 of file gad_calc_rhs.f
+  - Time gain - 0.000 s. at peak memory cost zero for call gad_implicit_r (1488 times), at location#52: line 3783 of file salt_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call gad_implicit_r (1488 times), at location#66: line 3785 of file temp_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call global_sum_tile_rl (1 times), at location#6: line 2134 of file cost_final.f
+  - Time gain - 0.000 s. at peak memory cost zero for call gmredi_calc_tensor_dummy (1488 times), at location#117: line 4519 of file do_oceanic_phys.f
+  - Time gain -35.000 s. at peak memory cost zero for call grad_sigma (52080 times), at location#116: line 4461 of file do_oceanic_phys.f
+  - Time gain - 0.000 s. at peak memory cost zero for call integr_continuity (1 times), at location#147: line 4424 of file initialise_varia.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_calc_hdiv (53568 times), at location#97: line 3826 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_calc_hfacz (53568 times), at location#94: line 3776 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_calc_ke (53568 times), at location#95: line 3791 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_calc_relvort3 (53568 times), at location#96: line 3793 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_calc_strain (53568 times), at location#99: line 3830 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_calc_tension (53568 times), at location#98: line 3829 of file mom_vecinv.f
+  - Time gain - 2.000 s. at peak memory cost zero for call mom_calc_visc (53568 times), at location#100: line 3855 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_u_botdrag_coeff (53568 times), at location#102: line 3939 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_v_botdrag_coeff (53568 times), at location#103: line 4003 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_coriolis (53568 times), at location#104: line 4053 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_hdissip (53568 times), at location#101: line 3886 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_u_coriolis (53568 times), at location#105: line 4100 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_u_grad_ke (53568 times), at location#109: line 4171 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_u_vertshear (53568 times), at location#107: line 4150 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_v_coriolis (53568 times), at location#106: line 4125 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_v_grad_ke (53568 times), at location#110: line 4177 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call mom_vi_v_vertshear (53568 times), at location#108: line 4157 of file mom_vecinv.f
+  - Time gain - 0.000 s. at peak memory cost zero for call packages_init_variables (1 times), at location#145: line 4389 of file initialise_varia.f
+  - Time gain - 0.000 s. at peak memory cost zero for call pressure_for_eos (105648 times), at location#118: line 2127 of file find_rho.f
+  - Time gain - 0.000 s. at peak memory cost zero for call reset_nlfs_vars (1488 times), at location#11: line 5229 of file forward_step.f
+  - Time gain - 0.000 s. at peak memory cost zero for call rotate_uv2en_rl (1488 times), at location#124: line 2527 of file ctrl_map_forcing.f
+  - Time gain - 8.000 s. at peak memory cost zero for call salt_integrate (1488 times), at location#45: line 4502 of file thermodynamics.f
+  - Time gain - 3.000 s. at peak memory cost zero for call solve_tridiagonal (2976 times), at location#54: line 3621 of file gad_implicit_r.f
+  - Time gain -20.000 s. at peak memory cost zero for call thermodynamics (1488 times), at location#32: line 5394 of file forward_step.f
+  - Time gain - 0.000 s. at peak memory cost zero for call timestep_tracer (1488 times), at location#51: line 3772 of file salt_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call timestep_tracer (1488 times), at location#65: line 3774 of file temp_integrate.f
+  - Time gain - 0.000 s. at peak memory cost zero for call update_etah (1489 times), at location#77: line 3828 of file integr_continuity.f
+ * Peak memory cost:
+  - Time gain - 2.000 s. at peak memory cost    0.000008 Mb for call solve_for_pressure (1488 times), at location#28: line 5350 of file forward_step.f
+  - Time gain - 2.000 s. at peak memory cost    0.000016 Mb for call impldiff (1488 times), at location#89: line 4022 of file dynamics.f
+  - Time gain - 1.000 s. at peak memory cost    0.000156 Mb for call calc_viscosity (1488 times), at location#84: line 3953 of file dynamics.f
+  - Time gain - 0.000 s. at peak memory cost    0.000020 Mb for call apply_forcing_s (53568 times), at location#49: line 3701 of file salt_integrate.f
+  - Time gain - 0.000 s. at peak memory cost    0.003372 Mb for call update_surf_dr (1488 times), at location#12: line 5236 of file forward_step.f
+  - Time gain - 3.000 s. at peak memory cost    0.222880 Mb for call impldiff (1488 times), at location#88: line 4017 of file dynamics.f
+  - Time gain - 9.000 s. at peak memory cost    1.944460 Mb for call temp_integrate (1488 times), at location#44: line 4494 of file thermodynamics.f
+  - Time gain - 1.000 s. at peak memory cost    0.366124 Mb for call gad_dst3_adv_x (107136 times), at location#57: line 3938 of file gad_advection.f
+  - Time gain - 1.000 s. at peak memory cost    0.639588 Mb for call gad_dst3_adv_r (104160 times), at location#59: line 4252 of file gad_advection.f
+  - Time gain - 0.000 s. at peak memory cost    0.379348 Mb for call gad_dst3_adv_y (107136 times), at location#58: line 4067 of file gad_advection.f
+  - Time gain -12.000 s. at peak memory cost    9.323128 Mb for call dynamics (1488 times), at location#26: line 5312 of file forward_step.f
+  - Time gain - 2.000 s. at peak memory cost    2.589588 Mb for call gad_advection (1488 times), at location#61: line 3672 of file temp_integrate.f
+  - Time gain -19.000 s. at peak memory cost   21.360032 Mb for call do_oceanic_phys (1488 times), at location#25: line 5286 of file forward_step.f
+  - Time gain - 2.000 s. at peak memory cost    3.237592 Mb for call gad_advection (1488 times), at location#47: line 3670 of file salt_integrate.f
+  - Time gain - 1.000 s. at peak memory cost    7.094092 Mb for call integr_continuity (1488 times), at location#30: line 5363 of file forward_step.f
+  - Time gain - 0.000 s. at peak memory cost 10403.063896 Mb for call main_do_loop (1488 times), at location#8: line 5159 of file the_main_loop.f

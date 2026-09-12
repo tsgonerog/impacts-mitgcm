@@ -2,8 +2,9 @@
 # production configuration) unchanged below this header. The siblings put GM/Redi in the FORWARD sweep with
 # the spin-up's parameters -- data.pkg (useGMRedi=.TRUE.) and data.gmredi (a copy of input/data.gmredi, K=571,
 # ldd97) -- while the live data.autodiff (useGMRediInAdMode=.FALSE.) keeps it out of the adjoint sweep: a GM-free
-# adjoint linearised about the GM model's own trajectory. Run it only with the approxAdv or ckpAll build; in a
-# -nocheckpoint build the switch half-applies (the tensor adjoint is kept, the flux adjoint dropped; 31156/31157).
+# adjoint linearised about the GM model's own trajectory. In the -nocheckpoint build of 2026-09-02 the switch
+# half-applied (the tensor adjoint kept, the flux adjoint dropped; 31156/31157); the list of 2026-09-12 keeps
+# every routine that reads it checkpointed.
 # Model parameters
 # Continuous equation parameters
  &PARM01

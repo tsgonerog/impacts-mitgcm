@@ -15,14 +15,16 @@ setup.
 | stop checkpointing chosen routines | `build_tapAdj_nocheckpoint.sh` + `submit_tapAdj_nocheckpoint.sh` | `-nocheckpoint "<code_tap/tap_nocheckpoint.txt>"` |
 | the plain adjoint, every call checkpointed | `build_tapAdj_ckpAll.sh` + `submit_tapAdj_ckpAll.sh` | none (Tapenade's default; was `build_tapAdj.sh` until 2026-09-02) |
 
-The first is a diagnostic. The second is **DINO's default adjoint since
-2026-09-02** — `build_tapAdj.sh` / `submit_tapAdj.sh` are symlinks to that
-pair — and its adjoint is mathematically the plain one; the plain build lives
-on as the `ckpAll` pair, the profiler's base and the timing baseline.
-`build_tapAdj_adjVisc.sh` does **not** carry it: under the adjoint-mode
-viscosity boost, split mode is not equivalent to joint mode (run 31056 vs
-31025, 2026-09-02 — `fc` identical, every sensitivity field different at order
-one; see section 2), so the boosted adjoint stays a `ckpAll` build. Every
+The first is a diagnostic. The second gives the plain adjoint, faster. It was
+**DINO's default adjoint from 2026-09-02 to 2026-09-10** (the default is now the
+`approxAdv` pair), and on 2026-09-12 its list was derived again for the current
+configuration and checked against the adjoint-mode switches (section 4). The
+plain build lives on as the `ckpAll` pair, the profiler's base and the timing
+baseline. `build_tapAdj_adjVisc.sh` does **not** carry the list: under the
+adjoint-mode viscosity boost the 2026-09-02 list was not equivalent to joint
+mode (run 31056 vs 31025 — `fc` identical, every sensitivity field different
+at order one; sections 2 and 4), so the boosted adjoint stays a `ckpAll` build.
+Every
 build script records what it built in `build_info.txt`, and the submit
 scripts name the run directory from its `run_token` (`tapAdj_nocheckpoint`,
 `tapAdj_ckpAll`, `tapAdj_ckpAll_profile`, `tapAdj_ckpAll_adjVisc`).
@@ -201,6 +203,9 @@ toy program and from the DINO build:
   0.3–0.9) — while 31054 vs 31052 and 31055 vs 31039, the plain pair, are
   bitwise identical. Report:
   `analyses/DINO_1deg/adjoint/tapenade_profiling/compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md`.
+  Section 4 gives the exact condition, which a list can meet under a switch:
+  the switch reaches whatever is recorded after `FORWARD_STEP` applies it,
+  and that list split `dynamics`, which is recorded before.
 
 The list lives in `code_tap/tap_nocheckpoint.txt` (one lower-case name per
 line, `#` comments allowed), the setup's one Tapenade input besides the
@@ -216,9 +221,11 @@ already passes that test under joint mode, and the hand-written hook adjoints
 
 ---
 
-## 3. What the DINO profile said, and what was done with it
+## 3. The 2026-09-01 profile and list
 
-Runs of 2026-09-01, all 27-rank, `baseline/from180yrPk_visc2x`; records in
+The list from 2026-09-02 to 2026-09-12; section 4 has its successor. Runs of
+2026-09-01, all 27-rank, `baseline/from180yrPk_visc2x` (KPP compiled but off,
+GM off, scheme 33 in both sweeps, implicit vertical advection); records in
 `analyses/DINO_1deg/adjoint/tapenade_profiling/`.
 
 **Profile (run 31053, 30 days, rank 0; 809 s of adjoint).** Peak tape 923 MB
@@ -246,8 +253,8 @@ costs memory sums to ~54 MB per process, so memory never constrained the
 choice. `main_do_loop` shows up at a peak cost of 11.3 GB — the binomial level,
 the whole run's tape, correctly left alone.
 
-**The list** (`code_tap/tap_nocheckpoint.txt`): every callee with a measured
-gain ≥ 1 s except the externals `cg2d` and `exch2_rl1_cube` (declared in
+**The list** (`code_tap/tap_nocheckpoint.txt` until 2026-09-12): every callee
+with a measured gain ≥ 1 s except the externals `cg2d` and `exch2_rl1_cube` (declared in
 `flow_tap`; no source to split) — 33 routines, 357 of the 363 s. The
 build confirmed all 33 went split (`@@ Options: split(...)`, 33 `_FWD`
 routines) with the four hook calls intact.
@@ -287,6 +294,90 @@ different configuration and checkpoint — keep it as history, not as input.
 
 ---
 
+## 4. Adjoint-mode switches, and the list of 2026-09-12
+
+**Why the 2026-09-01 list had to go.** Between the two profiles the adjoint
+changed: `kpp` left `code_tap/packages.conf`; GM/Redi runs in the forward sweep
+and not in the adjoint sweep (`useGMRediInAdMode=.FALSE.`); the tracers use
+scheme 33 in the forward sweep and scheme 30 in the adjoint sweep
+(`useApproxAdvectionInAdMode`, which every adjoint build honours since the
+`gad_advection.F` guard moved into `mods_tapenade_hooks/`); vertical advection
+is explicit; the viscosity is the reference file with `viscAhReMax=2.`. The old
+list no longer built (`kpp_calc_dummy` was gone), and nine of its routines are
+recorded before the switches and read one.
+
+**Where a switch acts.** `FORWARD_STEP` calls `AUTODIFF_INADMODE_UNSET_TAP`
+first and `AUTODIFF_INADMODE_SET_TAP` last, so in its reverse sweep
+`AUTODIFF_INADMODE_SET_TAP_B` applies the switches — `inAdMode` (which
+`useApproxAdvectionInAdMode` is read with), the `use<PKG>` flags and
+`viscFacAdj` — before any other adjoint statement of the step, and the `UNSET`
+hook reverts them after the last (`forward_step_b.f`). A switch therefore
+reaches only what is recorded after that point. `FORWARD_STEP`'s own recording
+sweep comes before it in every build. In the checkpoint-everything build every
+routine it calls is checkpointed, so that routine's primal runs again,
+recording, inside its `_B` routine — after the switch — and so does everything
+below it. A split routine is recorded in its `_FWD`, wherever its caller
+records: after the switch below a checkpointed routine, before it when called
+from `FORWARD_STEP` or from a split routine that is itself recorded before it.
+
+So a list gives the checkpoint-everything adjoint under a switch if no listed
+routine reached from `FORWARD_STEP` through listed routines only reads a
+switched variable, itself or anywhere below it. Run 31056 split `dynamics`,
+whose `mom_calc_visc` reads `viscFacAdj`; runs 31156/31157 of the stability
+study split `do_oceanic_phys`, which reads `useGMRedi`, and blew up. A split
+routine below a checkpointed one is recorded after the switch, as everything
+there is, whatever it reads.
+
+**The check.** `check_nocheckpoint_switches.py BUILD_DIR LIST` (in this
+directory) reads the preprocessed primal sources of a build directory, builds
+the static call graph, marks the units whose executable statements read a
+switched variable — dropping the flags of packages the build does not compile,
+which are `.FALSE.` in both sweeps — finds the unit that calls the switch hooks
+and reports each listed routine; `--filter=OUT` writes the list without the
+routines that must stay checkpointed. `build_tapAdj_nocheckpoint.sh` and
+`build_tapAdj_hooksInTree.sh` run it after `make` and record
+`nocheckpoint_switch_free=yes` or `no` in `build_info.txt`; the submit body
+refuses a `-nocheckpoint` build without `yes` when `data.autodiff` flips a
+switch (`use<PKG>InAdMode` off for a package that is on,
+`useApproxAdvectionInAdMode`, `viscFacInAd` different from `viscFacInFw`). The
+static graph cannot follow a switched value passed as an argument or a call
+through a procedure variable; neither occurs in the DINO call tree, and a run
+against the checkpoint-everything build is the final check.
+
+**Profile (run 31268, 31 days, the live namelists, rank 0).** Peak tape 837 MB
+per process (923 MB on 2026-09-01; the four KPP fields gone from each of the
+98 binomial snapshots account for 85 MB of the difference); 161 checkpoint
+locations, 118 callees; checkpointing costs 411 s of CPU on rank 0. Ranks
+14–26 report 486–499 s against 408–418 s for ranks 0–13, the difference sitting
+almost entirely in the halo exchange (`exch_xy_rl` 80–83 s on the slower ranks,
+2–31 s on the others). From any rank the ≥ 1 s candidates differ from rank 0's
+only in routines at the 1 s margin.
+
+| callee | gain [s] | Δ peak tape | | callee | gain [s] | Δ peak tape |
+| --- | --- | --- | --- | --- | --- | --- |
+| `timestep` | 101 | −31.1 MB | | `integrate_for_w` | 17 | −0.5 MB |
+| `forward_step` | 75 | 0 | | **`dynamics`** | 12 | +9.3 MB |
+| `grad_sigma` | 35 | 0 | | `temp_integrate` | 9 | +1.9 MB |
+| `calc_phi_hyd` | 30 | −8.6 MB | | `salt_integrate` | 8 | 0 |
+| `mom_vecinv` | 30 | −0.2 MB | | `calc_adv_flow` | 7 | −0.9 MB |
+| **`thermodynamics`** | 20 | 0 | | `impldiff` | 5 | +0.2 MB |
+| **`do_oceanic_phys`** | 19 | +21.4 MB | | `gad_advection` | 4 | +5.8 MB |
+
+(bold: kept checkpointed.) **The list** (`code_tap/tap_nocheckpoint.txt`): the
+34 callees with a gain ≥ 1 s, minus the externals `cg2d`, `exch2_rl1_cube` and
+`dummy_in_stepping_uv_xyz_rl`, minus what the filter keeps checkpointed —
+`thermodynamics`, `do_oceanic_phys` and `dynamics`, the three routines
+`FORWARD_STEP` calls that read a switched variable below them (`useGMRedi`;
+`useApproxAdvectionInAdMode` with `inAdMode`; `viscFacAdj`). 28 routines, 354
+of the 411 s (82–87 % of the total on the five ranks checked), at a summed
+peak-memory cost bound of 16 MB. `forward_step`, `temp_integrate`,
+`salt_integrate`, `gad_advection` and `gad_calc_rhs`, which the 2026-09-01 list
+also split, stay in: every call path to the last four passes a checkpointed
+routine. The build confirmed all 28 went split and recorded
+`nocheckpoint_switch_free=yes`.
+
+---
+
 ## Other levers, deliberately not pulled
 
 - **The binomial snapshot count.** `C$AD BINOMIAL-CKP nTimeSteps+1 98 1` caps
@@ -317,7 +408,9 @@ different configuration and checkpoint — keep it as history, not as input.
 - **`-defaultnocheckpoint`** (split everything, then `-checkpoint` the
   exceptions) is the TAF-like configuration: no recomputation inside a step at
   all. It is the limit the profile-guided list approaches; the list form was
-  preferred because each entry is justified by a measured gain.
+  preferred because each entry is justified by a measured gain. Under the
+  adjoint-mode switches it is not available at all: it would split
+  `thermodynamics`, `do_oceanic_phys` and `dynamics` (section 4).
 
 ---
 
