@@ -4,9 +4,12 @@
 > consolidation deleted 31055 and the `-nocheckpoint` ensemble reruns
 > 31060–31067 — every one of them was bitwise identical to the `ckpAll` run it
 > was compared against, so the reports below are the record and the duplicates
-> were redundant. The `ckpAll` half of every pair survives under
-> `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`, as do 31052, 31053, 31054 and
-> 31056. Re-running `compare_adjoint_runs.py` on a deleted pair is not possible;
+> were redundant. On 2026-09-12 31052, 31053 and 31054 were deleted as well,
+> with the variant record they ran (`baseline/from180yrPk_visc2x`, which no
+> longer stages their configuration); their build records, staged namelists and
+> all 27 profile tables are in the output tree's `logs/deleted_run_records/`.
+> The `ckpAll` half of every other pair survives under
+> `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`, as does 31056. Re-running `compare_adjoint_runs.py` on a deleted pair is not possible;
 > re-establishing the result means re-running the adjoint.
 
 Scripts and records, no notebook. The question was: which of the routines the
@@ -20,7 +23,8 @@ this directory holds the evidence.
 
 All 27-rank MPI, `/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/`. The runs of
 2026-09-01 to 2026-09-03 use `baseline/from180yrPk_visc2x` (the ensemble members:
-`kappa_v_ensemble/M1`–`M7`); those of 2026-09-12 the live namelists, GM/Redi in
+`kappa_v_ensemble/M1`–`M7`; both records were removed on 2026-09-12, git history
+has them); those of 2026-09-12 the live namelists, GM/Redi in
 the forward sweep and scheme 30 in the adjoint sweep (see the last sections).
 Run directories carry the build token since the 2026-09-02 rename:
 `DINO_1deg_tapAdj_ckpAll_…` for the plain runs, `…_ckpAll_tapProfile_…` for
@@ -29,9 +33,9 @@ default DINO adjoint from 2026-09-02 to 2026-09-10.
 
 | Run | Build | Length | Node | Wall time | Role |
 | --- | --- | --- | --- | --- | --- |
-| 31052 | `build_tapAdj_ckpAll` (plain; `build_tapAdj` until 2026-09-02) | 30 d | c2-1 | 0:13:13 | fresh plain reference; bitwise identical to 31032 (0:13:31) |
-| 31053 | `build_tapAdj_profile` (`build_tapAdj_tapProfile` until 2026-09-05) | 30 d | c2-3 | 0:13:29 | the profile (`tapenade_profile.0000`–`.0026.txt`) |
-| 31054 | `build_tapAdj_nocheckpoint` | 30 d | c2-1 | **0:08:47** | validation against 31052 |
+| 31052 | `build_tapAdj_ckpAll` (plain; `build_tapAdj` until 2026-09-02) | 30 d | c2-1 | 0:13:13 | fresh plain reference; bitwise identical to 31032 (0:13:31); deleted 2026-09-12 |
+| 31053 | `build_tapAdj_profile` (`build_tapAdj_tapProfile` until 2026-09-05) | 30 d | c2-3 | 0:13:29 | the profile (`tapenade_profile.0000`–`.0026.txt`); deleted 2026-09-12, the tables kept in `logs/deleted_run_records/` |
+| 31054 | `build_tapAdj_nocheckpoint` | 30 d | c2-1 | **0:08:47** | validation against 31052; deleted 2026-09-12 |
 | 31039 | `build_tapAdj_ckpAll` (plain; `build_tapAdj` until 2026-09-02) | 5 yr | — | 14:05:45 | production-length reference (2026-09-01) |
 | 31055 | `build_tapAdj_nocheckpoint` | 5 yr | c2-1 | **9:35:58** | production-length validation against 31039 |
 | 31060–31067 | `build_tapAdj_nocheckpoint` | 5 yr × 8 | c2-4, c3-1, c7-4, c8-1–c8-4, c9-1 | **9:30:47–9:44:50** | the κ_v ensemble (REF + M1–M7) rerun on 2026-09-02, validation against its 2026-09-01 `ckpAll` runs 31039–31046 (14:02:37–15:39:13) |

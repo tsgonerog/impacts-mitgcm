@@ -178,8 +178,8 @@ cd MITgcm_c69m/mysetups/DINO_1deg
 
 # per-run overrides — these leave the working tree clean
 IMPACTS_DURATION_DAYS=73200 ../../../tools/submit.sh scripts/submit_frd.sh          # 200 yr
-IMPACTS_TEST_CASE=kappa_v_ensemble/M3 ../../../tools/submit.sh scripts/submit_tapAdj.sh
-IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_visc2x_grdchkON \
+IMPACTS_TEST_CASE=stability_study/from180yrPk_viscRef_ReMax2_gmFwd ../../../tools/submit.sh scripts/submit_tapAdj.sh
+IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON \
   IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh
 
 # the adjVisc pairing — build and namelist must match
@@ -188,11 +188,16 @@ IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_visc2x_grdchkON \
 # dry-run: extra flags are passed through, and land before the script name
 ../../../tools/submit.sh scripts/submit_tapAdj.sh --test-only
 
-# chain: adjoint waits for a forward leg (the job-chaining recipe in the project notes)
-fwd=$(IMPACTS_TEST_CASE=kappa_v_ensemble/M3 ../../../tools/submit.sh scripts/submit_frd.sh --parsable | tail -1)
-adj=$(IMPACTS_TEST_CASE=kappa_v_ensemble/M3 ../../../tools/submit.sh scripts/submit_tapAdj.sh \
-        --parsable --dependency=afterok:$fwd | tail -1)
+# chain: an adjoint waits for the forward leg whose pickup it reads (the job-chaining recipe in the project notes)
+fwd=$(IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 ../../../tools/submit.sh scripts/submit_frd.sh --parsable | tail -1)
+adj=$(IMPACTS_TEST_CASE=<adjoint group>/<tag> \
+      IMPACTS_PICKUP_RUN_DIR=$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/DINO_1deg_frd_10yr_M3_ReMax2_run$fwd \
+      ../../../tools/submit.sh scripts/submit_tapAdj.sh --parsable --dependency=afterok:$fwd | tail -1)
 echo "M3: forward $fwd -> adjoint $adj"
+#   the forward legs' variants are in input/variants/kappa_v_ensemble/; the
+#   adjoint's kappa_v_ensemble/ group was removed on 2026-09-12 (its members no
+#   longer staged the configuration they ran), so <adjoint group>/<tag> is the
+#   member's adjoint namelist, to be written when that rerun is set up
 ```
 
 The DINO adjoint requests `-n 27` because `code_tap/SIZE.h` sets `nPx=3, nPy=9`;
@@ -213,7 +218,8 @@ as the namelist, and a submit script cannot claim a build it did not get.
 The duration label is whole 366-day years as `<n>yr` and anything else as
 `<n>d`, so the default 1830 days becomes `5yr` and `IMPACTS_DURATION_DAYS=30`
 becomes `30d`; the tag is the **last component only** of `IMPACTS_TEST_CASE`, so
-`kappa_v_ensemble/M3` names the directory `_M3`. That is worth knowing before
+`grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON` names the directory
+`_from180yrPk_viscRef_ReMax2_adv30_grdchkON`. That is worth knowing before
 you run `compare_adj_runs.sh`, since you have to name the directory yourself.
 
 ---
@@ -350,11 +356,11 @@ tools/compare_adj_runs.sh \
 cd MITgcm_c69m/mysetups/DINO_1deg
 jid=$(IMPACTS_DURATION_DAYS=5 ../../../tools/submit.sh scripts/submit_tapAdj.sh --parsable | tail -1)
 nohup ../../../tools/compare_adj_runs.sh --wait "$jid" \
-  "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31281" \
+  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31281" \
   "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run$jid" &
-#   31281 is the default (ckpAll) build's 5-day run of the live namelist, of
-#   2026-09-12; a fresh run lands directly in runs/adjoint/ and is filed into a
-#   campaign directory later, and the reference path changes when it is
+#   note the asymmetry: the reference, 31281 (the default ckpAll build's 5-day
+#   run of the live namelist, 2026-09-12), sits in a campaign directory; the new
+#   run does not — a fresh run lands directly in runs/adjoint/ and is filed later
 
 # print only, keep the listings for a closer look (still in the setup directory)
 ../../../tools/compare_adj_runs.sh --no-report --work /tmp/cmp_31032 \
@@ -631,13 +637,13 @@ echo "submitted $jid"
 # 3. when it lands, bit-compare it against a run you trust
 R=$SCRATCH_ROOT/DINO_1deg_outputs/runs/adjoint
 ../../../tools/compare_adj_runs.sh --wait "$jid" \
-  "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31281" \
+  "$R/toolchain_validation/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run31281" \
   "$R/DINO_1deg_tapAdj_ckpAll_5d_from180yrPk_viscRef_ReMax2_gmFwd_approxAdv_run$jid"
 #   -> writes comparison_vs_..._run31281.txt into the new run directory,
 #      which lands unfiled in runs/adjoint/ — move it into a campaign later
 #      (the run_token in the name comes from build_info.txt, the settings
 #       tokens after the duration from the staged namelist; 31281 is the
-#       default build's run of 2026-09-12, unfiled when this was written)
+#       default build's run of 2026-09-12)
 #      exit 0 = every ADJ*/adxx* bit-identical, fc and %MON identical
 
 # 4. before pushing, check what in the tree is actually yours

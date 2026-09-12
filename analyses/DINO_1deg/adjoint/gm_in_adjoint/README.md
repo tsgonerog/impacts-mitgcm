@@ -4,10 +4,14 @@ Scripts for the 2026-09-11 test of running GM/Redi in the DINO adjoint's forward
 sweep only (`useGMRedi=.TRUE.` with the spin-up's `data.gmredi`,
 `useGMRediInAdMode=.FALSE.`), in the `approxAdv` build, from the REF_ReMax2
 leg's year-180 pickup (31205). The namelists are the variants
-`input_tap/variants/stability_study/*_ReMax2_gmFwd`, `*_gmOn`,
-`REF*_ReMax2_gmFwd` and `thetaPatchFD_*`; that directory's `README.md` has the
-row for each run and the table of results, and the setup's `TODO.md` the open
-decision.
+`input_tap/variants/stability_study/*_ReMax2_gmFwd`, `*_ReMax2_gmOn`,
+`REF*_ReMax2_gmFwd` and `thetaPatchFD_gmFwd`; that directory's `README.md` has
+the row for each run and the table of results, and the setup's `TODO.md` the
+open decision. The variants of the GM-free finite-difference sweeps,
+`stability_study/thetaPatchFD_gmOff` and `kappa_v_ensemble/REFp10_ReMax2`,
+`REFm10_ReMax2`, were removed on 2026-09-12, because they stage today's
+GM-on `data.pkg`; their runs 31247–31252, 31231 and 31232 stay, since
+`fd_summary.py` reads them.
 
 ## Runs
 

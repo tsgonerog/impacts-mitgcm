@@ -395,13 +395,14 @@ on, and `useApproxAdvectionInAdMode=.TRUE.` when `data` sets `tempAdvScheme` or
 since every adjoint build honours both switches, no build name can say which
 adjoint a run computes. An exact adjoint is a deliberate choice,
 `IMPACTS_ALLOW_EXACT_ADJOINT=1`; of the committed variants,
-`stability_study/from180yrPk_{visc2x,viscRef,viscRef_ReMax2}_gmOn` and
+`stability_study/from180yrPk_viscRef_ReMax2_gmOn` and
 `grdchk_repair/from180yrPk_viscRef_ReMax2_approxAdvOff_grdchkON` need it (run
-31283, the `viscRef_gmOn` record without it, was refused before the model
-started). The exact scheme-33 adjoint of the gradient check (31178, 31179) is
-now the `approxAdvOff` record with the override: `adv33` has no
-`data.autodiff` of its own, so it takes the live file's switch and gives the
-approximate adjoint in every build.
+31283, a `viscRef_gmOn` record submitted without it, was refused before the
+model started; that record was removed later the same day). The exact
+scheme-33 adjoint of the gradient check (31178, 31179) is the `approxAdvOff`
+record with the override. The variants that, staging the live `data.pkg` or
+`data.autodiff`, no longer gave the configuration of their runs were removed on
+2026-09-12; `input_tap/variants/README.md` lists them.
 
 `adjVisc` runs the adjoint with **larger viscosity and diffusivity than the
 forward** — the standard trick for stopping a long adjoint from blowing up.
@@ -500,16 +501,17 @@ input_tap/
 ├── ...
 └── variants/
     ├── README.md                 the rule, and an index of the groups
-    ├── baseline/                 earlier baselines, kept as records
-    │   └── data_from180yrPk_visc2x
-    ├── viscosity_study/
+    ├── baseline/                 an earlier baseline, kept as a record
+    │   └── data_from180yrPk_viscRef_ReMax2_gmOff, data.pkg_...
     ├── adjointViscosity/         data.autodiff_additions (the lines the adjVisc submit script adds)
     ├── grdchk_repair/            gradient check on the sensitivity peak (passes; the
     │                             committed data.grdchk's point measures noise)
-    └── kappa_v_ensemble/
-        ├── README.md
-        └── data_M1 ... data_M7
+    └── stability_study/          GM/Redi in either sweep, and its finite differences
 ```
+
+(`kappa_v_ensemble/` and `viscosity_study/` were removed on 2026-09-12, with the
+other adjoint variants that no longer gave the configuration of their runs;
+`input_tap/variants/README.md` lists them.)
 
 `input/variants/` is organised the same way, with the same group names where a
 study has both a forward and an adjoint half. **Every variant is in a group**;
@@ -535,9 +537,9 @@ IMPACTS_TEST_CASE=stability_study/from170yrPk_viscRef_gmOff \
 Select a variant without touching any script:
 
 ```bash
-IMPACTS_TEST_CASE=baseline/from180yrPk_visc2x  ../../../tools/submit.sh scripts/submit_tapAdj.sh
-IMPACTS_TEST_CASE=kappa_v_ensemble/M3          ../../../tools/submit.sh scripts/submit_tapAdj.sh
-IMPACTS_TEST_CASE=                             ../../../tools/submit.sh scripts/submit_tapAdj.sh   # live input_tap/data
+IMPACTS_TEST_CASE=stability_study/from180yrPk_viscRef_ReMax2_gmFwd    ../../../tools/submit.sh scripts/submit_tapAdj.sh
+IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON ../../../tools/submit.sh scripts/submit_tapAdj.sh
+IMPACTS_TEST_CASE=                                                    ../../../tools/submit.sh scripts/submit_tapAdj.sh   # live input_tap/data
 ```
 
 or change the committed default, the value `IMPACTS_TEST_CASE` falls back to
@@ -1033,7 +1035,7 @@ Beyond the forward set, the adjoint adds four:
 | Namelist | Controls |
 | --- | --- |
 | `data.cost` | `mult_atl` — scales the cost function |
-| `data.ctrl` | which controls are optimised (`xx_theta`, `xx_salt`, `xx_diffkr`, wind stress, heat and freshwater flux) and their weight files — every `xx_*_weight` points at `ones_64b.bin` |
+| `data.ctrl` | the controls and their weight files — every `xx_*_weight` points at `ones_64b.bin`. Eight are active: the time-varying `xx_fu`, `xx_fv` (wind stress), `xx_qnet`, `xx_qsw` and `xx_empmr`, and the time-invariant 3-D `xx_theta`, `xx_salt` (initial state) and `xx_diffkr`. Six more are comments since 2026-09-12, because none reaches the model in this build and their gradients were identically zero: `xx_tauu`, `xx_tauv`, `xx_uwind` and `xx_vwind` act only through `pkg/exf`, which DINO does not compile, and `xx_uvel`, `xx_vvel` need `ALLOW_UVEL0_CONTROL` and `ALLOW_VVEL0_CONTROL`, undefined in `code_tap/CTRL_OPTIONS.h`. The note above each says when it would be used and what enabling it takes |
 | `data.autodiff` | adjoint-mode behaviour: the live file sets `useGMRediInAdMode=.FALSE.` and `useApproxAdvectionInAdMode=.TRUE.`, which every adjoint build honours and the submit body requires unless `IMPACTS_ALLOW_EXACT_ADJOINT=1` (see "Run"); `useKPPinAdMode` is a comment while KPP is not compiled. `variants/adjointViscosity/data.autodiff_additions` holds the lines the adjoint-viscosity submit script adds to it, and a sibling with `useApproxAdvectionInAdMode=.FALSE.` (the `*_approxAdvOff*` tags) gives the exact scheme-33 adjoint |
 | `data.grdchk` | the finite-difference gradient check: `grdchk_eps`, `grdchkvarname`, and the `iGloPos/jGloPos/kGloPos` point to perturb |
 

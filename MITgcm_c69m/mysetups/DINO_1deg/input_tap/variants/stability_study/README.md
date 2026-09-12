@@ -2,12 +2,30 @@
 
 Started 2026-09-09 on branch `dino-stability-study`; the forward half is
 [`../../../input/variants/stability_study/`](../../../input/variants/stability_study/).
-All `from180yrPk_*` files are `baseline/data_from180yrPk_visc2x` with the lines
-their headers name changed; the `_gm*` tags carry `data.pkg`, `data.gmredi`
-(the spin-up's, K = 571 with the ldd97 taper — the live `input_tap/data.gmredi`
-was a different file until 2026-09-11, K = 1000 with dm95) and, for `_gmOn`, a `data.autodiff`
-sibling with `useGMRediInAdMode=.TRUE.`. Growth is read from the `ADJ*`
-dumps (there is no adjoint monitor stream): wet-RMS of `ADJtheta` per dump.
+All `from180yrPk_*` files were derived from `baseline/data_from180yrPk_visc2x`
+(removed on 2026-09-12) with the lines their headers name changed; the `_gm*`
+tags carry `data.pkg`, `data.gmredi` (the spin-up's, K = 571 with the ldd97
+taper — the live `input_tap/data.gmredi` was a different file until 2026-09-11,
+K = 1000 with dm95) and, for `_gmOn`, a `data.autodiff` sibling with
+`useGMRediInAdMode=.TRUE.`. Growth is read from the `ADJ*` dumps (there is no
+adjoint monitor stream): wet-RMS of `ADJtheta` per dump.
+
+**Removed on 2026-09-12.** Thirteen tags of this study no longer gave the
+configuration of their runs and were removed (git history has them):
+`from180yrPk_viscRef`, `from180yrPk_viscRef_vort3`, `from180yrPk_visc2x_gmOn`,
+`from180yrPk_viscRef_gmOn`, `from180yrPk_visc2x_gmFwd`,
+`from180yrPk_viscRef_gmFwd`, `from180yrPk_visc2x_approxAdv`,
+`from180yrPk_viscRef_approxAdv`, `M7_lastHalfYr`, `M7_lastHalfYr_adv30`,
+`M7_lastHalfYr_ReMax2`, `M7_lastHalfYr_approxAdv` and `thetaPatchFD_gmOff`.
+Without a `data.pkg` of their own the GM-free rows would now stage GM/Redi; the
+2026-09-09 `_gmOn` runs staged the K = 1000 `data.gmredi`, not the sibling they
+now carry; and the 2026-09-09 `_gmFwd` and `_approxAdv` runs used builds that
+half-applied or ignored their switches. Runs 31152–31159 were deleted with
+them (provenance in `logs/deleted_run_records/` of the scratch output tree);
+31166–31168, 31176 and 31247–31252, which the stability note's figures and
+`fd_summary.py` read, are still on scratch. The table keeps the removed rows as
+the record of what their runs showed; the tags still here are
+`from180yrPk_viscRef_ReMax2` and the 2026-09-11 rows.
 
 **Two facts about the configuration every earlier adjoint ran with.** The
 spin-up ran with GM/Redi on (`input/data.pkg`) and every adjoint with it off
@@ -77,12 +95,13 @@ IMPACTS_ALLOW_EXACT_ADJOINT=1 IMPACTS_TEST_CASE=stability_study/from180yrPk_visc
 IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh
 ```
 
-A row without its own `data.pkg` or `data.autodiff` stages the live file, so it
-no longer reproduces a run made before that file changed (GM/Redi in the
-forward sweep since 2026-09-11; scheme 30 in the adjoint sweep of every build
-since 2026-09-12). Every GM-free row above is such a run, the `M7_*` restarts
-included: the command at the end of this README now runs the M7 control with
-GM/Redi in the forward sweep and scheme 30 in the adjoint sweep.
+A row without its own `data.pkg` or `data.autodiff` stages the live file (GM/Redi
+in the forward sweep since 2026-09-11; scheme 30 in the adjoint sweep of every
+build since 2026-09-12). The rows for which that changed the configuration were
+removed on 2026-09-12 (see the top of this README). Of the tags left, every
+2026-09-11 row carries the `data.pkg` it needs, and `from180yrPk_viscRef_ReMax2`,
+which carries none, gives the configuration of its 2026-09-12 runs 31279 and
+31282 but not of 31163 (2026-09-09, GM-free and exact).
 
 **GM/Redi in the forward sweep only (2026-09-11).** Adjoint minus finite
 difference, in % of the finite difference (`fd_summary.py` in
@@ -103,11 +122,7 @@ carries no GM linearisation, which cannot be added (31236). **Adopted for produc
 `_gmFwd`), and `../baseline/data_from180yrPk_viscRef_ReMax2_gmOff` keeps the
 GM-free one.
 
-The `M7_*` runs need the pickup override the adjoint submit definitions gained
-the same day:
-
-```bash
-IMPACTS_PICKUP_RUN_DIR=$SCRATCH_ROOT/DINO_1deg_outputs/runs/adjoint/kappa_v_ensemble/DINO_1deg_tapAdj_ckpAll_5yr_M7_run31046 \
-IMPACTS_PICKUP_ITER=3241296 IMPACTS_TEST_CASE=stability_study/M7_lastHalfYr \
-IMPACTS_DURATION_DAYS=183 ../../../tools/submit.sh scripts/submit_tapAdj_ckpAll.sh
-```
+The `M7_*` restarts started from the monthly pickup 3241296 that member M7's
+adjoint 31046 wrote (`IMPACTS_PICKUP_RUN_DIR` at that run,
+`IMPACTS_PICKUP_ITER=3241296`). Their variants were removed on 2026-09-12 (git
+history has them); 31046 is still on scratch.

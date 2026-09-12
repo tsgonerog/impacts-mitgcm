@@ -14,17 +14,30 @@
 # *********************
 # names for CTRL_GENARR, CTRL_GENTIM
 # *********************
+# Six controls are commented out (2026-09-12): xx_tauu, xx_tauv, xx_uwind,
+# xx_vwind, xx_uvel, xx_vvel. None of them reaches the model in this setup, so
+# their gradients were identically zero in every adjoint run (e.g. 31281). The
+# controls that stay keep their indices: pkg/ctrl skips an index whose weight
+# file is blank (ctrl_init_fixed.F, lines 251 and 297).
  &CTRL_NML_GENARR
 # ======== 2-D CONTROLS (time varying) ========
-# Zonal wind stress control  → ADJtaux, adxx_tauu
- xx_gentim2d_file(1)       = 'xx_tauu',
- xx_gentim2d_weight(1)     = 'ones_64b.bin',
+# Wind stress, xx_tauu / xx_tauv (adxx_tauu, adxx_tauv): commented out.
+#   Why unused: only pkg/exf applies them, adding them to its wind stress
+#   ustress/vstress (exf_getsurfacefluxes.F, lines 111-125), and DINO does not
+#   compile pkg/exf. DINO reads its wind stress from zonalWindFile (data, PARM05)
+#   into fu/fv, which xx_fu/xx_fv below control (ctrl_map_forcing.F, 119-121).
+#   When to use: a setup forced through pkg/exf.
+#   To enable: compile-time, add exf to code_tap/packages.conf (and
+#   code/packages.conf); ALLOW_GENTIM2D_CONTROL in CTRL_OPTIONS.h is already
+#   defined. Run-time, useEXF=.TRUE. in data.pkg with the wind-stress files in
+#   data.exf. Then uncomment the file and weight lines (bounds optional).
+# xx_gentim2d_file(1)       = 'xx_tauu',
+# xx_gentim2d_weight(1)     = 'ones_64b.bin',
 # optional bounds (units: N/m^2):
 # xx_gentim2d_bounds(1:5,1) = -0.5, -0.3, 0.3, 0.5, 5.,
 #
-# Meridional wind stress control  → ADJtauy, adxx_tauv
- xx_gentim2d_file(2)       = 'xx_tauv',
- xx_gentim2d_weight(2)     = 'ones_64b.bin',
+# xx_gentim2d_file(2)       = 'xx_tauv',
+# xx_gentim2d_weight(2)     = 'ones_64b.bin',
 # xx_gentim2d_bounds(1:5,2) = -0.5, -0.3, 0.3, 0.5, 5.,
 #
 # surface heat flux (Qnet) control
@@ -42,14 +55,23 @@
  xx_gentim2d_weight(5) = 'ones_64b.bin',
 # xx_gentim2d_bounds(1:5,5) = -300., -150., 150., 300., 1.,
 #
-# zonal wind speed (Uwind) control
- xx_gentim2d_file(6)   = 'xx_uwind',
- xx_gentim2d_weight(6) = 'ones_64b.bin',
+# Wind speed, xx_uwind / xx_vwind (adxx_uwind, adxx_vwind): commented out.
+#   Why unused: only pkg/exf applies them, adding them to its atmospheric winds
+#   uwind/vwind (exf_getffields.F, lines 542-556), and DINO does not compile
+#   pkg/exf.
+#   When to use: a setup that prescribes atmospheric winds and lets pkg/exf's
+#   bulk formulae compute the stress.
+#   To enable: compile-time, add exf to both packages.conf files, with
+#   ALLOW_ATM_WIND and ALLOW_BULKFORMULAE defined in EXF_OPTIONS.h (the tree's
+#   default header defines both); ALLOW_GENTIM2D_CONTROL is already defined.
+#   Run-time, useEXF=.TRUE. in data.pkg with the wind files in data.exf. Then
+#   uncomment the file and weight lines (bounds optional).
+# xx_gentim2d_file(6)       = 'xx_uwind',
+# xx_gentim2d_weight(6)     = 'ones_64b.bin',
 # xx_gentim2d_bounds(1:5,6) = -10., -5., 5., 10., 1.,
 #
-# meridional wind speed (Vwind) control
- xx_gentim2d_file(7)   = 'xx_vwind',
- xx_gentim2d_weight(7) = 'ones_64b.bin',
+# xx_gentim2d_file(7)       = 'xx_vwind',
+# xx_gentim2d_weight(7)     = 'ones_64b.bin',
 # xx_gentim2d_bounds(1:5,7) = -10., -5., 5., 10., 1.,
 #
  xx_gentim2d_file(8)       = 'xx_fu',
@@ -71,14 +93,20 @@
  xx_genarr3d_weight(3)     = 'ones_64b.bin',
  xx_genarr3d_bounds(1:5,3) = 1.E-6,2.E-6,4.E-4,5.E-4,0.,
 #
-# initial zonal velocity
- xx_genarr3d_file(4)       = 'xx_uvel',
- xx_genarr3d_weight(4)     = 'ones_64b.bin',
+# Initial velocity, xx_uvel / xx_vvel (adxx_uvel, adxx_vvel): commented out.
+#   Why unused: ctrl_map_ini_genarr.F (lines 367-372) adds them to uVel/vVel
+#   only when ALLOW_UVEL0_CONTROL and ALLOW_VVEL0_CONTROL are both defined, and
+#   code_tap/CTRL_OPTIONS.h undefines both (lines 64-65).
+#   When to use: for the sensitivity of the cost to the initial velocity field.
+#   To enable: compile-time, define both flags in code_tap/CTRL_OPTIONS.h and
+#   rebuild every adjoint build. Run-time, uncomment the file and weight lines
+#   (bounds optional). Not yet tried with Tapenade in this project.
+# xx_genarr3d_file(4)       = 'xx_uvel',
+# xx_genarr3d_weight(4)     = 'ones_64b.bin',
 # xx_genarr3d_bounds(1:5,4) = -0.5, -0.25, 0.25, 0.5, 1.,
 #
-# initial meridional velocity
- xx_genarr3d_file(5)       = 'xx_vvel',
- xx_genarr3d_weight(5)     = 'ones_64b.bin',
+# xx_genarr3d_file(5)       = 'xx_vvel',
+# xx_genarr3d_weight(5)     = 'ones_64b.bin',
 # xx_genarr3d_bounds(1:5,5) = -0.5, -0.25, 0.25, 0.5, 1.,
 #
  &

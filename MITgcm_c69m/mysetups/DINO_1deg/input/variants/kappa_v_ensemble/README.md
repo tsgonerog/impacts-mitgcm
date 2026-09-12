@@ -9,19 +9,25 @@ reference viscosity files, `viscAhReMax=2.`, the flux-limited scheme 33 — i.e.
 `../stability_study/data_from170yrPk_viscRef_ReMax2` with `diffKrT/S`, `pChkptFreq`
 and the vertical advection (explicit) changed; `REF_ReMax2` is the κ = 1.2e-5
 member, needed because 31164 ran the implicit form. The
-matching adjoints are `../../../input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2`,
-run with the default pair of that day (`approxAdv`, merged into `ckpAll` on
-2026-09-12) from each leg's year-180 pickup. The
-bare `M<k>` files below are the 2026-08 members at 2× viscosity (runs
-30996–31002), kept as the record of that campaign.
+matching adjoints (31206 and 31208–31220, even) were run from each leg's
+year-180 pickup with the default pair of that day (`approxAdv`, merged into
+`ckpAll` on 2026-09-12). Their variants,
+`input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2`, were removed on
+2026-09-12 (git history has them): with no `data.pkg` of their own they would
+now stage GM/Redi, which those GM-free adjoints did not have. A rerun with
+GM/Redi in the forward sweep recreates them as `M<k>_ReMax2_gmFwd` (DINO
+`TODO.md`). The bare `M<k>` files below are the 2026-08 members at 2× viscosity
+(runs 30996–31002), kept as the record of that campaign.
 
 Vertical-mixing perturbation ensemble, Part I of the neural-network surrogate
 proposal: **do the adjoint sensitivity patterns depend on the model's vertical
 mixing?**
 
 These seven namelists are the **forward re-equilibration leg**, year 2170 →
-2180, each at its own vertical diffusivity. The adjoint half lives in
-[`../../../input_tap/variants/kappa_v_ensemble/`](../../../input_tap/variants/kappa_v_ensemble/).
+2180, each at its own vertical diffusivity. The adjoint half lived in
+`input_tap/variants/kappa_v_ensemble/` until 2026-09-12 (removed; git history
+has it); its runs, the reference 31039 and the members 31040–31046, are analysed
+in `analyses/DINO_1deg/adjoint/kappa_v_ensemble/`.
 
 | Tag | κ_v (m² s⁻¹) | × reference |
 | --- | --- | --- |
@@ -67,5 +73,6 @@ rerun from these namelists reproduces them.
 and are healthy; each wrote its year-2180 pickup and its matching adjoint ran
 from it. Results live in `analyses/DINO_1deg/adjoint/kappa_v_ensemble/`
 and in the surrogate proposal's Part I §Results — including the caveat that
-four of the seven *adjoint* legs blow up (see the adjoint-side
-`input_tap/variants/kappa_v_ensemble/README.md`).
+four of the seven *adjoint* legs blow up (see
+`analyses/DINO_1deg/adjoint/kappa_v_ensemble/README.md`; the adjoint-side
+variant README was removed with its variants on 2026-09-12).

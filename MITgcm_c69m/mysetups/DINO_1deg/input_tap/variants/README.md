@@ -18,16 +18,18 @@ which stages `variants/<group>/data_<tag>` as `data`.
 ## The two rules
 
 **1. A file is named after the MITgcm file it replaces.** The name is
-`<mitgcm-file>_<tag>` — so `data_M3` replaces `data`, `data.pkg_M3` replaces
-`data.pkg`, `data.autodiff_M3` replaces `data.autodiff`. The part before the
-first underscore tells you which file you are looking at.
+`<mitgcm-file>_<tag>` — so in `stability_study/`,
+`data_from180yrPk_viscRef_ReMax2_gmOn` replaces `data`,
+`data.pkg_from180yrPk_viscRef_ReMax2_gmOn` replaces `data.pkg` and
+`data.autodiff_from180yrPk_viscRef_ReMax2_gmOn` replaces `data.autodiff`. The
+part before the first underscore tells you which file you are looking at.
 
 **2. Every file sharing a tag inside a group is staged together.** Selecting a
 tag stages its `data` *and* every sibling `<mitgcm-file>_<tag>` beside it. That
 is what lets one variant change a package flag as well as the namelist:
-`grdchk_repair/from180yrPk_visc2x_grdchkON` stages `data_...grdchkON`,
-`data.pkg_...grdchkON` and `data.grdchk_...grdchkON`, so the run really does get
-`useGrdchk=.TRUE.` and the moved perturbation point. Before this existed
+`grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON` stages
+`data_...grdchkON`, `data.pkg_...grdchkON` and `data.grdchk_...grdchkON`, so the
+run really does get `useGrdchk=.TRUE.` and the moved perturbation point. Before this existed
 (2026-08-28) only the `data` half was staged, and a forward KPP variant (deleted
 on 2026-09-12) silently ran without KPP.
 
@@ -48,22 +50,38 @@ IMPACTS_ALLOW_EXACT_ADJOINT=1 IMPACTS_TEST_CASE=<group>/<tag> ../../../tools/sub
 ```
 
 Those records are `grdchk_repair/from180yrPk_viscRef_ReMax2_approxAdvOff_grdchkON`
-and `stability_study/from180yrPk_{visc2x,viscRef,viscRef_ReMax2}_gmOn`. A record
-without its own `data.pkg` or `data.autodiff` stages the live file, so it runs
-today's configuration (GM/Redi in the forward sweep since 2026-09-11, scheme 30
-in the adjoint sweep), not the one it was run with; the group READMEs say which
-of their records that affects.
+and `stability_study/from180yrPk_viscRef_ReMax2_gmOn`. A record without its own
+`data.pkg` or `data.autodiff` stages the live file, so it runs today's
+configuration (GM/Redi in the forward sweep since 2026-09-11, scheme 30 in the
+adjoint sweep); the records for which that meant a different configuration from
+their runs' were removed on 2026-09-12 (next section), and every record left
+gives the configuration of its runs (`stability_study/from180yrPk_viscRef_ReMax2`
+that of 31279 and 31282, not of its first run 31163, which was GM-free and exact).
 
 ## Groups
 
 | Group | What it varies |
 | --- | --- |
-| [`baseline/`](baseline/) | Earlier reference adjoint configurations, kept as records (`from180yrPk_visc2x`, `from180yrPk_viscRef_ReMax2_gmOff`); since 2026-09-09 the live `input_tap/data` is the baseline |
-| [`viscosity_study/`](viscosity_study/) | Adjoint runs at the `viscAhGrid` settings of the forward-side study of the same name |
+| [`baseline/`](baseline/) | The GM-free configuration of 31206 and of the 2026-09-10 κ ensemble adjoints (`from180yrPk_viscRef_ReMax2_gmOff`), kept as a record; since 2026-09-09 the live `input_tap/data` is the baseline |
 | [`adjointViscosity/`](adjointViscosity/) | `data.autodiff_additions`, the adjoint-mode viscosity inflation (`viscFacInAd = 10.`): lines that `submit_tapAdj_adjVisc.sh` adds to the staged `data.autodiff`, not a tag. **Needs the matching build and submit script** — `build_tapAdj_adjVisc.sh` + `submit_tapAdj_adjVisc.sh` |
-| [`kappa_v_ensemble/`](kappa_v_ensemble/) | The vertical-mixing perturbation ensemble of the surrogate proposal — the 5-year adjoints |
-| [`grdchk_repair/`](grdchk_repair/) | The finite-difference gradient check with its perturbation moved onto the sensitivity peak and `useGrdchk` switched on — the check that can actually pass (0.9 % at the peak, run 31037), unlike the committed `data.grdchk` point |
-| [`stability_study/`](stability_study/) | What makes the adjoint blow up, and what holds it: viscosity, GM/Redi in either sweep, the flux limiter's adjoint (2026-09-09 to 2026-09-11) |
+| [`grdchk_repair/`](grdchk_repair/) | The finite-difference gradient check with its perturbation moved onto the sensitivity peak and `useGrdchk` switched on — the check that can actually pass (all five points to 0.0035 % under scheme 30, run 31172), unlike the committed `data.grdchk` point |
+| [`stability_study/`](stability_study/) | What makes the adjoint blow up, and what holds it: GM/Redi in either sweep, and the finite differences of the 2026-09-11 test; its README keeps the record of the 2026-09-09 viscosity and flux-limiter rows |
+
+## Removed on 2026-09-12
+
+Variants that no longer gave the configuration of their runs were removed
+(git history has them). Each tag was staged as the submit body stages it today
+and compared with the namelists its runs staged, counting only differences that
+change a run, and with whether the run's build applied its switches as every
+build does now. That removed the whole `kappa_v_ensemble/` group (M1–M7,
+`M<k>_ReMax2`, `REFm10_ReMax2`, `REFp10_ReMax2`) and the whole
+`viscosity_study/` group, `baseline/from180yrPk_visc2x`,
+`grdchk_repair/from180yrPk_visc2x_grdchkON` and `…adv33_grdchkON`, and thirteen
+`stability_study/` tags (listed in its README). Every run keeps its staged
+namelists in its own directory. The runs no analysis reads were deleted with
+their variants (31032, 31037, 31052–31054, 31074, 31093, 31095, 31152–31159,
+31178; provenance in `logs/deleted_run_records/` of the scratch output tree);
+the others are still on scratch.
 
 ## Adding to this
 
@@ -79,4 +97,5 @@ of their records that affects.
 
 The run directory is named after the **tag only**, not the group — a run is
 described by its physics, not by where its namelist lives in this repository.
-So `kappa_v_ensemble/M3` produces `..._M3_run<jobid>`.
+So `grdchk_repair/from180yrPk_viscRef_ReMax2_adv30_grdchkON` produces
+`..._from180yrPk_viscRef_ReMax2_adv30_grdchkON_run<jobid>`.

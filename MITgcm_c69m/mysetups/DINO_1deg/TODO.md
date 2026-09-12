@@ -14,8 +14,12 @@
   start after the cleanup): the ensemble adjoints 31206–31220 are GM-free in both
   sweeps. Rerun them with GM in the forward sweep (about 14.5 h each). Decide
   first whether the forward legs start again from the 2× spin-up's year-170 state,
-  as 31205–31219 did, or from 31203's own state; and give the variants a `_gmFwd`
-  tag, because runs named by a variant tag carry no GM token.
+  as 31205–31219 did, or from 31203's own state. Their adjoint variants were
+  removed on 2026-09-12 (entry below), so the rerun first recreates them as
+  `kappa_v_ensemble/M<k>_ReMax2_gmFwd`: the live `input_tap/data` with
+  `diffKrT`/`diffKrS` set to the member's κ, the values in the forward variants
+  `input/variants/kappa_v_ensemble/data_M<k>_ReMax2`. The `_gmFwd` goes into the
+  tag because runs named by a variant tag carry no GM token.
 - [ ] **Decide whether the default adjoint pair becomes `_nocheckpoint`**
   (2026-09-12). Under the live switches the nocheckpoint build now gives the
   `approxAdv` adjoint bit for bit at 1.41× on 30 d (31276 vs 31269), which by
@@ -29,6 +33,50 @@
   no run of it with implicit vertical advection has been compared.) Repointing
   is `ln -sfn` of the two symlinks (setup README, "Switching the default
   adjoint").
+- [x] **Unused controls commented out; variants that no longer reproduce their
+  runs removed** (2026-09-12, after the entry below). (1) `input_tap/data.ctrl`:
+  the six controls whose gradients were identically zero in every adjoint run
+  (31281, for one) are comments, each with a note on when it would be used, how
+  to enable it and the flags it needs — `xx_tauu`, `xx_tauv` (added to
+  `pkg/exf`'s wind stress; DINO compiles no `exf` and forces `fu`/`fv`, which
+  `xx_fu`/`xx_fv` control), `xx_uwind`, `xx_vwind` (added to `pkg/exf`'s winds,
+  with `ALLOW_ATM_WIND` and `ALLOW_BULKFORMULAE`), `xx_uvel`, `xx_vvel` (need
+  `ALLOW_UVEL0_CONTROL` and `ALLOW_VVEL0_CONTROL`, both undefined in
+  `code_tap/CTRL_OPTIONS.h`). A DINO adjoint writes 8 control gradients instead
+  of 14; the remaining controls keep their indices. Validated by 31288 (5 d of
+  the live namelist, `ckpAll`, default 5-day output) against 31281 (1-day
+  output): `fc`, every sensitivity file both runs wrote and the %MON blocks at
+  the steps both recorded are identical; the report's NOT CLEAN comes only from
+  the six controls' `adxx_*`/`xx_*` files, the packed control-vector files
+  (`ecco_c*_MIT_CE_000.opt0000`) and 31281's daily output. (2) Every
+  `input_tap/variants/` tag was staged as
+  the submit body stages it today and compared with the namelists each of its
+  runs on scratch staged, counting only differences that change a run (not
+  GM/Redi parameters with GM off in both, not the scheme-30 switch with scheme
+  30, not the validated `diffKrFile` → `diffKrT/S` change), and with whether the
+  run's build applied its switches as every build does now. The tags that no
+  longer reproduce were removed, 53 files with two READMEs (git history has
+  them): `baseline/from180yrPk_visc2x`; `grdchk_repair/from180yrPk_visc2x_grdchkON`
+  and `…adv33_grdchkON`; the whole `kappa_v_ensemble/` group (M1–M7,
+  `M<k>_ReMax2`, `REFm10/REFp10_ReMax2`) and the whole `viscosity_study/` group;
+  and thirteen `stability_study/` tags (`from180yrPk_viscRef`, `…_viscRef_vort3`,
+  the `_gmOn`, `_gmFwd` and `_approxAdv` pairs of 2026-09-09, the four
+  `M7_lastHalfYr*` restarts and `thetaPatchFD_gmOff`). Kept, because they still
+  give their runs' configuration: `baseline/from180yrPk_viscRef_ReMax2_gmOff`
+  (31206), the other three `grdchk_repair` tags (31172, 31177, 31179), and in
+  `stability_study/` `from180yrPk_viscRef_ReMax2` (31279, 31282; not its first
+  run 31163), `…_ReMax2_gmFwd` (31234, 31237), `…_ReMax2_gmOn` (31236),
+  `REFp10/REFm10_ReMax2_gmFwd` (31238/31239) and `thetaPatchFD_gmFwd`
+  (31241–31246). No script, tool or notebook ran a removed variant; the header
+  example in the adjoint submit definitions now names a kept one. (3) The runs
+  of the removed variants that no notebook, script or note reads were deleted
+  from scratch, 3.0 GB: 31032, 31037, 31052–31054, 31074, 31093, 31095,
+  31152–31159 and 31178. Each keeps its `build_info.txt`, `run_timing.txt`,
+  staged namelists, comparison reports, first `fc` line and, where present, its
+  grdchk lines and profile tables in `logs/deleted_run_records/` of the scratch
+  output tree. Still on scratch, pending a decision because analyses or the
+  stability note read them: 28486, 31022, 31028, 31039–31046, 31137, 31140,
+  31166–31168, 31176, 31208–31220 (even), 31231, 31232 and 31247–31252.
 - [x] **KPP and the C-D scheme out of DINO; the `approxAdv` build merged into
   `ckpAll`** (2026-09-12, after the setup review below). (1) Configuration:
   `kpp` and `cd_code` are compiled neither in the forward model nor in the
@@ -74,8 +122,8 @@
   namelists alone (`data`, `data.autodiff`: comment text and the commented-out
   lines; in four, `data.kpp` present only in the reference). 31283
   (`stability_study/from180yrPk_viscRef_gmOn` without the override) was
-  refused before the model started, and its staging directory deleted. The new
-  runs are not yet filed.
+  refused before the model started, and its staging directory deleted. The
+  runs, with 31279, are filed under `runs/{forward,adjoint}/toolchain_validation/`.
 - [x] **Setup review after the configuration changes** (2026-09-12). (1) The
   variant copies of tree files got a drift check: each
   `code_tap/variants/*/` and `tools/tapenade_profiling/mods_profile/` records

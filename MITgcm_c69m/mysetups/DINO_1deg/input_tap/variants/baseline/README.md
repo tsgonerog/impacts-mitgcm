@@ -25,13 +25,19 @@ spin-up 31169, on which it waits (`--dependency=afterok`, the pickup through
 `IMPACTS_PICKUP_RUN_DIR`); the gradient check under the new configuration is
 31172 (`../grdchk_repair/`).
 
-`data_from180yrPk_visc2x` is the previous **reference adjoint**: 5 years, 2180 → 2185,
+`data_from180yrPk_visc2x` was the previous **reference adjoint**: 5 years, 2180 → 2185,
 started from the year-2180 pickup of the 200-year spin-up, at the same
-viscosity the spin-up used. It is the control every `kappa_v_ensemble/` member
-is compared against, and the configuration of the reference chain 28486
-(May 2026) → 30995 → 31039 (2026-09-01, the current seam-clean reference)
+viscosity the spin-up used. It was the control every 2026-08 `kappa_v_ensemble`
+member was compared against, and the configuration of the reference chain 28486
+(May 2026) → 30995 → 31039 (2026-09-01, the seam-clean reference)
 ≡ 31060 (2026-09-02, the same run with the `-nocheckpoint` build, bitwise
-identical).
+identical). **It was removed on 2026-09-12** (git history has it): with no
+`data.pkg` or `data.autodiff` of its own it staged the live files, GM/Redi in
+the forward sweep and scheme 30 in the adjoint sweep, and no longer gave the
+configuration of its runs. Of those runs 28486, 31022, 31028, 31039, 31137 and
+31140 are still on scratch; 31032, 31052–31054, 31074, 31093 and 31095 were
+deleted the same day (provenance in `logs/deleted_run_records/` of the scratch
+output tree).
 
 Since 2026-09-09 the vertical diffusivity is `diffKrT = diffKrS = 1.2E-5` in
 `PARM01` rather than `diffKrFile='dino_diffKr.bin'`; the `diffKr` array the
@@ -39,15 +45,11 @@ model builds is the same bit for bit, and so is the adjoint (30 d, 31140 ≡
 31137: every `ADJ*`/`adxx_*`, `fc`, `%MON`). See the setup README, "Lateral
 viscosity and vertical diffusivity: file or parameter".
 
-`nIter0=3162240` is year 2180. Since 2026-09-12 the adjoint submit definitions
-link the pickup at the staged `nIter0` themselves and default to the production
-spin-up 31203, which they refuse for a `visc2x` namelist: a run of
-`data_from180yrPk_visc2x` needs `IMPACTS_PICKUP_RUN_DIR` pointing at the 2×
-spin-up 30983.
-
-Neither record has a `data.autodiff` sibling, and `data_from180yrPk_visc2x` has
-no `data.pkg` either, so a run of it today stages the live files: GM/Redi in the
-forward sweep (since 2026-09-11) and scheme 30 in the adjoint sweep (every DINO
-adjoint build since 2026-09-12), which is not the configuration of 31039.
-`data_from180yrPk_viscRef_ReMax2_gmOff`, with its `data.pkg` sibling, still gives
-the configuration of 31206.
+`data_from180yrPk_viscRef_ReMax2_gmOff`, the one record left here, has a
+`data.pkg` sibling and no `data.autodiff`: staged as the submit body stages it
+today, it gives the configuration of 31206 (checked on 2026-09-12 against
+31206's staged namelists; the live `data.autodiff`'s scheme-30 switch is the
+one 31206 ran with). `nIter0=3162240` is year 2180. The adjoint submit
+definitions link the pickup at the staged `nIter0` themselves and default to
+the production spin-up 31203; 31206 started from the REF_ReMax2 leg 31205, so
+name that run in `IMPACTS_PICKUP_RUN_DIR` to repeat it.

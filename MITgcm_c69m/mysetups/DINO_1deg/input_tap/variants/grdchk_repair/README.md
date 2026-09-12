@@ -1,11 +1,15 @@
 # `grdchk_repair/` — a gradient check that can actually pass
 
-One tag, `from180yrPk_visc2x_grdchkON`: the `baseline/from180yrPk_visc2x`
-namelist plus two sibling overrides — `data.pkg` with `useGrdchk = .TRUE.`
-(the committed DINO default is `.FALSE.` since 2026-08-28) and a `data.grdchk`
-with the perturbation moved from (4,8,1) to the 30-day sensitivity peak
-(i=2, j=127, k=26 on the cost section) and `grdchk_eps` raised to `1e-3`,
-per the repair prescribed in the root `README.md` ("Verifying correctness").
+The first tag here, `from180yrPk_visc2x_grdchkON` (2026-09-01), was the
+`baseline/from180yrPk_visc2x` namelist plus two sibling overrides — `data.pkg`
+with `useGrdchk = .TRUE.` (the committed DINO default is `.FALSE.` since
+2026-08-28) and a `data.grdchk` with the perturbation moved from (4,8,1) to the
+30-day sensitivity peak (i=2, j=127, k=26 on the cost section) and `grdchk_eps`
+raised to `1e-3`, per the repair prescribed in the root `README.md` ("Verifying
+correctness"). Its run 31037 passed at the peak to 0.9 %. The tag was removed on
+2026-09-12 (git history has it) and 31037 deleted (provenance, its grdchk lines
+included, in `logs/deleted_run_records/` of the scratch output tree); the three
+tags left use the same perturbation points.
 
 Since 2026-09-09 there is a second tag, `from180yrPk_viscRef_ReMax2_adv30_grdchkON`,
 the same check under the new production configuration (reference viscosity,
@@ -21,7 +25,7 @@ each 30 d from the year-180 pickup, the same five points, `grdchk_eps=1e-3`):
 
 | Tag | Adjoint | Build / submit pair |
 | --- | --- | --- |
-| `from180yrPk_viscRef_ReMax2_adv33_grdchkON` | the exact adjoint of scheme 33 (31178) | the default `build_tapAdj.sh` / `submit_tapAdj.sh` |
+| `from180yrPk_viscRef_ReMax2_adv33_grdchkON` (removed 2026-09-12) | the exact adjoint of scheme 33 (31178, deleted 2026-09-12) | the default `build_tapAdj.sh` / `submit_tapAdj.sh` of that day |
 | `from180yrPk_viscRef_ReMax2_approxAdv_grdchkON` | scheme 33 forward, scheme 30 in the adjoint sweep: the `data.autodiff` sibling sets `useApproxAdvectionInAdMode=.TRUE.` (31177) | `build_tapAdj_approxAdv.sh` / `submit_tapAdj_approxAdv.sh` |
 | `from180yrPk_viscRef_ReMax2_approxAdvOff_grdchkON` | the same build with the switch `.FALSE.` — the control (31179) | the same pair |
 
@@ -55,23 +59,20 @@ that amplitude, not a mask over it.
 
 **Since 2026-09-12 every DINO adjoint build honours `useApproxAdvectionInAdMode`**
 (the `approxAdv` build was merged into `ckpAll`, the default pair), so the last
-column above records what the runs used, not what a rerun needs. A tag without
-a `data.autodiff` sibling stages the live one, which sets the switch:
-`adv33_grdchkON` now gives the approximate adjoint of 31177 rather than the
-exact one of 31178, and a rerun of `from180yrPk_visc2x_grdchkON` is approximate
-too (31037 was exact). `approxAdv_grdchkON` and `adv30_grdchkON` run as they
-are. The exact scheme-33 check is `approxAdvOff_grdchkON`, whose sibling turns
-the switch off (31179, the same gradients as 31178); the submit body refuses
-it unless the exact adjoint is asked for.
+column above records what the runs used, not what a rerun needs.
+`approxAdv_grdchkON` and `adv30_grdchkON` run as they are. The exact scheme-33
+check is `approxAdvOff_grdchkON`, whose sibling turns the switch off (31179,
+the same gradients as 31178); the submit body refuses it unless the exact
+adjoint is asked for. `adv33_grdchkON` and `from180yrPk_visc2x_grdchkON`, which
+had no `data.autodiff` of their own and would now have staged the live
+switch, giving the approximate adjoint where their runs had the exact one,
+were removed that day, and their runs 31178 and 31037 deleted.
 
 Every run here started from the 2× spin-up 30983's year-180 pickup. Since
 2026-09-12 the adjoint submit definitions default to the production spin-up
-31203 instead (and refuse it for a `visc2x` namelist), so name 30983 to repeat
-one:
+31203 instead, so name 30983 to repeat one:
 
     P=$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983
-    IMPACTS_PICKUP_RUN_DIR=$P IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_visc2x_grdchkON \
-    IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh
     IMPACTS_ALLOW_EXACT_ADJOINT=1 IMPACTS_PICKUP_RUN_DIR=$P \
     IMPACTS_TEST_CASE=grdchk_repair/from180yrPk_viscRef_ReMax2_approxAdvOff_grdchkON \
     IMPACTS_DURATION_DAYS=30 ../../../tools/submit.sh scripts/submit_tapAdj.sh

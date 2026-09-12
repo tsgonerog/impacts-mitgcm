@@ -126,8 +126,8 @@ DINO_1deg/
 ├── input_tap/                adjoint namelists MITgcm reads (11: adds data.autodiff,
 │   │                         data.cost, data.ctrl, data.grdchk)
 │   └── variants/             alternative namelists, grouped by purpose:
-│                             baseline/ viscosity_study/ adjointViscosity/
-│                             kappa_v_ensemble/ grdchk_repair/
+│                             baseline/ adjointViscosity/ grdchk_repair/
+│                             stability_study/
 ├── input_binaries/           bathymetry, forcing, initial state — NOT tracked, 179 MB
 ├── input_adj_binaries/       ones_64b.bin, the uniform control weight — NOT tracked
 ├── 00_archive/               superseded config, mirroring the live dirs it came from
@@ -508,8 +508,10 @@ Scratch paths come from `$SCRATCH_ROOT` and are not hardcoded, but the
 ### Namelist variants
 
 Rather than editing `data` in place, alternative configurations live in
-`input*/variants/`, **grouped by purpose** — `baseline/`, `viscosity_study/`,
-`scheme_tests/`, `from70yrPk_sweep/`, `kappa_v_ensemble/` — and are selected by
+`input*/variants/`, **grouped by purpose** — for the forward model `baseline/`,
+`viscosity_study/`, `scheme_tests/`, `stability_study/`, `from70yrPk_sweep/`,
+`kappa_v_ensemble/`; for the adjoint `baseline/`, `adjointViscosity/`,
+`grdchk_repair/`, `stability_study/` — and are selected by
 the `test_cases` variable at the top of a submit script, or per run through
 `IMPACTS_TEST_CASE`:
 
@@ -553,8 +555,8 @@ The `CDscheme` and `kppON` extras named forward variants that were deleted on
 on scratch used either.
 
 So `input/variants/baseline/data_from_rest_visc2x` was the 200-year production
-configuration and `input_tap/variants/baseline/data_from180yrPk_visc2x` the
-5-year adjoint's until 2026-09-09; since then the live `input/data` and
+configuration and `input_tap/variants/baseline/data_from180yrPk_visc2x` (removed
+on 2026-09-12) the 5-year adjoint's until 2026-09-09; since then the live `input/data` and
 `input_tap/data` are, and a run of them is named from the namelist. Setting
 `IMPACTS_TEST_CASE=baseline/from_rest_visc2x` selects the first, and the run
 directory it stages is named to match:
@@ -586,13 +588,22 @@ live value is per setup, not shared:
 | DINO | 25 | upper 982 m of 36 levels / 4600 m |
 | SOMA | 21 | upper 954 m of 31 levels / 3500 m |
 
-**Controls** (`data.ctrl`), via `ctrl_genarr`/`ctrl_gentim`:
+**Controls** (`data.ctrl`), via `ctrl_genarr`/`ctrl_gentim`. DINO's, since
+2026-09-12:
 
-- *2-D, time varying*: wind stress `xx_tauu` / `xx_tauv`, net heat flux
-  `xx_qnet`, freshwater flux `xx_empmr`, shortwave `xx_qsw`, wind speeds
-  `xx_uwind` / `xx_vwind`, `xx_fu` / `xx_fv`
-- *3-D, time invariant*: initial `xx_theta`, `xx_salt`, `xx_uvel`, `xx_vvel`,
-  and vertical diffusivity `xx_diffkr`
+- *2-D, time varying*: net heat flux `xx_qnet`, freshwater flux `xx_empmr`,
+  shortwave `xx_qsw`, and `xx_fu` / `xx_fv`, which act on the wind stress DINO
+  reads into `fu`/`fv`
+- *3-D, time invariant*: initial `xx_theta`, `xx_salt`, and vertical
+  diffusivity `xx_diffkr`
+
+Six more are commented out, each with a note on when it would be used and what
+enabling it takes: the wind stress `xx_tauu` / `xx_tauv` and wind speeds
+`xx_uwind` / `xx_vwind`, which only `pkg/exf` applies and DINO does not compile,
+and the initial velocity `xx_uvel` / `xx_vvel`, which need `ALLOW_UVEL0_CONTROL`
+and `ALLOW_VVEL0_CONTROL` in `code_tap/CTRL_OPTIONS.h`. Their gradients were
+identically zero in every earlier DINO adjoint. SOMA's `data.ctrl` still
+declares all fourteen, and the same six are zero in its run 31265.
 
 Physical bounds are supplied for the tracer and diffusivity controls; the flux
 controls have bounds available but commented out.
@@ -677,7 +688,7 @@ There are no unit tests. What has and has not been checked, as of 2026-09-04:
 | Adjoint runs end to end | **verified** | 30-day adjoint from the 180-year pickup writes `ADJ*` and `adxx*`, peak sensitivity on the cost section at `i=2, j=127, k=26`. The 5-yr reference chain 28486 ≡ 30995 ≡ 31039 reproduces `fc` and every `adxx_*` bit-identically (the 2026-09-01 rerun's `ADJ*` dumps are seam-corrected and add `ADJetan`) |
 | `-nocheckpoint` tuned adjoint (DINO) | **verified 2026-09-02; re-derived and verified under the adjoint-mode switches 2026-09-12** | `build_tapAdj_nocheckpoint.sh` — the routines Tapenade's own profiler ranked highest (33 until 2026-09-12), differentiated in split mode instead of checkpointed — reproduces the plain build **bitwise** (fc, all `adxx_*`, all `ADJ*`) at 30 days (run 31054 vs 31052, 8:47 vs 13:13) and at 5 years (31055 vs 31039, 9:35:58 vs 14:05:45, **1.47×**). Method, numbers and the 45 % ceiling in `tools/tapenade_profiling/README.md`. **The DINO default from 2026-09-02 to 2026-09-10** (the plain build lives on as `build_tapAdj_ckpAll.sh`). **Re-verified 2026-09-03 on the whole κ_v ensemble**: all eight 5-yr adjoints (31060–31067 vs 31039–31046) bitwise identical, the four blow-ups included, at 1.45–1.65× per run — 37.8 h saved of 114.6 h. **2026-09-12:** re-profiled under the live namelists (31268) and re-derived, 28 routines, keeping checkpointed the three routines that are recorded before the adjoint-mode switches act and read them; bitwise identical to the `approxAdv` adjoint under the live switches (31276 vs 31269, 30 d, 1.41×; 31277 vs 31259, 5 d) |
 | `-nocheckpoint` under `adjVisc` | **tested 2026-09-02, not equivalent — rejected** | Run 31056 (boost + list) vs 31025 (boost, every call checkpointed): `fc` and `%MON` byte-identical, every `ADJ*` and `adxx_*` field different at order one. Joint-mode recomputation happens after the mode-switch hook has boosted the viscosities; split-mode tapes were taken before it. The boosted adjoint therefore stays a `ckpAll` build; report in `analyses/DINO_1deg/adjoint/tapenade_profiling/` |
-| Adjoint **correctness** | **verified at gradient-check level, 2026-09-01** | The repaired check (`input_tap/variants/grdchk_repair/`) agrees with finite differences to **0.9 %** at the DINO sensitivity peak (run 31037), and SOMA's always-on check passes at 0.07–1.8 % on all five of its points. The committed `data.grdchk` still points at the historical dead spot and still fails — use the variant. A control build of the pre-hook mechanism reproduces every grdchk digit and all `adxx_*`/`ADJ*` bitwise (run 31038; that state is preserved as tag `archive/20260831_pre-tapenade-hooks`) |
+| Adjoint **correctness** | **verified at gradient-check level, 2026-09-01** | The repaired check (`input_tap/variants/grdchk_repair/`) agrees with finite differences to **0.9 %** at the DINO sensitivity peak (run 31037, deleted with its `visc2x` variant on 2026-09-12; provenance in `logs/deleted_run_records/`), and SOMA's always-on check passes at 0.07–1.8 % on all five of its points. The committed `data.grdchk` still points at the historical dead spot and still fails — use the variant. A control build of the pre-hook mechanism reproduces every grdchk digit and all `adxx_*`/`ADJ*` bitwise (run 31038; that state is preserved as tag `archive/20260831_pre-tapenade-hooks`) |
 | Adjoint vs finite differences (κ_v ensemble) | **executed 2026-08-29 (adjoints rerun seam-clean 2026-09-01), fails as a validation** | The linear gradient mispredicts every member's ΔJ (wrong sign for 4 of 7) — dominated by physical nonlinearity of the 10-yr state adjustment, so it neither confirms nor refutes the adjoint. Four member adjoints also blow up (linearisation instability). Full analysis: `analyses/DINO_1deg/adjoint/kappa_v_ensemble/` |
 
 ### The gradient check: the committed default measures nothing; the repaired variant passes
@@ -709,7 +720,10 @@ the noise floor above, and still return noise: cite only points whose
 (`main`-tip) mechanism reproduces the whole `grdchk` table digit for digit
 and all `adxx_*`/`ADJ*` files bitwise (run 31038 vs 31037). SOMA's always-on
 check passes at 0.07–1.8 % on all five of its points (runs 31031/31033,
-identical output).
+identical output). The `visc2x` variant and run 31037 were removed on
+2026-09-12, because the variant no longer stages the configuration it ran;
+`grdchk_repair/` keeps the checks at the reference viscosity, where the
+scheme-30 check passes at all five points (run 31172).
 
 `useGrdchk` is now `.FALSE.` in DINO's `input_tap/data.pkg` (since 2026-08-28;
 verified bit-identical `ADJ*`/`adxx*` output, and worth 8.2 h per 5-yr adjoint).

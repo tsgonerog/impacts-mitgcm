@@ -66,16 +66,17 @@ job produced it:
 │       ├── kappa_v_ensemble/                   2026-08 reference + M1–M7, 5 yr (31039–31046)
 │       ├── kappa_v_ensemble_ReMax2_approxAdv/  2026-09-10 adjoints (31206–31220) and the κ_v FD sweeps
 │       ├── stability_study/                    30-d and 183-d stability tests, the GM/Redi tests
-│       ├── checkpointing_study/                ckpAll / -nocheckpoint / -profile (31052–31054, 31056)
+│       ├── checkpointing_study/                the boosted -nocheckpoint test 31056 and the 2026-09-12 profile 31268 (31052–31054 deleted 2026-09-12)
 │       ├── adjViscBoost/                       boosted run and its plain control (31025, 31026)
 │       ├── toolchain_validation/               build, hook and script checks; 31259, the current setup's smoke test
-│       ├── gradient_check/                     grdchk runs (31037, 31172, 31177–31179)
+│       ├── gradient_check/                     grdchk runs (31172, 31177, 31179; 31037 and 31178 deleted 2026-09-12)
 │       └── sensitivity/                        the 2× science runs (28486, 31028)
 ├── analysis/        multi-run analysis products, one directory per campaign:
 │                    kappa_v_ensemble/, kappa_v_ensemble_ReMax2_approxAdv/,
 │                    spinup_200yr_viscRef_ReMax2/, stability_study/, gm_in_adjoint/
 ├── executables/     adjoint binaries kept for provenance, named for their commit
-└── logs/            build logs, and validation_reports/ for reruns deleted as duplicates
+└── logs/            build logs, validation_reports/ for reruns deleted as duplicates, and
+                     deleted_run_records/ for runs deleted with their variant records (2026-09-12)
 
 /scratch2/<user>/SOMA_1deg_outputs/
 ├── runs/{forward,adjoint}/          five validation runs, no campaign level yet
@@ -164,8 +165,10 @@ record of why the reference DINO viscosity is unstable here and what else
 stabilises it: 2-yr and 10-yr forward restarts of the 2× spin-up's year-170
 pickup under `input/variants/stability_study/` (31143–31151, 31160, 31161,
 31164), 30-d adjoints from the 180-yr pickup under
-`input_tap/variants/stability_study/` (31152–31159, 31163) and the 183-d
-restarts of kappa member M7's blown 5-yr adjoint (31166–31168 against 31046).
+`input_tap/variants/stability_study/` (31152–31159, 31163; the variants of
+31152–31159 were removed and those runs deleted on 2026-09-12) and the 183-d
+restarts of kappa member M7's blown 5-yr adjoint (31166–31168 against 31046;
+their variants were removed the same day, the runs kept).
 Figures go to `analysis/stability_study/figures/`.
 
 `first_look_at_output.ipynb` is the entry point for reading any DINO run:
@@ -223,7 +226,8 @@ once the comparison reports had recorded the result.
 
 `tapenade_profiling/` (2026-09-01, extended 2026-09-12) is scripts and records
 rather than a notebook: the Tapenade checkpointing profile of the adjoint (run
-31053, `-profile` build) parsed into a per-routine ranking, the 33-routine
+31053, `-profile` build; runs 31052–31054 were deleted on 2026-09-12, the
+reports and this profile stay) parsed into a per-routine ranking, the 33-routine
 `-nocheckpoint` list derived from it (in use until 2026-09-12; its successor,
 28 routines from profile 31268 of the live namelists, is bitwise identical to
 the `approxAdv` adjoint under the adjoint-mode switches at 1.41×, run 31276 vs
@@ -346,9 +350,11 @@ follow `data.diagnostics` and are `float32`. Read the `.meta` beside a file rath
 than assuming — guessing wrong silently reshapes the array into plausible-looking
 garbage. `xmitgcm.open_mdsdataset` handles this for you; raw `np.fromfile` does not.
 
-One run is kept for verification rather than science:
+One run was kept for verification rather than science until 2026-09-12, when it
+was deleted with its variant record (provenance in the output tree's
+`logs/deleted_run_records/`):
 
-| Run | What it is |
+| Run | What it was |
 | --- | --- |
 | `DINO_1deg_tapAdj_ckpAll_30d_from180yrPk_visc2x_run31032` | 30-day adjoint, confirms `ADJ*`/`adxx*` output (incl. `ADJetan`) and sensitivity on the cost section. Successor of the 2026-08-18 original (30948): 31032 is the current-toolchain rerun of the same config, bitwise-validated back to it through the 31022 chain |
 

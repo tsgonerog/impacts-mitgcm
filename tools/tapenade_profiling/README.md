@@ -226,7 +226,11 @@ already passes that test under joint mode, and the hand-written hook adjoints
 The list from 2026-09-02 to 2026-09-12; section 4 has its successor. Runs of
 2026-09-01, all 27-rank, `baseline/from180yrPk_visc2x` (KPP compiled but off,
 GM off, scheme 33 in both sweeps, implicit vertical advection); records in
-`analyses/DINO_1deg/adjoint/tapenade_profiling/`.
+`analyses/DINO_1deg/adjoint/tapenade_profiling/`. That variant was removed on
+2026-09-12, since it no longer stages the configuration these runs used, and
+runs 31032 and 31052–31054 were deleted with it; their build records, staged
+namelists and the 27 profile tables of 31053 are in the output tree's
+`logs/deleted_run_records/`.
 
 **Profile (run 31053, 30 days, rank 0; 809 s of adjoint).** Peak tape 923 MB
 per process. 156 checkpoint locations, 116 callees. Checkpointing costs
