@@ -1,8 +1,19 @@
 # TODO — DINO_1deg
 
-- [ ] **Decide whether production adjoints run GM/Redi in the forward sweep**
-  (tested 2026-09-11 on branch `dino-stability-study`, variants and scripts in
-  commit `7cd4772`): the spin-up and forward legs use GM, every adjoint so far
+- [x] ~~**Decide whether production adjoints run GM/Redi in the forward sweep**~~
+  **Adopted for production on 2026-09-11.** The live `input_tap/data.pkg` sets
+  `useGMRedi=.TRUE.`, `input_tap/data.gmredi` is a copy of `input/data.gmredi`
+  and `data.autodiff` keeps `useGMRediInAdMode=.FALSE.`; runs of the live
+  namelist are named `_gmFwd` (`scripts/setup_params.sh`); the submit body
+  refuses the combination with a `-nocheckpoint` build (test 31260, refused
+  before the model started); the GM-free configuration is the record variant
+  `input_tap/variants/baseline/data_from180yrPk_viscRef_ReMax2_gmOff`. Smoke
+  test 31259 (5 d, `approxAdv`, from spin-up 31203's year-180 pickup): ended
+  normally, `fc` 0.058062, `ADJtheta` RMS 1.7–2.1e-4 over its five dumps. The
+  GM-free production adjoint 31204 was cancelled at 83 % and deleted; the
+  GM-in-forward-sweep production adjoint from 31203's pickup is deferred. The
+  test that decided it (tested 2026-09-11 on branch `dino-stability-study`,
+  variants and scripts in commit `7cd4772`): the spin-up and forward legs use GM, every adjoint so far
   ran without it. In the `approxAdv` build from the REF_ReMax2 leg's year-180
   pickup: GM in both sweeps blows up at lead 4 d even with scheme 30 in the
   adjoint sweep (31236); GM in the forward sweep only (`useGMRedi=.TRUE.` with
@@ -28,7 +39,7 @@
   adjoint keeps scheme 33 in its forward sweep and linearises about scheme 30
   in the adjoint sweep (`useApproxAdvectionInAdMode` in the live
   `input_tap/data.autodiff`, the `approxAdv` build, now the default pair), GM
-  off. Decided by the user on 2026-09-10 after the scheme study below: the
+  off (in the forward sweep since 2026-09-11, the entry above). Decided by the user on 2026-09-10 after the scheme study below: the
   pathways matter more than an exact gradient. First submitted 02:35 CDT
   (31180–31196) with the implicit vertical advection this setup had always
   run; two kappa legs blew up within two years (the flux-limited implicit
@@ -39,8 +50,9 @@
   (10 yr from the 2× spin-up's year-170 pickup) with **31206**, the 5-yr
   production adjoint, chained `afterok` on it from its year-180 pickup (the
   early production run and the validation); **31204** the same adjoint
-  chained on the spin-up's year-180 pickup (`IMPACTS_PICKUP_RUN_DIR` at
-  31203's unfiled directory — do not move it before 31204 starts); the kappa
+  chained on the spin-up's year-180 pickup (cancelled at 83 % on 2026-09-11 and
+  deleted when GM in the forward sweep was adopted; its replacement is not yet
+  run); the kappa
   ensemble legs **31207/31209/31211/31213/31215/31217/31219** (M1–M7_ReMax2)
   each with its 5-yr adjoint chained on it,
   **31208/31210/31212/31214/31216/31218/31220**. Kept running: 31171, the

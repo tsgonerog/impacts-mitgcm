@@ -75,9 +75,10 @@ difference, in % of the finite difference (`fd_summary.py` in
 GM in the forward sweep gives the GM model's trajectory and cost and a much
 better κ_v gradient, but its temperature sensitivities still follow the GM-free
 model (within 1–15 % of its differences), consistent with an adjoint sweep that
-carries no GM linearisation, which cannot be added (31236). Not adopted: the
-live `input_tap/data.pkg` keeps GM off; the decision is open in the setup's
-`TODO.md`.
+carries no GM linearisation, which cannot be added (31236). **Adopted for production on
+2026-09-11**: the live `input_tap/` now runs this configuration (runs named
+`_gmFwd`), and `../baseline/data_from180yrPk_viscRef_ReMax2_gmOff` keeps the
+GM-free one.
 
 The `M7_*` runs need the pickup override the adjoint submit definitions gained
 the same day:

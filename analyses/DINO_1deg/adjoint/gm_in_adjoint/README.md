@@ -44,5 +44,5 @@ and gives the GM model's trajectory and cost. Against finite differences of the
 GM model its dJ/dκ_v is 22 % too large, where production's is 65 %; its
 temperature gradients are no better (tropics +4 % against +5 %, upper Southern
 Ocean +45 % against +42 %, deep North Atlantic −21 % against −9 %), and still
-follow the GM-free model's own differences. GM in both sweeps blows up. Not
-adopted as of 2026-09-11.
+follow the GM-free model's own differences. GM in both sweeps blows up.
+Adopted for production on 2026-09-11 (the setup's `TODO.md`).

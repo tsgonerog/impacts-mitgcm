@@ -1,21 +1,8 @@
-# Production configuration since 2026-09-10 (scheme study, TODO.md): DINO's reference viscosity
-# files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the flux-limited DST3 tracer
-# advection (scheme 33) in the forward sweep; data.autodiff sets useApproxAdvectionInAdMode so the
-# adjoint sweep linearises about the unlimited scheme 30 -- which only the approxAdv build honours
-# (scripts/build_tapAdj.sh -> build_tapAdj_approxAdv.sh since 2026-09-10; the nocheckpoint and
-# ckpAll builds silently run the exact, blow-up-prone adjoint of scheme 33 with this file). From
-# 2026-09-09 to 2026-09-10 production was scheme 30 in both sweeps; before that both viscosity
-# files at 2x (visc2x), kept in input_tap/variants/baseline/data_from180yrPk_visc2x. This file IS
-# the baseline: the 5-yr adjoint from the year-180 pickup of the production spin-up (nIter0=3162240;
-# IMPACTS_PICKUP_RUN_DIR selects which run supplies it).
-# Since 2026-09-10 (later the same day) the vertical tracer advection is EXPLICIT (tempImplVertAdv=
-# saltImplVertAdv=.FALSE.): the implicit form of the flux-limited DST3 blew up two kappa-ensemble legs
-# (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column
-# (runs 31191/31193, diagnosed with 31198-31201; stability_study README); the explicit form, DINO's own
-# choice, survives, and the vertical CFL here is below 0.05.
-# Since 2026-09-11 GM/Redi runs in the forward sweep (data.pkg, with the spin-up's data.gmredi) and not in the
-# adjoint sweep (data.autodiff); runs of this file are named ..._gmFwd. The GM-free configuration of 2026-09-10
-# (31206 and the kappa_v_ensemble_ReMax2 adjoints) is variants/baseline/data_from180yrPk_viscRef_ReMax2_gmOff.
+# baseline/from180yrPk_viscRef_ReMax2_gmOff (2026-09-11): the production adjoint configuration of 2026-09-10, kept
+# as a record when GM/Redi moved into the adjoint's forward sweep. The live input_tap/data of that day unchanged
+# below this header; the data.pkg sibling turns GM/Redi off in both sweeps. The configuration of 31206 (from the
+# REF_ReMax2 leg's year-180 pickup), of the kappa_v_ensemble_ReMax2 adjoints apart from their kappa_v, and of the
+# cancelled 31204.
 # Model parameters
 # Continuous equation parameters
  &PARM01

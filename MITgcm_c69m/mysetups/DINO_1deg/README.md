@@ -549,7 +549,7 @@ found:
   20 d at the reference viscosity, is marginal at 2×, and still explodes with
   scheme 30 in the adjoint sweep, 31236) but can run in the forward sweep alone
   in the `approxAdv` build (2026-09-11: stable, a better κ_v gradient, no better
-  temperature sensitivities; not adopted, see the stability_study README); and the GM-free
+  temperature sensitivities; adopted for production the same day, see the stability_study README); and the GM-free
   adjoint's blow-ups (four of the seven kappa members) are episodic bursts with
   1–3-day e-folding seeded at single deep points — the signature the flux
   limiter's adjoint leaves in nearly uniform tracer fields. MITgcm's stock
@@ -964,5 +964,9 @@ finite difference measures run-to-run noise, not the perturbation, and fails by
 `iGloPos=2, jGloPos=127, kGloPos=26` with `grdchk_eps` around 1e-3. See
 "Verification status" in the root `README.md`.
 
-KPP and GM/Redi are off (`input_tap/data.pkg`), which makes the
-`useKPPinAdMode` / `useGMRediInAdMode` flags in `data.autodiff` inert.
+KPP is off (`input_tap/data.pkg`), which makes `useKPPinAdMode` in
+`data.autodiff` inert. GM/Redi is on in the forward sweep since 2026-09-11
+(`useGMRedi=.TRUE.` with the spin-up's `data.gmredi`) and kept out of the
+adjoint sweep by `useGMRediInAdMode=.FALSE.`, which is therefore live; only the
+`approxAdv` and `ckpAll` builds may run it, and the submit body refuses the
+`-nocheckpoint` builds.

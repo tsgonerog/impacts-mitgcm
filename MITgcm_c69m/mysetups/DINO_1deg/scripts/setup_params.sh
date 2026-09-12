@@ -42,10 +42,20 @@ DUMP_CALLS=5
 # viscAhDfile/viscAhZfile -> viscRef (dino_viscAhD.bin, both) / visc2x (_2p00,
 # both) / viscD2x_Zref (D doubled, Z at reference); a scalar viscAhGrid with no
 # files -> viscGrid<value> (1.8E-2 -> viscGrid1p8e-2); viscAhReMax -> _ReMax<v> and a
-# tempAdvScheme other than 33 -> _adv<n> are appended (2026-09-09). Anything unrecognised
-# gives liveData, so the name never claims a setting the script could not read.
+# tempAdvScheme other than 33 -> _adv<n> are appended (2026-09-09), and _gmFwd when the
+# data.pkg beside the namelist turns GM/Redi on while the data.autodiff beside it keeps GM
+# out of the adjoint sweep (2026-09-11; a forward namelist has no data.autodiff and gets no
+# GM token). Anything unrecognised gives liveData, so the name never claims a setting the
+# script could not read.
 run_suffix_from_namelist() {
-  awk -F'[=, ]+' '
+  local dir gm=
+  dir=$(dirname "$1")
+  if [[ -f "$dir/data.pkg" && -f "$dir/data.autodiff" ]] \
+     && grep -qiE '^[[:space:]]*useGMRedi[[:space:]]*=[[:space:]]*\.?t' "$dir/data.pkg" \
+     && grep -qiE '^[[:space:]]*useGMRediInAdMode[[:space:]]*=[[:space:]]*\.?f' "$dir/data.autodiff"; then
+    gm=_gmFwd
+  fi
+  awk -F'[=, ]+' -v gm="$gm" '
     { sub(/^[[:space:]]+/, ""); k=tolower($1) }   # strip the indent, else $1 is empty
     k=="niter0"      {n=$2+0}
     k=="viscahdfile" {d=$2; gsub(/\047/,"",d)}
@@ -63,6 +73,6 @@ run_suffix_from_namelist() {
       else v="liveData"
       if (r!="") { rr=r; sub(/\.0*$/,"",rr); gsub(/\./,"p",rr); v=v "_ReMax" rr }   # viscAhReMax=2. -> _ReMax2 (since 2026-09-09)
       if (a!="" && a!=33) v=v "_adv" a                                              # tempAdvScheme other than 33 -> _adv<n>
-      print s "_" v
+      print s "_" v gm
     }' "$1"
 }

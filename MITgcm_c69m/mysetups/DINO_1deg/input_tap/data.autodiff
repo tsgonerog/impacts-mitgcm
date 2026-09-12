@@ -6,6 +6,10 @@
  &AUTODIFF_PARM01
 # inAdExact = .FALSE.,
  useKPPinAdMode = .FALSE.,
+# Live since 2026-09-11, when data.pkg turned GM/Redi on: GM acts in the forward sweep and in every
+# recomputation of it, and not in the adjoint sweep, where its linearisation blows up within days
+# (stability_study, 31236). Honoured only where Tapenade recomputes each routine inside the backward
+# sweep (approxAdv, ckpAll); a -nocheckpoint build applies it to half the recomputation and is refused.
  useGMRediInAdMode = .FALSE.,
 # Since 2026-09-10: the adjoint sweep linearises about the unlimited DST3 (scheme 30) while the
 # forward sweep keeps the flux-limited scheme 33 of data -- the flux limiter's adjoint is what

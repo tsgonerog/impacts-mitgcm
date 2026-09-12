@@ -268,6 +268,25 @@ if declare -F stage_extra > /dev/null; then
   stage_extra
 fi
 
+# ---------- GM/Redi split between the sweeps needs a checkpoint-every-call build ----------
+# A staged data.pkg with GM/Redi on and a data.autodiff that keeps it out of the adjoint
+# sweep (useGMRediInAdMode=.FALSE.; DINO's live namelist since 2026-09-11) works only where
+# Tapenade recomputes each routine inside the backward sweep after the mode switch. A build
+# made with a -nocheckpoint list applies the switch to half of that recomputation -- its
+# split _BWD routines replay the GM branch taped in the forward sweep, while the joint
+# GMREDI_*TRANSPORT_B read the flipped flag -- and blew up runs 31156/31157 (DINO
+# stability_study README). The list is read from build_info.txt's tap_extra line alone,
+# because other lines of a record may mention the option in prose.
+if [[ "$RUN_MODE" = tapAdj && -f data.pkg && -f data.autodiff ]] \
+   && grep -qiE '^[[:space:]]*useGMRedi[[:space:]]*=[[:space:]]*\.?t' data.pkg \
+   && grep -qiE '^[[:space:]]*useGMRediInAdMode[[:space:]]*=[[:space:]]*\.?f' data.autodiff \
+   && [[ "$(sed -n 's/^tap_extra=//p' "$build_info")" == *-nocheckpoint* ]]; then
+  echo "ERROR: data.pkg turns GM/Redi on and data.autodiff keeps it out of the adjoint sweep, but"
+  echo "       $build_dir was built with a -nocheckpoint list, where that switch half-applies."
+  echo "       Use the approxAdv or ckpAll build, or a variant with GM off (baseline/*_gmOff)."
+  exit 1
+fi
+
 # ---------- time stepping: patch the STAGED copy, not the tracked namelist ----------
 # This runs here, after staging, so the repo is never written to. It matters for
 # more than tidiness: this body executes on the compute node when the job

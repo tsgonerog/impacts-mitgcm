@@ -1,5 +1,14 @@
 # `baseline/` — the previous reference adjoint configuration, kept as a record
 
+**Since 2026-09-11 the live `input_tap/` runs GM/Redi in the adjoint's forward
+sweep** (`data.pkg` `useGMRedi=.TRUE.` with the spin-up's `data.gmredi`,
+`data.autodiff` `useGMRediInAdMode=.FALSE.`; runs named `..._gmFwd`), and
+`data_from180yrPk_viscRef_ReMax2_gmOff` with its `data.pkg` sibling is the
+GM-free configuration it replaced: that of 31206 and of the
+`kappa_v_ensemble_ReMax2` adjoints (see `../stability_study/README.md`,
+"GM/Redi in the forward sweep only"). The paragraphs below describe the earlier
+baselines and are kept as they were written.
+
 **Since 2026-09-09 the baseline is the live `input_tap/data` itself**: the 5-yr
 adjoint from the production spin-up's year-180 pickup (`nIter0=3162240`),
 which `submit_tapAdj.sh` (a symlink to `submit_tapAdj_nocheckpoint.sh`; the
