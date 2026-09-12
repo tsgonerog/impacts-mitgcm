@@ -56,22 +56,29 @@ job produced it:
 /scratch2/<user>/DINO_1deg_outputs/
 ├── runs/            model output — one directory per job, grouped by campaign
 │   ├── forward/
-│   │   ├── spinup_200yr_visc2x/     the 200-year spin-up (30983)
-│   │   └── kappa_v_ensemble/        the seven 10-yr forward legs (30996–31002)
+│   │   ├── spinup_200yr_visc2x/                the 2× 200-year spin-up (30983)
+│   │   ├── spinup_200yr_viscRef_ReMax2/        the production configuration's spin-up (31203)
+│   │   ├── kappa_v_ensemble/                   the 2026-08 κ_v legs (30996–31002)
+│   │   ├── kappa_v_ensemble_ReMax2_approxAdv/  the 2026-09-10 κ_v legs (31205–31219)
+│   │   ├── stability_study/                    viscosity, advection-scheme and vertical-advection restarts
+│   │   └── toolchain_validation/               forward bitwise checks (31100, 31139, 31142)
 │   └── adjoint/
-│       ├── kappa_v_ensemble/        reference + M1–M7, 5 yr (31039–31046)
-│       ├── checkpointing_study/     ckpAll / -nocheckpoint / -profile (31052–31054, 31056)
-│       ├── adjViscBoost/            boosted run and its plain control (31025, 31026)
-│       ├── toolchain_validation/    hook and stub-fix reruns (31022, 31032, 31074, 31075, 31077)
-│       ├── gradient_check/          the repaired grdchk run (31037)
-│       └── sensitivity/             the science runs the notebooks read (28486, 31028)
-├── analysis/        multi-run analysis products, one directory per campaign
-│   └── kappa_v_ensemble/  cache/ figures/ animations/ stats/ + the ckpAll-vs-nocheckpoint workspace
+│       ├── kappa_v_ensemble/                   2026-08 reference + M1–M7, 5 yr (31039–31046)
+│       ├── kappa_v_ensemble_ReMax2_approxAdv/  2026-09-10 adjoints (31206–31220) and the κ_v FD sweeps
+│       ├── stability_study/                    30-d and 183-d stability tests, the GM/Redi tests
+│       ├── checkpointing_study/                ckpAll / -nocheckpoint / -profile (31052–31054, 31056)
+│       ├── adjViscBoost/                       boosted run and its plain control (31025, 31026)
+│       ├── toolchain_validation/               build, hook and script checks; 31259, the current setup's smoke test
+│       ├── gradient_check/                     grdchk runs (31037, 31172, 31177–31179)
+│       └── sensitivity/                        the 2× science runs (28486, 31028)
+├── analysis/        multi-run analysis products, one directory per campaign:
+│                    kappa_v_ensemble/, kappa_v_ensemble_ReMax2_approxAdv/,
+│                    spinup_200yr_viscRef_ReMax2/, stability_study/, gm_in_adjoint/
 ├── executables/     adjoint binaries kept for provenance, named for their commit
-└── logs/            SLURM logs kept out of the run directories
+└── logs/            build logs, and validation_reports/ for reruns deleted as duplicates
 
 /scratch2/<user>/SOMA_1deg_outputs/
-├── runs/{forward,adjoint}/          three runs, no campaign level yet
+├── runs/{forward,adjoint}/          five validation runs, no campaign level yet
 └── executables/
 ```
 
@@ -127,10 +134,12 @@ that field doubled. That is DINO's own law, A_h = ½·U_v·Δx with `rn_Uv = 0.2
 | `viscD2x_Zref` | `viscAhDfile` at 2× but `viscAhZfile` left at the reference field — a **mixed** setting, not the same experiment as `visc2x` |
 | `viscRef` | both files at the unscaled reference |
 | `ReMax2` | `viscAhReMax=2.` on top, the grid-Reynolds floor; with `viscRef` this is the production viscosity since 2026-09-09 |
-| `adv30` | `tempAdvScheme=saltAdvScheme=30`, the unlimited DST3, whose adjoint does not blow up; production since 2026-09-09 |
+| `adv30` | `tempAdvScheme=saltAdvScheme=30`, the unlimited DST3, whose adjoint does not blow up; production in both sweeps from 2026-09-09 to 2026-09-10. No token means scheme 33, the flux-limited DST3 of the forward model since 2026-09-10 |
 | `viscGrid<v>` | scalar `viscAhGrid` in `PARM01` instead, `PARM05` files commented out; `viscGrid1p8e-2` is `viscAhGrid=1.8E-2` |
 | `adjVisc` | adjoint-mode viscosity inflation: `viscFacInAd = 10.` against `viscFacInFw = 1.`, from `data.autodiff_adjointViscosity`. Needs the matching build *and* submit script |
-| `ckpAll` / `nocheckpoint` | which Tapenade checkpointing the adjoint was built with; `nocheckpoint` is the DINO default since 2026-09-02 and is bitwise identical to `ckpAll` except under `adjVisc` |
+| `ckpAll` / `nocheckpoint` | which Tapenade checkpointing the adjoint was built with; `nocheckpoint` is bitwise identical to `ckpAll` except under an adjoint-mode switch (`adjVisc`, `approxAdv`, GM in the forward sweep only), and was the DINO default from 2026-09-02 to 2026-09-10 |
+| `approxAdv` | the `ckpAll` build with `code_tap/variants/approxAdvection/`: scheme 33 in the forward sweep, scheme 30 in the adjoint sweep through `useApproxAdvectionInAdMode`; the DINO default adjoint since 2026-09-10 |
+| `gmFwd` | GM/Redi on in the adjoint's forward sweep and off in its adjoint sweep (`useGMRedi=.TRUE.`, `useGMRediInAdMode=.FALSE.`); the live `input_tap/` namelist since 2026-09-11, in the `approxAdv` or `ckpAll` build only |
 
 Reading `p` as the decimal point keeps the tokens shell-safe: `1p135e-2` is
 `1.135E-2`. Every notebook repeats its setting in full in a banner directly
@@ -204,7 +213,7 @@ noise floor reconstructed from spin-up 30983's 2,402 pickups. It has its own
 before re-executing the notebooks — they write the intermediates the notebooks
 read. Unlike the single-run notebooks, this suite spans nine runs, so everything
 it generates goes to the sibling scratch directory
-`/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/analysis/kappa_v_ensemble/`
+`/scratch2/<user>/DINO_1deg_outputs/analysis/kappa_v_ensemble/`
 (`cache/`, `figures/`, `animations/`, `stats/`) rather than into any one run
 directory. All eight adjoints ran a third time on 2026-09-02 with the
 `-nocheckpoint` build (31060–31067): bitwise identical to 31039–31046 in `fc`,
@@ -275,7 +284,7 @@ needs editing in two places.
 
 The one deliberate exception is `kappa_v_ensemble/`, which reads nine runs and
 therefore writes everything to the sibling directory
-`/scratch2/<user>/DINO_1deg_outputs/runs/adjoint/analysis/kappa_v_ensemble/` instead
+`/scratch2/<user>/DINO_1deg_outputs/analysis/kappa_v_ensemble/` instead
 of into any one run (details in that suite's own `README.md`). Its two
 publication figures are additionally kept with the project notes, as LaTeX
 sources for the `kappa_ensemble_results` brief. Since the 2026-09-04 split

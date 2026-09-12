@@ -334,7 +334,7 @@ parameterises the Tapenade command through `$(TAP_EXTRA)`. To see exactly what
 a variant did:
 
 ```bash
-OLD=/home/tshahriar/backups_and_resources/Proj_ImPACTS/02_20260817_Proj_ImPACTS_old_c69f_tree/MITgcm_c69f/MITgcm/tools
+OLD=<clone of Proj_ImPACTS_old>/MITgcm_c69f/MITgcm/tools
 diff "$OLD/genmake2" tools/tapenade_profiling/c69f_originals/patched_ForTapProfile_genmake2
 ```
 

@@ -9,8 +9,7 @@ forward model and off in the adjoint. Eight members (the reference and the seven
 κ_v factors of the 2026-08 campaign, `../kappa_v_ensemble/`), each a 10-yr
 forward leg from the 2× spin-up's year-170 pickup and a 5-yr adjoint from the
 leg's year-180 pickup. Runs on scratch under
-`runs/{forward,adjoint}/kappa_v_ensemble_ReMax2_approxAdv/` once filed (unfiled
-at `runs/{forward,adjoint}/` level while their dependents run); figures under
+`runs/{forward,adjoint}/kappa_v_ensemble_ReMax2_approxAdv/`; figures under
 `analysis/kappa_v_ensemble_ReMax2_approxAdv/figures/`.
 
 | member | κ_v [m² s⁻¹] | × ref | forward leg | adjoint |
@@ -28,10 +27,12 @@ Two more runs belong to the campaign without being ensemble members: **31203**,
 the 200-yr spin-up from rest under the same forward configuration (filed under
 `runs/forward/spinup_200yr_viscRef_ReMax2/`, analysed in
 `../../forward/spinup_200yr_from_rest_viscRef_ReMax2.ipynb` against the 2×
-spin-up 30983), and **31204**, the production adjoint proper: the same 5-yr
-adjoint as 31206 started from 31203's own year-180 pickup instead of the
-reference leg's (`runs/adjoint/spinup_200yr_viscRef_ReMax2/` once done; read
-by `production_adjoint_stability_and_pathways.ipynb` beside 31206 and 31171).
+spin-up 30983), and **31204**, the same 5-yr adjoint as 31206 started from
+31203's own year-180 pickup, which was cancelled at 83 % on 2026-09-11 and
+deleted when GM/Redi in the adjoint's forward sweep was adopted. Its
+replacement, and a rerun of these eight adjoints with GM in the forward sweep,
+are on the setup's `TODO.md`; every adjoint in this directory ran GM-free in
+both sweeps.
 
 The first submission of the same campaign that morning (31180–31196) ran the
 implicit vertical advection this setup had used since its import; two legs

@@ -1,5 +1,38 @@
 # TODO — DINO_1deg
 
+- [ ] **Production adjoint under the current setup** (kept on the list 2026-09-11,
+  to start after the project cleanup): the 5-yr adjoint of the live `input_tap/`
+  namelist, GM/Redi in the forward sweep (runs named `_gmFwd`), with the default
+  `approxAdv` pair, from the production spin-up 31203's year-180 pickup
+  (`IMPACTS_PICKUP_RUN_DIR` at
+  `runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203`,
+  `IMPACTS_PICKUP_ITER=3162240`); about 14.5 h. It replaces 31204 (GM off,
+  cancelled) and measures what the ensemble legs' 2× tropical thermocline does
+  to the pathways, against 31206.
+- [ ] **κ_v ensemble under the current setup** (kept on the list 2026-09-11, to
+  start after the cleanup): the ensemble adjoints 31206–31220 are GM-free in both
+  sweeps. Rerun them with GM in the forward sweep (about 14.5 h each). Decide
+  first whether the forward legs start again from the 2× spin-up's year-170 state,
+  as 31205–31219 did, or from 31203's own state; and give the variants a `_gmFwd`
+  tag, because runs named by a variant tag carry no GM token.
+- [x] **Project cleanup before the production runs** (2026-09-11). Scratch:
+  deleted `_trash_20260903/` (22 GB: the per-rank `STDOUT.0001`–`0026` of 30
+  kept runs, pruned on 2026-09-03, and four short test runs no document
+  names), `logs/slurm_run28463/` (252 MB, the rank-0 log of the deleted
+  duplicate spin-up) and the validation reruns whose output was verified
+  identical to a run that stays — 31077, 31090–31092, 31101–31104,
+  31107–31109 here and SOMA 31105, 31106, 31110 (their comparison reports,
+  `build_info.txt` and `run_timing.txt` are in `logs/validation_reports/`;
+  CLAUDE.md, "A second pass on 2026-09-11", has the pairs); removed the
+  compatibility link at 31203's old unfiled path; filed the smoke test 31259
+  under `runs/adjoint/toolchain_validation/`. Repository: the SLURM logs of
+  jobs with no run directory left and two Jupyter checkpoint directories
+  moved out of the working tree (not deleted); `__pycache__` removed. Every
+  notebook still resolves its runs, and none was retired. Kept on purpose,
+  although superseded: the 2× spin-up 30983 (the κ_v legs' year-170 start and
+  the submit scripts' default pickup), the 2026-08 κ_v ensemble (its suite and
+  the project notes read it), 28486 (the poster) and the stability, scheme and
+  GM studies behind the production configuration.
 - [x] ~~**Decide whether production adjoints run GM/Redi in the forward sweep**~~
   **Adopted for production on 2026-09-11.** The live `input_tap/data.pkg` sets
   `useGMRedi=.TRUE.`, `input_tap/data.gmredi` is a copy of `input/data.gmredi`
@@ -95,11 +128,10 @@
   (the reference leg 31205, the 2× year 170 plus 10 yr under the new
   configuration) differs from the spin-up's own year 180 by 0.40 K rms, up to
   1.6 K at 700 m in the tropics — it carries the 2× state's thick tropical
-  thermocline; 31204, the production adjoint on the spin-up's own state, is
-  the measure of what that does to the pathways. Still to close: 31204
-  (running since 2026-09-11 11:01 CDT) → file under
-  `runs/adjoint/spinup_200yr_viscRef_ReMax2/`, compare with 31206 and 31171,
-  update the page. The forward reproducibility check 31256 (10 yr from rest,
+  thermocline; 31204, the production adjoint on the spin-up's own state, was
+  to measure what that does to the pathways, and was cancelled at 83 % when
+  GM/Redi in the forward sweep was adopted (its replacement is the first entry
+  of this file). The forward reproducibility check 31256 (10 yr from rest,
   the committed `submit_frd.sh` defaults, same executable as 31203) is done:
   all 601 diagnostic and pickup files and all 6 050 `%MON` values byte-identical
   to 31203's first 10 years (1 h 37 min); the run was deleted, CLAUDE.md's
@@ -346,10 +378,11 @@
   here as a separate matter. After the merge the five adjoint builds of
   this setup were rebuilt from `main` (commit `01aa06a`, clean tree) so
   that each `build_info.txt` names a commit on `main`; the validation runs
-  31108 and 31109 keep the records of the executables they actually ran,
-  built from the same sources before the commit existed (`git_commit=
-  eada304` with the branch's 17 modified files), which is what their
-  `build_info.txt` still says.
+  31108 and 31109 recorded the executables they actually ran, built from the
+  same sources before the commit existed (`git_commit=eada304` with the
+  branch's 17 modified files). Both runs were deleted on 2026-09-11 as
+  duplicates; their `build_info.txt` are kept in the scratch
+  `logs/validation_reports/`.
 
 - [x] ~~**Integrate the Tapenade hooks into the MITgcm source tree and test
   the result**~~ (added and **done 2026-09-05**). The shadows were written into

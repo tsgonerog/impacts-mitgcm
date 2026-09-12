@@ -687,7 +687,9 @@ member's full 10-yr leg with it. Every run of the campaign was resubmitted
 under the corrected namelists: spin-up 31203 (200 yr from rest), the
 reference leg 31205 (10 yr from the year-170 pickup — 31164 ran with the
 implicit form, so it is no longer the reference state) with the production
-adjoint 31206 chained on it, the chained adjoint 31204 on the spin-up, and
+adjoint 31206 chained on it, the chained adjoint 31204 on the spin-up
+(cancelled on 2026-09-11, when GM/Redi in the adjoint's forward sweep was
+adopted; its replacement is on the `TODO.md`), and
 the kappa ensemble 31207–31220; the runs made with the implicit form that
 morning (31180–31196) were cancelled and deleted. The spin-up completed on
 2026-09-11 (200 yr in 31 h 39 min, no incident; filed under
@@ -700,7 +702,8 @@ only place the two differ), its tracers inside the forcing range with none of
 the 2× run's monthly salinity spikes above 37.0. The ensemble's year-180 state
 (the reference leg 31205) is 0.40 K rms from the spin-up's own year 180 and
 keeps the 2× state's thick tropical thermocline; the DINO `TODO.md` entry has
-the numbers, 31204 the adjoint on the spin-up's own state.
+the numbers. The production adjoint from the spin-up's own year 180, still to
+run, will show what that does to the pathways.
 
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but
