@@ -21,11 +21,11 @@ C     Package-specific Options & Macros go here
 C Designed to simplify the Ajoint code:
 C #define GMREDI_WITH_STABLE_ADJOINT
 C -- exclude the clipping/tapering part of the code that is not used
-C #define GM_EXCLUDE_CLIPPING
-C #define GM_EXCLUDE_FM07_TAP
-C #define GM_EXCLUDE_AC02_TAP
+#define GM_EXCLUDE_CLIPPING
+#define GM_EXCLUDE_FM07_TAP
+#define GM_EXCLUDE_AC02_TAP
 C #define GM_EXCLUDE_TAPERING
-C #define GM_EXCLUDE_SUBMESO
+#define GM_EXCLUDE_SUBMESO
 
 C Allows to read-in background 3-D Redi and GM diffusivity coefficients
 C Note: need these to be defined for use as control (pkg/ctrl) parameters
@@ -33,10 +33,10 @@ C Note: need these to be defined for use as control (pkg/ctrl) parameters
 #undef GM_READ_K3D_GM
 
 C This allows to use Visbeck et al formulation to compute K_GM+Redi
-#define GM_VISBECK_VARIABLE_K
-C Use old calculation (before 2007/05/24) of Visbeck etal K_GM+Redi
-C (which depends on tapering scheme)
-#undef OLD_VISBECK_CALC
+#undef GM_VISBECK_VARIABLE_K
+
+C This allows to use the GEOMETRIC formulation to compute K_GM
+#undef GM_GEOM_VARIABLE_K
 
 C This allows the Bates et al formulation to calculate the
 C bolus transport and K for Redi
@@ -56,7 +56,7 @@ C  instead of the Skew-Flux form (=default)
 #define GM_BOLUS_ADVEC
 
 C Allows to use the Boundary-Value-Problem method to evaluate GM Bolus transport
-#define GM_BOLUS_BVP
+#undef GM_BOLUS_BVP
 
 C Allow QG Leith variable viscosity to be added to GMRedi coefficient
 #undef ALLOW_GM_LEITH_QG

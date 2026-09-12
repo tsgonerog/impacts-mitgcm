@@ -1,7 +1,13 @@
 # Packages (lines beginning "#" are comments)
  &PACKAGES
- useMNC=.FALSE.,
  useDiagnostics=.TRUE.,
- useKPP=.FALSE.,
  useGMRedi=.TRUE.,
+# KPP and MNC are not compiled (commented out in code/packages.conf), so their flags keep the
+# default .FALSE.; a flag set .TRUE. for a package that is not compiled stops the model at
+# start-up. Set them again only together with the package:
+#   KPP: uncomment kpp in code/packages.conf, restore input/data.kpp (git history), and comment
+#        out ivdc_kappa in data (convective adjustment and KPP should not both act), then
+# useKPP=.TRUE.,
+#   MNC (netCDF output): uncomment mnc in code/packages.conf, then
+# useMNC=.TRUE.,
  &

@@ -55,7 +55,10 @@
  readBinaryPrec=64,
  writeBinaryPrec=32,
  debugLevel=1,
-#-useCDscheme ==> enables the C–D velocity-smoothing scheme; turns on a stabilizing filter that reduces timestep-to-timestep velocity oscillations.
+#-useCDscheme ==> computes the Coriolis terms with the C-D scheme, which MITgcm offers for coarse
+#   resolution: a second velocity, carried on the D-grid and relaxed toward the C-grid velocity over
+#   tauCD (PARM03), supplies them in place of the C-grid Coriolis terms. Needs pkg/cd_code compiled
+#   (commented out in code/packages.conf since 2026-09-12, which says how to restore it).
 # useCDscheme=.TRUE.,
  viscC4Leith=1.5,
  viscC4Leithd=1.5,
@@ -87,7 +90,9 @@
 #-for longer run (100 yrs)
 # endTime = 3110400000.,
 # monitorFreq=2592000.,
-#-tauCD ==> Sets the timescale determining how strongly that filter smooths the velocities.
+#-tauCD ==> C-D scheme coupling time scale (s): each step the D-grid velocity is moved toward the C-grid
+#   velocity by the fraction deltaTMom/tauCD. 321428 s (3.7 d) is the value in MITgcm's global_oce_latlon
+#   and exp2 examples. Set it only with useCDscheme=.TRUE. (model/src/config_check.F).
 # tauCD=321428.,
  &
 

@@ -1,16 +1,23 @@
 # Packages (lines beginning "#" are comments)
  &PACKAGES
- useMNC         = .FALSE.,
  useDiagnostics = .TRUE.,
 # GM/Redi in the forward sweep since 2026-09-11, as in the spin-up and the forward legs (input/data.pkg;
 # data.gmredi is a copy of input/data.gmredi). data.autodiff keeps it out of the adjoint sweep
-# (useGMRediInAdMode=.FALSE.), where its linearisation blows up within days (stability_study, 31236). Only
-# the approxAdv and ckpAll builds honour that split; the submit body refuses a -nocheckpoint build with it.
+# (useGMRediInAdMode=.FALSE.), where its linearisation blows up within days (stability_study, 31236).
+# Every checkpoint-everything build honours that split; a -nocheckpoint build only if its build_info.txt
+# records the list as free of switched variables, which the submit body checks.
 # The GM-free configuration before that date is variants/baseline/*_gmOff.
  useGMRedi      = .TRUE.,
- useKPP         = .FALSE.,
 # grdchk off for the kappa_v ensemble: at its current check point it measures
 # noise, not the gradient, and costs ~2.6x the adjoint proper. The ensemble's
 # own finite-difference comparison is the real validation.
  useGrdchk      = .FALSE.,
+# KPP and MNC are not compiled (commented out in code_tap/packages.conf), so their flags keep the
+# default .FALSE.; a flag set .TRUE. for a package that is not compiled stops the model at start-up.
+# Set them again only together with the package:
+#   KPP: uncomment kpp in code_tap/packages.conf, restore input_tap/data.kpp (git history), comment
+#        out ivdc_kappa in data, and set useKPPinAdMode in data.autodiff, then
+# useKPP         = .TRUE.,
+#   MNC (netCDF output): uncomment mnc in code_tap/packages.conf, then
+# useMNC         = .TRUE.,
  &
