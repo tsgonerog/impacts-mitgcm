@@ -40,7 +40,7 @@ EXPECT_RUN_TOKEN=tapAdj_ckpAll_profile   # refuse a build directory holding any 
 # Set to "" for default (i.e., use input_tap/data). IMPACTS_TEST_CASE overrides
 # this per run. The `-` (not `:-`) is deliberate: IMPACTS_TEST_CASE= selects the
 # live input_tap/data, which `:-` would swallow.
-test_cases="${IMPACTS_TEST_CASE-baseline/from180yrPk_visc2x}"
+test_cases="${IMPACTS_TEST_CASE-}"      # the live namelist (since 2026-09-12; until then baseline/from180yrPk_visc2x)
 
 # ========== TIME STEPPING PARAMETERS (IN DAYS) ==========
 
@@ -61,12 +61,17 @@ TIME_PARAMS=(monitorFreq adjMonitorFreq adjDumpFreq)
 
 # ========== PICKUP ==========
 
-# The 180-yr state of the 200-yr visc2x spin-up, matching the nIter0=3162240
-# baked into baseline/data_from180yrPk_visc2x. Changing test_cases to another
-# from*Pk tag means changing these two lines to the matching pickup as well.
+# The run starts from the pickup at the staged namelist's nIter0 (none from rest),
+# read from IMPACTS_PICKUP_RUN_DIR or, when that is unset, from the production
+# spin-up 31203 -- which a namelist of other settings is refused, and must name
+# its run instead. IMPACTS_PICKUP_ITER overrides the iteration. See link_pickup
+# in scripts/setup_params.sh (since 2026-09-12; until then the 2x spin-up
+# 30983's year-180 pickup was hard-coded here). A kappa_v_ensemble member starts
+# from its own leg:
+#     IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 IMPACTS_PICKUP_RUN_DIR=<leg run dir> \
+#         ../../../tools/submit.sh scripts/<this script>
 stage_pickups() {
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.data pickup.0003162240.data
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.meta pickup.0003162240.meta
+    link_pickup
 }
 
 # ========== PROFILE OUTPUT ==========

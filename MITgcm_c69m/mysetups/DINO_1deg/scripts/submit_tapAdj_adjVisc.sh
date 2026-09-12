@@ -77,19 +77,17 @@ stage_extra() {
 
 # ========== PICKUP ==========
 
-# Until 2026-09-09 the live namelist started from rest and needed none (the
-# from-rest boost runs 31025/31075/31090/31109/31138/31141 are that
-# configuration); the 50 yr and 70 yr anchors are visc2x states of spin-up
-# 30983 since the 2026-09-03 consolidation (the crashed runs they came from
-# are gone).
-# IMPACTS_PICKUP_RUN_DIR / IMPACTS_PICKUP_ITER override the pickup, as in the other two
-# adjoint definitions; the defaults are the spin-up 30983 and its year-180 pickup, which
-# the live input_tap/data starts from since 2026-09-09 (nIter0=3162240).
+# The run starts from the pickup at the staged namelist's nIter0 (none from rest),
+# read from IMPACTS_PICKUP_RUN_DIR or, when that is unset, from the production
+# spin-up 31203 -- which a namelist of other settings is refused, and must name
+# its run instead. IMPACTS_PICKUP_ITER overrides the iteration. See link_pickup
+# in scripts/setup_params.sh (since 2026-09-12; until then the 2x spin-up
+# 30983's year-180 pickup was hard-coded here). A kappa_v_ensemble member starts
+# from its own leg:
+#     IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 IMPACTS_PICKUP_RUN_DIR=<leg run dir> \
+#         ../../../tools/submit.sh scripts/<this script>
 stage_pickups() {
-    local pk_dir="${IMPACTS_PICKUP_RUN_DIR:-$SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983}"
-    local pk_it; pk_it=$(printf '%010d' "${IMPACTS_PICKUP_ITER:-3162240}")
-    ln -s "$pk_dir/pickup.$pk_it.data" "pickup.$pk_it.data"
-    ln -s "$pk_dir/pickup.$pk_it.meta" "pickup.$pk_it.meta"
+    link_pickup
 }
 
 source "$SLURM_SUBMIT_DIR/../../../tools/lib/submit_body.sh"

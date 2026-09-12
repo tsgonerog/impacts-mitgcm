@@ -83,3 +83,44 @@ run_suffix_from_namelist() {
       print s "_" v gm ((a==33) ? ax : "")                                         # _approxAdv only where there is a scheme to replace
     }' "$1"
 }
+
+# ---------- the pickup an adjoint run starts from ----------
+# stage_pickups in every DINO adjoint submit definition calls link_pickup, in the
+# staged run directory. The iteration is the staged namelist's nIter0, so a run
+# cannot link a pickup its namelist does not start from (IMPACTS_PICKUP_ITER
+# still overrides it); a run from rest links nothing. The run directory is
+# IMPACTS_PICKUP_RUN_DIR or, when that is unset, the production spin-up 31203 --
+# but only for a namelist of that spin-up's settings: any other namelist is
+# refused rather than started silently from the production state, and has to
+# name its run (the 2x spin-up 30983 for the visc2x variants, a kappa leg for its
+# member). Since 2026-09-12; until then every adjoint definition hard-coded
+# 30983's year-180 pickup, which the live namelist had not matched since
+# 2026-09-09.
+PRODUCTION_SPINUP_RUN=runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203
+PRODUCTION_SPINUP_SETTINGS=viscRef_ReMax2
+link_pickup() {
+  local it dir settings
+  it=${IMPACTS_PICKUP_ITER:-$(awk -F'[=, ]+' '{ sub(/^[[:space:]]+/, "") } tolower($1)=="niter0" {n=$2+0} END {print n+0}' data)}
+  if (( it == 0 )); then
+    echo "nIter0 = 0: a run from rest, no pickup linked"; return 0
+  fi
+  if [[ -n "${IMPACTS_PICKUP_RUN_DIR:-}" ]]; then
+    dir=$IMPACTS_PICKUP_RUN_DIR
+  else
+    settings="_$(run_suffix_from_namelist "$PWD/data")_"
+    if [[ "$settings" != *"_${PRODUCTION_SPINUP_SETTINGS}_"* ]]; then
+      echo "ERROR: the staged namelist (${settings//_/ }) does not have the settings of the production"
+      echo "       spin-up ($PRODUCTION_SPINUP_SETTINGS), the default pickup source. Name the run to start from"
+      echo "       with IMPACTS_PICKUP_RUN_DIR (for a visc2x namelist, the 2x spin-up 30983)."
+      exit 1
+    fi
+    dir=$SCRATCH_ROOT/DINO_1deg_outputs/$PRODUCTION_SPINUP_RUN
+  fi
+  it=$(printf '%010d' "$it")
+  if [[ ! -f "$dir/pickup.$it.data" ]]; then
+    echo "ERROR: $dir has no pickup.$it.data (nIter0 of the staged namelist)"; exit 1
+  fi
+  ln -s "$dir/pickup.$it.data" "pickup.$it.data"
+  ln -s "$dir/pickup.$it.meta" "pickup.$it.meta"
+  echo "pickup: $dir/pickup.$it"
+}

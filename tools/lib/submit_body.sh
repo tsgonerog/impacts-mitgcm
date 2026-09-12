@@ -277,42 +277,44 @@ if declare -F stage_extra > /dev/null; then
   stage_extra
 fi
 
-# ---------- GM/Redi split between the sweeps needs a checkpoint-every-call build ----------
-# A staged data.pkg with GM/Redi on and a data.autodiff that keeps it out of the adjoint
-# sweep (useGMRediInAdMode=.FALSE.; DINO's live namelist since 2026-09-11) works only where
-# Tapenade recomputes each routine inside the backward sweep after the mode switch. A build
-# made with a -nocheckpoint list applies the switch to half of that recomputation -- its
-# split _BWD routines replay the GM branch taped in the forward sweep, while the joint
-# GMREDI_*TRANSPORT_B read the flipped flag -- and blew up runs 31156/31157 (DINO
-# stability_study README). The list is read from build_info.txt's tap_extra line alone,
-# because other lines of a record may mention the option in prose.
-if [[ "$RUN_MODE" = tapAdj && -f data.pkg && -f data.autodiff ]] \
-   && grep -qiE '^[[:space:]]*useGMRedi[[:space:]]*=[[:space:]]*\.?t' data.pkg \
-   && grep -qiE '^[[:space:]]*useGMRediInAdMode[[:space:]]*=[[:space:]]*\.?f' data.autodiff \
-   && [[ "$(sed -n 's/^tap_extra=//p' "$build_info")" == *-nocheckpoint* ]]; then
-  echo "ERROR: data.pkg turns GM/Redi on and data.autodiff keeps it out of the adjoint sweep, but"
-  echo "       $build_dir was built with a -nocheckpoint list, where that switch half-applies."
-  echo "       Use the approxAdv or ckpAll build, or a variant with GM off (baseline/*_gmOff)."
-  exit 1
-fi
-
-# ---------- the approximate-advection switch: joint mode, and its implicit half ----------
-# useApproxAdvectionInAdMode (data.autodiff) swaps the flux-limited DST3 for the unlimited one
-# inside the backward sweep. Every adjoint build compiles the swap for the horizontal and
-# explicit vertical fluxes since 2026-09-12 (gad_advection.F in mods_tapenade_hooks/), but it
-# acts only where Tapenade re-runs gad_advection in joint mode: a -nocheckpoint list that splits
-# it, or a routine above it, replays the limiter there while joint routines take the other
-# branch. The swap for the implicit vertical advection (gad_implicit_r.F) exists only in the
-# approxAdv build's variant directory.
-if [[ "$RUN_MODE" = tapAdj && -f data.autodiff ]] \
-   && grep -qiE '^[[:space:]]*useApproxAdvectionInAdMode[[:space:]]*=[[:space:]]*\.?t' data.autodiff; then
-  if [[ "$(sed -n 's/^tap_extra=//p' "$build_info")" == *-nocheckpoint* ]]; then
-    echo "ERROR: data.autodiff sets useApproxAdvectionInAdMode, but $build_dir was built with a"
-    echo "       -nocheckpoint list, where the switch cannot act on the split advection routines."
-    echo "       Use the approxAdv or ckpAll build, or a data.autodiff without the switch."
+# ---------- adjoint-mode switches need joint mode wherever they are read ----------
+# data.autodiff can flip a package flag between the sweeps (use<PKG>InAdMode=.FALSE. while
+# data.pkg sets use<PKG>=.TRUE.; DINO's GM/Redi since 2026-09-11) and swap the advection
+# scheme inside the adjoint sweep (useApproxAdvectionInAdMode; DINO since 2026-09-10). A
+# switch reaches the adjoint only where Tapenade re-runs a routine inside the backward
+# sweep, i.e. in joint mode: a routine differentiated in split mode (-nocheckpoint) replays
+# the forward sweep's tape, and if it reaches a switched variable while its joint callees
+# read the flipped value, the adjoint is neither the one nor the other (runs 31156/31157 of
+# the DINO stability study split do_oceanic_phys under the GM flip and blew up). So a build
+# with a -nocheckpoint list is accepted with a flip only if its build_info.txt records
+# nocheckpoint_switch_free=yes: build_tapAdj_nocheckpoint.sh checks its own list with
+# tools/tapenade_profiling/check_nocheckpoint_switches.py over the compiled sources (since
+# 2026-09-12). The list is read from the tap_extra line alone, because other lines of a
+# record may mention the option in prose.
+if [[ "$RUN_MODE" = tapAdj && -f data.autodiff ]]; then
+  flips=""
+  for pkg in GMRedi KPP GGL90 SALT_PLUME SEAICE; do
+    if [[ -f data.pkg ]] && grep -qiE "^[[:space:]]*use${pkg}[[:space:]]*=[[:space:]]*\.?t" data.pkg \
+       && grep -qiE "^[[:space:]]*use${pkg}InAdMode[[:space:]]*=[[:space:]]*\.?f" data.autodiff; then
+      flips="$flips use${pkg}InAdMode"
+    fi
+  done
+  if grep -qiE '^[[:space:]]*useApproxAdvectionInAdMode[[:space:]]*=[[:space:]]*\.?t' data.autodiff; then
+    flips="$flips useApproxAdvectionInAdMode"
+  fi
+  if [[ -n "$flips" && "$(sed -n 's/^tap_extra=//p' "$build_info")" == *-nocheckpoint* ]] \
+     && ! grep -q '^nocheckpoint_switch_free=yes' "$build_info"; then
+    echo "ERROR: data.autodiff switches between the sweeps ($flips ), but $build_dir was built with a"
+    echo "       -nocheckpoint list its build_info.txt does not record as free of switched variables"
+    echo "       (nocheckpoint_switch_free=yes), so the switch would act on part of the recomputation only."
+    echo "       Rebuild with a switch-free list, or use the approxAdv or ckpAll build."
     exit 1
   fi
-  if grep -qiE '^[[:space:]]*(temp|salt)ImplVertAdv[[:space:]]*=[[:space:]]*\.?t' data \
+  # The swap for the implicit vertical advection (gad_implicit_r.F) exists only in the
+  # approxAdv build's variant directory; every adjoint build has the horizontal and explicit
+  # vertical one (gad_advection.F in mods_tapenade_hooks/, since 2026-09-12).
+  if [[ "$flips" == *useApproxAdvectionInAdMode* ]] \
+     && grep -qiE '^[[:space:]]*(temp|salt)ImplVertAdv[[:space:]]*=[[:space:]]*\.?t' data \
      && ! grep -q '^variant=approxAdv' "$build_info"; then
     echo "ERROR: data.autodiff sets useApproxAdvectionInAdMode and data advects tracers implicitly"
     echo "       in the vertical, which only the approxAdv build makes approximate (gad_implicit_r.F)."
@@ -370,9 +372,9 @@ cp -p "$build_info" .
 
 #----- pickups ---------------
 # The definition owns these: nIter0 is baked into whichever data_<tag> the
-# test case selects, and the matching pickup is a hardcoded ln -s in its
-# stage_pickups. Changing the duration is safe; changing the starting point
-# means editing both by hand.
+# test case selects, and its stage_pickups links the matching pickup. DINO's
+# adjoint definitions derive it from the staged nIter0 through link_pickup in
+# scripts/setup_params.sh (since 2026-09-12); the others link a fixed one.
 if declare -F stage_pickups > /dev/null; then
   stage_pickups
 fi

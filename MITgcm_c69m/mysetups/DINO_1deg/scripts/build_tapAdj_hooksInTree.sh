@@ -96,10 +96,22 @@ post_build_checks() {
     [ -z "$missing" ] || { echo "ERROR: no _FWD/_BWD pair was generated for:$missing"; bad=1; }
     [ $bad -eq 0 ] || exit 1
     echo "OK: hooks compiled from $MITGCM_TREE; wrapper split; all ${#NOCP_LIST[@]} listed routines split."
+
+    # Is the list consistent with the adjoint-mode switches? Recorded for the submit
+    # body, which refuses a namelist that flips a switch unless this says yes.
+    if python3 "$SETUP_DIR/../../../tools/tapenade_profiling/check_nocheckpoint_switches.py" . "$NOCP_FILE" > nocheckpoint_switches.txt 2>&1; then
+        NOCP_SWITCH_FREE=yes
+        echo "OK: no listed routine reaches an adjoint-mode switch (nocheckpoint_switches.txt)."
+    else
+        NOCP_SWITCH_FREE=no
+        echo "NOTE: listed routines reach an adjoint-mode switch; the submit body will refuse namelists that flip one:"
+        grep 'SWITCH' nocheckpoint_switches.txt || true
+    fi
 }
 
 build_info_extra() {
     echo "nocheckpoint_list=$NOCP"
+    echo "nocheckpoint_switch_free=$NOCP_SWITCH_FREE"
     echo "mitgcm_tree_commit=$(git -C "$MITGCM_TREE" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 }
 

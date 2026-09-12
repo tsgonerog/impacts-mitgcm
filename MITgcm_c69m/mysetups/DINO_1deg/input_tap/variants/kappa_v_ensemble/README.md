@@ -36,9 +36,13 @@ README), because the whole design rests on κ_v being the only difference
 between a member and the reference. `nIter0=3162240` is year 2180 and
 `nTimeSteps=87840` is five years.
 
-**The pickup must be repointed by hand.** `submit_tapAdj.sh` carries it as a
-hardcoded `ln -s`, and each member's adjoint has to read *its own* forward
-leg's `pickup.0003162240`, not the spin-up's. Chaining the two halves so the
+**The pickup must be named.** Each member's adjoint has to read *its own*
+forward leg's `pickup.0003162240`, not the spin-up's: pass the leg's run
+directory as `IMPACTS_PICKUP_RUN_DIR`, as above. Since 2026-09-12 the adjoint
+submit definitions refuse to fall back on the production spin-up for a
+namelist of other settings, which catches a bare `M<k>` (2×) member; the
+`M<k>_ReMax2` members share the spin-up's settings, so for them the override is
+the only safeguard. Chaining the two halves so the
 adjoint waits for its forward leg is written up in the project notes, as the
 job-chaining recipe.
 

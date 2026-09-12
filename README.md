@@ -466,10 +466,13 @@ Four things to know before editing or submitting one:
   opt-in and leave no diff. The run directory name and its staged `data` are the
   record of what ran. Since 2026-08-31 SOMA works the same way (one script per
   mode; its duration override patches `endTime` rather than `nTimeSteps`).
-- **`nIter0` is not auto-patched.** The start iteration lives in whichever
-  `data_<tag>` the `test_cases` string selects, while the pickup is a hardcoded
-  `ln -s` further down the same script. Changing the duration is safe; changing
-  the starting point means editing both by hand.
+- **`nIter0` is not auto-patched, but DINO's adjoint pickup follows it.** The
+  start iteration lives in whichever `data_<tag>` the `test_cases` string
+  selects. Since 2026-09-12 DINO's adjoint submit definitions link the pickup
+  at that iteration themselves, from `IMPACTS_PICKUP_RUN_DIR` or the production
+  spin-up (refused for a namelist of other settings); DINO's forward definition
+  and SOMA's still link a fixed pickup, which a change of starting point must
+  follow by hand.
 
 Scratch paths come from `$SCRATCH_ROOT` and are not hardcoded, but the
 `--mail-user` address still is — override per job with

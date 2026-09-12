@@ -91,10 +91,22 @@ post_build_checks() {
         exit 1
     fi
     echo "OK: all ${#NOCP_LIST[@]} listed routines were generated in split (_FWD/_BWD) mode."
+
+    # Is the list consistent with the adjoint-mode switches? Recorded for the submit
+    # body, which refuses a namelist that flips a switch unless this says yes.
+    if python3 "$SETUP_DIR/../../../tools/tapenade_profiling/check_nocheckpoint_switches.py" . "$NOCP_FILE" > nocheckpoint_switches.txt 2>&1; then
+        NOCP_SWITCH_FREE=yes
+        echo "OK: no listed routine reaches an adjoint-mode switch (nocheckpoint_switches.txt)."
+    else
+        NOCP_SWITCH_FREE=no
+        echo "NOTE: listed routines reach an adjoint-mode switch; the submit body will refuse namelists that flip one:"
+        grep 'SWITCH' nocheckpoint_switches.txt || true
+    fi
 }
 
 build_info_extra() {
     echo "nocheckpoint_list=$NOCP"
+    echo "nocheckpoint_switch_free=$NOCP_SWITCH_FREE"
 }
 
 source "$SETUP_DIR/../../../tools/lib/build_body.sh"

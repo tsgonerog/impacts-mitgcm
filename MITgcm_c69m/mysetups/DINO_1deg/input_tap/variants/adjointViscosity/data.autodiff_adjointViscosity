@@ -7,6 +7,11 @@
 # inAdExact = .FALSE.,
  useKPPinAdMode = .FALSE.,
  useGMRediInAdMode = .FALSE.,
+# The live input_tap/data.autodiff's approximate advection (scheme 30 in the
+# adjoint sweep, since 2026-09-10), so that this file is the production adjoint
+# plus the viscosity boost rather than the exact adjoint of scheme 33 plus the
+# boost (added 2026-09-12; before, the boosted runs linearised about scheme 33).
+ useApproxAdvectionInAdMode = .TRUE.,
 ### useGGL90inAdMode = .FALSE.,
  useSALT_PLUMEinAdMode = .FALSE.,
 # useInOutAdvar = .TRUE.,

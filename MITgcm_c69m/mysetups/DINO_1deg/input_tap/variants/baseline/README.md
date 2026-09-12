@@ -39,6 +39,8 @@ model builds is the same bit for bit, and so is the adjoint (30 d, 31140 ≡
 31137: every `ADJ*`/`adxx_*`, `fc`, `%MON`). See the setup README, "Lateral
 viscosity and vertical diffusivity: file or parameter".
 
-`nIter0=3162240` is year 2180 and is coupled by hand to a pickup symlink in
-each `submit_tapAdj*.sh`. Changing the duration is safe; changing the starting point
-means editing both.
+`nIter0=3162240` is year 2180. Since 2026-09-12 the adjoint submit definitions
+link the pickup at the staged `nIter0` themselves and default to the production
+spin-up 31203, which they refuse for a `visc2x` namelist: a run of
+`data_from180yrPk_visc2x` needs `IMPACTS_PICKUP_RUN_DIR` pointing at the 2×
+spin-up 30983.

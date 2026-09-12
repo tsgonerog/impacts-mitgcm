@@ -87,7 +87,8 @@ IMPACTS_TEST_CASE=kappa_v_ensemble/M3 ../../../tools/submit.sh scripts/submit_fr
 | `IMPACTS_MONITOR_FREQ_DAYS` | `monitorFreq` | `30.5` / `5` |
 | `IMPACTS_ADJ_MONITOR_FREQ_DAYS` | `adjMonitorFreq` | — / `5` |
 | `IMPACTS_ADJ_DUMP_FREQ_DAYS` | `adjDumpFreq` | — / `5` |
-| `IMPACTS_TEST_CASE` | which variant is staged: `<group>/<tag>` → `variants/<group>/data_<tag>` (a bare `<tag>` still works) | `baseline/from_rest_visc2x` / `baseline/from180yrPk_visc2x` |
+| `IMPACTS_TEST_CASE` | which variant is staged: `<group>/<tag>` → `variants/<group>/data_<tag>` (a bare `<tag>` still works) | the live `input/data` / the live `input_tap/data` (since 2026-09-09; the profiler and the in-tree build since 2026-09-12) |
+| `IMPACTS_PICKUP_RUN_DIR`, `IMPACTS_PICKUP_ITER` | the run the pickup is linked from, and its iteration | the 2× spin-up 30983 at `2986560` (year 170) / the production spin-up 31203 at the staged `nIter0`, refused for a namelist of other settings (since 2026-09-12) |
 
 Durations are whole days; a non-numeric value is rejected before the job stages
 anything. `IMPACTS_TEST_CASE=` (explicitly empty) selects the live `input*/data`
@@ -96,9 +97,14 @@ the environment, and the run directory name records the result — a duration th
 failed to arrive shows up as `_10yr_` instead of `_200yr_`.
 
 **`nIter0` is deliberately not in that table.** The start iteration lives in
-whichever `data_<tag>` `test_cases` selects, and the matching pickup is a
-hardcoded `ln -s` in the submit definition's `stage_pickups`. Changing the
-duration is safe; changing the starting point means editing both by hand.
+whichever `data_<tag>` `test_cases` selects. Since 2026-09-12 every adjoint
+submit definition links the pickup at that `nIter0` itself (`link_pickup` in
+`scripts/setup_params.sh`), from `IMPACTS_PICKUP_RUN_DIR` or, when that is
+unset, from the production spin-up 31203 — a default it refuses for a namelist
+whose settings are not the spin-up's, so a `visc2x` variant has to name the 2×
+spin-up 30983 and a κ member its own leg. The forward definition still links
+`IMPACTS_PICKUP_ITER` (default the 2× spin-up's year 170, the κ legs' start),
+which a change of starting point must follow by hand.
 
 ## Build
 

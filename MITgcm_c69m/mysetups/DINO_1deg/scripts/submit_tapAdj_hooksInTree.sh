@@ -5,9 +5,10 @@
 #
 # Same namelists, pickup and per-run overrides as submit_tapAdj_nocheckpoint.sh;
 # only the executable differs, and the run token check below enforces the
-# pairing. The committed default duration is 30 days, the configuration this
-# build is validated in (tools/compare_adj_runs.sh against run 31101), not the
-# 5-year production default of the other adjoint scripts.
+# pairing. The committed default duration is 30 days, a validation length
+# (tools/compare_adj_runs.sh against a build_tapAdj_nocheckpoint run of the same
+# namelist; 31107 against 31101 on 2026-09-05, and again on 2026-09-12 under the
+# live namelist), not the 5-year production default of the other adjoint scripts.
 #
 # This file says WHAT to run; HOW is tools/lib/submit_body.sh. Run it from the
 # setup directory through the wrapper:
@@ -39,7 +40,7 @@ EXPECT_RUN_TOKEN=tapAdj_nocheckpoint_hooksInTree     # refuse a build directory 
 # Set to "" for default (i.e., use input_tap/data). IMPACTS_TEST_CASE overrides
 # this per run. The `-` (not `:-`) is deliberate: IMPACTS_TEST_CASE= selects the
 # live input_tap/data, which `:-` would swallow.
-test_cases="${IMPACTS_TEST_CASE-baseline/from180yrPk_visc2x}"
+test_cases="${IMPACTS_TEST_CASE-}"      # the live namelist (since 2026-09-12; until then baseline/from180yrPk_visc2x)
 
 # ========== TIME STEPPING PARAMETERS (IN DAYS) ==========
 
@@ -49,7 +50,7 @@ test_cases="${IMPACTS_TEST_CASE-baseline/from180yrPk_visc2x}"
 #
 #     IMPACTS_DURATION_DAYS=3660 ../../../tools/submit.sh scripts/submit_tapAdj.sh
 #
-duration_days="${IMPACTS_DURATION_DAYS:-30}"                # 30 d: the validation configuration of this build (run 31101)
+duration_days="${IMPACTS_DURATION_DAYS:-30}"                # 30 d; compare with a build_tapAdj_nocheckpoint run of the same namelist and pickup
 monitorFreq_days="${IMPACTS_MONITOR_FREQ_DAYS:-5}"
 adjMonitorFreq_days="${IMPACTS_ADJ_MONITOR_FREQ_DAYS:-5}"
 adjDumpFreq_days="${IMPACTS_ADJ_DUMP_FREQ_DAYS:-5}"
@@ -60,12 +61,17 @@ TIME_PARAMS=(monitorFreq adjMonitorFreq adjDumpFreq)
 
 # ========== PICKUP ==========
 
-# The 180-yr state of the 200-yr visc2x spin-up, matching the nIter0=3162240
-# baked into baseline/data_from180yrPk_visc2x. Changing test_cases to another
-# from*Pk tag means changing these two lines to the matching pickup as well.
+# The run starts from the pickup at the staged namelist's nIter0 (none from rest),
+# read from IMPACTS_PICKUP_RUN_DIR or, when that is unset, from the production
+# spin-up 31203 -- which a namelist of other settings is refused, and must name
+# its run instead. IMPACTS_PICKUP_ITER overrides the iteration. See link_pickup
+# in scripts/setup_params.sh (since 2026-09-12; until then the 2x spin-up
+# 30983's year-180 pickup was hard-coded here). A kappa_v_ensemble member starts
+# from its own leg:
+#     IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 IMPACTS_PICKUP_RUN_DIR=<leg run dir> \
+#         ../../../tools/submit.sh scripts/<this script>
 stage_pickups() {
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.data pickup.0003162240.data
-    ln -s $SCRATCH_ROOT/DINO_1deg_outputs/runs/forward/spinup_200yr_visc2x/DINO_1deg_frd_200yr_from_rest_visc2x_run30983/pickup.0003162240.meta pickup.0003162240.meta
+    link_pickup
 }
 
 source "$SLURM_SUBMIT_DIR/../../../tools/lib/submit_body.sh"
