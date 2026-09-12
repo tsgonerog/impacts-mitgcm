@@ -5,12 +5,12 @@
 #
  &AUTODIFF_PARM01
 # inAdExact = .FALSE.,
- useKPPinAdMode = .FALSE.,
+# useKPPinAdMode = .FALSE.,   # no effect, KPP is not compiled; see input_tap/data.autodiff
  useGMRediInAdMode = .TRUE.,
 # Since 2026-09-10: the adjoint sweep linearises about the unlimited DST3 (scheme 30) while the
 # forward sweep keeps the flux-limited scheme 33 of data -- the flux limiter's adjoint is what
-# blew up every long adjoint here (stability_study, runs 31166/31167/31176). Honoured only by the
-# approxAdv build (code_tap/variants/approxAdvection/, the default build_tapAdj.sh); inert, and
-# therefore dangerous, with the nocheckpoint and ckpAll builds.
+# blew up every long adjoint here (stability_study, runs 31166/31167/31176). Honoured by every
+# adjoint build since 2026-09-12 (from 2026-09-10 only by the approxAdv build). With GM/Redi kept in
+# the adjoint sweep above, the submit body runs this tag only with IMPACTS_ALLOW_EXACT_ADJOINT=1.
  useApproxAdvectionInAdMode = .TRUE.,
  &

@@ -30,12 +30,13 @@
 # preference over a same-named file anywhere later.
 #
 # The build only provides the machinery; the values come from
-# input_tap/variants/adjointViscosity/data.autodiff_adjointViscosity at run
-# time (viscFacInAd = 10 vs viscFacInFw = 1, inAdviscArNr = 2.E-3 against a
-# forward 1.2E-4, and added inAddiffKhT/S). So this build MUST be paired with
-# submit_tapAdj_adjVisc.sh, which swaps that namelist in and refuses any
-# other build's run token. Pairing it with submit_tapAdj.sh silently runs the
-# plain configuration.
+# input_tap/variants/adjointViscosity/data.autodiff_additions at run time
+# (viscFacInAd = 10 vs viscFacInFw = 1, inAdviscArNr = 2.E-3 against a forward
+# 1.2E-4, inAdviscAhGrid = 2.5E-2), which submit_tapAdj_adjVisc.sh adds to the
+# staged data.autodiff (since 2026-09-12; until then it replaced the file with
+# a full copy); the adjoint-mode switches stay the staged namelist's. So this
+# build MUST be paired with that script -- every other submit script refuses
+# its run token, and without the additions the inAd*/outAd* values are unset.
 #
 # Validation history: run 31025 (30 d from rest, live input_tap/data) is the
 # first working adjVisc adjoint (fc bit-identical to plain 31026, every

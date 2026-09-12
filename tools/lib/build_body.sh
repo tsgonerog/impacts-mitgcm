@@ -58,6 +58,12 @@
 #   DUMP_CALLS   how many DUMP_ADJ_* calls the compiled DUMP_FILE must carry
 #   DUMP_FILE    the preprocessed source holding them (tapAdj only)
 #                                                            default dummy_tap.f
+#   COMPILED_NAME_CHECKS  optional array of "<name> <compiled file> ...": each
+#                file must carry the name after make (tapAdj only; DINO: the
+#                approximate-advection replacement in gad_advection and
+#                gad_implicit_r). Every adjoint build also records in
+#                build_info.txt whether its gad_implicit_r.f carries that
+#                replacement (approx_advection_implicit_vertical=yes|no).
 #
 # The definition runs under `set -euo pipefail`, and so does this file.
 
@@ -260,6 +266,29 @@ if [ "$BUILD_MODE" = tapAdj ]; then
             || { echo "ERROR: the Makefile's TAP_EXTRA lacks -ext $HOOKS_MODS/flow_tap"; exit 1; }
         echo "OK: hook sources and flow_tap came from $hooks_abs."
     fi
+
+    # Names the setup requires in compiled sources (COMPILED_NAME_CHECKS in
+    # scripts/setup_params.sh; DINO: the approximate-advection replacement in
+    # gad_advection and gad_implicit_r, primal and adjoint). A setup without the
+    # list checks nothing here.
+    for entry in "${COMPILED_NAME_CHECKS[@]+"${COMPILED_NAME_CHECKS[@]}"}"; do
+        read -r cname cfiles <<< "$entry"
+        for f in $cfiles; do
+            grep -qi -- "$cname" "$f" 2>/dev/null \
+                || { echo "ERROR: the compiled $f does not carry $cname (COMPILED_NAME_CHECKS in $SETUP_PARAMS)"; exit 1; }
+        done
+        echo "OK: $cname is compiled into $cfiles."
+    done
+
+    # Whether the implicit vertical advection honours useApproxAdvectionInAdMode:
+    # only a gad_implicit_r.F that carries the replacement does (DINO's code_tap/,
+    # not the vendored tree), so the submit body can refuse a namelist that needs
+    # it with a build that lacks it.
+    if grep -qi 'useApproxAdvectionInAdMode' gad_implicit_r.f 2>/dev/null; then
+        APPROX_IMPLICIT_VERTICAL=yes
+    else
+        APPROX_IMPLICIT_VERTICAL=no
+    fi
 fi
 
 # The definition's own checks: the variant really compiled, every listed
@@ -289,6 +318,7 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
     if [ "$BUILD_MODE" = tapAdj ]; then
         echo "tap_extra=$(sed -n 's/^TAP_EXTRA *= *//p' Makefile)"
         echo "hooks_mods=${HOOKS_MODS:-none (the tree carries the hooks)}"
+        echo "approx_advection_implicit_vertical=$APPROX_IMPLICIT_VERTICAL   # yes: gad_implicit_r.f carries the useApproxAdvectionInAdMode replacement"
     fi
     if [ -n "${MITGCM_TREE:-}" ]; then
         echo "mitgcm_root=$MITGCM_ROOT"   # not the vendored tree: say which

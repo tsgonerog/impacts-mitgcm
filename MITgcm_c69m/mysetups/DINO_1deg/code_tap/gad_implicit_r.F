@@ -3,18 +3,24 @@
 # include "AUTODIFF_OPTIONS.h"
 #endif
 C
-C     code_tap/variants/approxAdvection/gad_implicit_r.F (2026-09-09): the
-C     vendored pkg/generic_advdiff/gad_implicit_r.F plus the
-C     useApproxAdvectionInAdMode replacement that gad_advection.F makes for the
-C     horizontal fluxes, here for the implicit vertical advection, which the
-C     vendored file selects from its scheme argument alone. DINO ran
-C     tempImplVertAdv/saltImplVertAdv until 2026-09-10 and advects
-C     explicitly since, so the replacement is dormant in production; it
-C     stays here, not in mods_tapenade_hooks/, because under ALLOW_AUTODIFF
-C     it changes TAF adjoints too (a question for upstream, see the README). The argument is renamed advectionSchArg and a
-C     local advectionScheme carries the scheme actually used, as in
-C     gad_advection.F; everything after that point is the vendored code.
-C     See the README beside this file.
+C     code_tap/gad_implicit_r.F: the vendored pkg/generic_advdiff/gad_implicit_r.F
+C     plus the useApproxAdvectionInAdMode replacement that gad_advection.F makes
+C     for the horizontal fluxes (mods_tapenade_hooks/gad_advection.F under
+C     Tapenade), here for the implicit vertical advection, which the vendored
+C     file selects from its scheme argument alone: in the adjoint sweep the
+C     flux-limited DST3 (scheme 33) is replaced by the unlimited DST3 (30). The
+C     argument is renamed advectionSchArg and a local advectionScheme carries the
+C     scheme actually used, as in gad_advection.F; everything after that point is
+C     the vendored code.
+C     Compiled by every DINO adjoint build since 2026-09-12 (from 2026-09-09 only
+C     by the approxAdv build, from code_tap/variants/approxAdvection/). It acts
+C     only with tempImplVertAdv/saltImplVertAdv, which DINO has not used since
+C     2026-09-10: with explicit vertical advection GAD_IMPLICIT_R solves only the
+C     implicit diffusion and the replacement is dormant. It is not in
+C     mods_tapenade_hooks/ because under ALLOW_AUTODIFF it changes TAF adjoints
+C     too, a question for the MITgcm maintainers rather than a patch. Listed in
+C     code_tap/TREE_BASE.txt: tools/check_variant_shadows.sh fails when the tree
+C     file changes under this copy.
 
 CBOP
 C     !ROUTINE: GAD_IMPLICIT_R
@@ -122,8 +128,8 @@ CEOP
 
       advectionScheme = advectionSchArg
 #ifdef ALLOW_AUTODIFF
-C     approxAdvection variant: in AD-mode replace the flux-limited DST3 by the
-C     unlimited DST3, as gad_advection.F does for the horizontal fluxes.
+C     In AD-mode replace the flux-limited DST3 by the unlimited DST3, as
+C     gad_advection.F does for the horizontal fluxes (see the header above).
       IF ( inAdMode .AND. useApproxAdvectionInAdMode ) THEN
        IF ( advectionSchArg.EQ.ENUM_DST3_FLUX_LIMIT )
      &      advectionScheme = ENUM_DST3

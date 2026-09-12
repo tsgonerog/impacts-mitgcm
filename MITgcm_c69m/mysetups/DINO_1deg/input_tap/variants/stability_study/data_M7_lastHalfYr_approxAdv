@@ -1,6 +1,6 @@
 # stability_study/M7_lastHalfYr_approxAdv (2026-09-09): data_M7_lastHalfYr (the control that reproduces
 # the M7 blow-up: scheme 33 in both sweeps) unchanged; the data.autodiff sibling sets
-# useApproxAdvectionInAdMode=.TRUE., which the approxAdv build (scripts/build_tapAdj_approxAdv.sh)
+# useApproxAdvectionInAdMode=.TRUE., which the approxAdv build (since 2026-09-12 every adjoint build)
 # makes reachable under Tapenade: the forward sweep keeps the flux-limited scheme 33, the adjoint
 # sweep linearises about the unlimited scheme 30 (the ECCO practice). Compare with 31166 (control,
 # fc must be identical) and 31167 (scheme 30 in both sweeps, no blow-up).

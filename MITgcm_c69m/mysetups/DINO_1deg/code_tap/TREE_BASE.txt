@@ -1,0 +1,12 @@
+# Tree files copied whole into code_tap/ with lines added or changed, and the git blob of each tree
+# file the copy was derived from or last reviewed against (checkpoint69m). tools/check_variant_shadows.sh,
+# run by tools/pre_push_check.sh, fails when one of these tree files changes under its copy: carry the
+# change into the copy, then
+#     tools/check_variant_shadows.sh --record <this directory>
+# code_tap/ also holds the setup's own headers (SIZE.h, packages.conf, the *_OPTIONS.h toggles) and
+# tap_nocheckpoint.txt; those are not listed here and not checked.
+#
+# file                         tree path under MITgcm_c69m/MITgcm            blob
+gad_implicit_r.F               pkg/generic_advdiff/gad_implicit_r.F          5b82ef13d4720a0d53929a2cb2ad054e809233c7
+the_main_loop.F                model/src/the_main_loop.F                     41496b94444addd6f288b84cc733d3894e12ff64
+cost_atlantic_heat.F           pkg/cost/cost_atlantic_heat.F                 e47db446142c82eef7ef756c139c38b1a44cf10c

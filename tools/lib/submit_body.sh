@@ -54,6 +54,10 @@
 #   run_suffix_from_namelist()  optional; given the staged namelist, prints the
 #                     <start>_<settings> tokens that name a run of the live
 #                     input*/data, which has no tag of its own
+#   check_staged_namelists()  optional; runs in the run directory once the
+#                     namelists are staged (after stage_extra) and exits to
+#                     refuse a combination the setup does not allow (DINO: an
+#                     adjoint without its adjoint-mode switches)
 #
 # The definition runs under `set -e` and `set -x`, and so does this file.
 
@@ -218,10 +222,10 @@ if [[ -n "${EXPECT_RUN_TOKEN:-}" && "$run_token" != "$EXPECT_RUN_TOKEN" ]]; then
   echo "ERROR: $build_dir holds run_token=$run_token, but this submit script expects $EXPECT_RUN_TOKEN"
   echo "       (build and submit script are a pair; rebuild, or use the matching submit script)"; exit 1
 fi
-# A token the build record already carries is not repeated from a namelist-derived suffix:
-# the approxAdv build of a namelist that sets the approximate-advection switch stays
-# ..._gmFwd, as its runs were named before that token existed (2026-09-12). Tag-named runs
-# keep the tag byte for byte.
+# A token the build record already carries is not repeated from a namelist-derived suffix
+# (written 2026-09-12 for DINO's approxAdv build, removed the same day, whose runs of a
+# namelist setting the approximate-advection switch were named ..._gmFwd before the
+# _approxAdv token existed). Tag-named runs keep the tag byte for byte.
 if [[ -z "$test_cases" && -n "$suffix" ]]; then
   kept=""
   for t in ${suffix//_/ }; do [[ "_${run_token}_" == *"_${t}_"* ]] || kept="${kept}_$t"; done
@@ -258,8 +262,9 @@ cp "$namelist_data" data
 # ---------- sibling overrides: a variant may replace more than just `data` ----------
 # Any file beside the chosen namelist named <mitgcm-file>_<tag> is staged over
 # <mitgcm-file>. That is what lets one variant change a package flag as well as
-# the namelist -- kppON needs data.pkg (useKPP=.TRUE.) as well as data, and
-# staging only the data half silently ran the experiment without KPP.
+# the namelist -- DINO's grdchk_repair tags need data.pkg (useGrdchk=.TRUE.) and
+# data.grdchk as well as data. Until 2026-08-28 only the data half was staged, and
+# a KPP variant (deleted 2026-09-12) silently ran without KPP.
 variant_tag="${test_cases##*/}"
 if [[ -n "$variant_tag" ]]; then
   for extra in "$(dirname "$namelist_data")"/*_"$variant_tag"; do
@@ -272,9 +277,15 @@ if [[ -n "$variant_tag" ]]; then
 fi
 
 # The definition's own staging step, if any (the adjoint-viscosity submit
-# script swaps its data.autodiff in here).
+# script adds its lines to data.autodiff here).
 if declare -F stage_extra > /dev/null; then
   stage_extra
+fi
+
+# The setup's own check of the staged namelists, if scripts/setup_params.sh
+# defines one (DINO: the adjoint-mode switches its adjoint requires).
+if declare -F check_staged_namelists > /dev/null; then
+  check_staged_namelists
 fi
 
 # ---------- adjoint-mode switches and the -nocheckpoint list ----------
@@ -318,18 +329,22 @@ if [[ "$RUN_MODE" = tapAdj && -f data.autodiff ]]; then
     echo "ERROR: data.autodiff switches between the sweeps ($flips ), but $build_dir was built with a"
     echo "       -nocheckpoint list its build_info.txt does not record as free of switched variables"
     echo "       (nocheckpoint_switch_free=yes), so the switch would act on part of the recomputation only."
-    echo "       Rebuild with a switch-free list, or use the approxAdv or ckpAll build."
+    echo "       Rebuild with a switch-free list, or use a build that checkpoints every call (ckpAll)."
     exit 1
   fi
-  # The swap for the implicit vertical advection (gad_implicit_r.F) exists only in the
-  # approxAdv build's variant directory; every adjoint build has the horizontal and explicit
-  # vertical one (gad_advection.F in mods_tapenade_hooks/, since 2026-09-12).
+  # The replacement for the implicit vertical advection lives in gad_implicit_r.F, which the
+  # vendored tree lacks: every adjoint build has the horizontal and explicit vertical one
+  # (gad_advection.F in mods_tapenade_hooks/, since 2026-09-12), but only a build whose
+  # compiled gad_implicit_r.f carries it records approx_advection_implicit_vertical=yes
+  # (every DINO adjoint build since 2026-09-12, from code_tap/; from 2026-09-10 only the
+  # approxAdv build, whose record does not have the line).
   if [[ "$flips" == *useApproxAdvectionInAdMode* ]] \
      && grep -qiE '^[[:space:]]*(temp|salt)ImplVertAdv[[:space:]]*=[[:space:]]*\.?t' data \
-     && ! grep -q '^variant=approxAdv' "$build_info"; then
-    echo "ERROR: data.autodiff sets useApproxAdvectionInAdMode and data advects tracers implicitly"
-    echo "       in the vertical, which only the approxAdv build makes approximate (gad_implicit_r.F)."
-    echo "       Use scripts/submit_tapAdj_approxAdv.sh."
+     && ! grep -q '^approx_advection_implicit_vertical=yes' "$build_info"; then
+    echo "ERROR: data.autodiff sets useApproxAdvectionInAdMode and data advects tracers implicitly in"
+    echo "       the vertical, but $build_dir's build_info.txt does not record"
+    echo "       approx_advection_implicit_vertical=yes: its gad_implicit_r.F lacks the replacement, and the"
+    echo "       adjoint would be approximate only in part. Rebuild (DINO: code_tap/gad_implicit_r.F)."
     exit 1
   fi
 fi

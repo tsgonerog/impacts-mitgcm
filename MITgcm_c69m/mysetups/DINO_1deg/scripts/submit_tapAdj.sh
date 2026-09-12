@@ -1,1 +1,1 @@
-submit_tapAdj_approxAdv.sh
+submit_tapAdj_ckpAll.sh

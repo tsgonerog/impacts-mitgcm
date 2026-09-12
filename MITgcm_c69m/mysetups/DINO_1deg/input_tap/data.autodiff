@@ -5,7 +5,10 @@
 #
  &AUTODIFF_PARM01
 # inAdExact = .FALSE.,
- useKPPinAdMode = .FALSE.,
+# useKPPinAdMode: KPP is not compiled (see data.pkg), and pkg/autodiff ANDs this switch with useKPP
+# (autodiff_readparms.F), so it has no effect. Set it again only with KPP restored: .FALSE. keeps KPP
+# in the forward sweep and out of the adjoint sweep.
+# useKPPinAdMode = .FALSE.,
 # Live since 2026-09-11, when data.pkg turned GM/Redi on: GM acts in the forward sweep and in every
 # recomputation of it, and not in the adjoint sweep, where its linearisation blows up within days
 # (stability_study, 31236). It acts on what Tapenade records after FORWARD_STEP applies it: in every
@@ -14,8 +17,12 @@
  useGMRediInAdMode = .FALSE.,
 # Since 2026-09-10: the adjoint sweep linearises about the unlimited DST3 (scheme 30) while the
 # forward sweep keeps the flux-limited scheme 33 of data -- the flux limiter's adjoint is what
-# blew up every long adjoint here (stability_study, runs 31166/31167/31176). Honoured by every adjoint
-# build since 2026-09-12 for the horizontal and explicit vertical fluxes (gad_advection.F in
-# mods_tapenade_hooks/); implicit vertical advection needs the approxAdv build (gad_implicit_r.F).
+# blew up every long adjoint here (stability_study, runs 31166/31167/31176). Every adjoint build
+# compiles the replacement: for the horizontal and explicit vertical fluxes in
+# mods_tapenade_hooks/gad_advection.F (since 2026-09-12), and for implicit vertical advection in
+# code_tap/gad_implicit_r.F (since 2026-09-12; before that only the approxAdv build carried it).
+# The submit body refuses a DINO adjoint namelist without this switch, or without
+# useGMRediInAdMode=.FALSE. while data.pkg turns GM/Redi on, unless IMPACTS_ALLOW_EXACT_ADJOINT=1
+# (check_staged_namelists in scripts/setup_params.sh; since 2026-09-12).
  useApproxAdvectionInAdMode = .TRUE.,
  &

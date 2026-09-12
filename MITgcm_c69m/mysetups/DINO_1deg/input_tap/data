@@ -1,9 +1,9 @@
 # Production configuration since 2026-09-10 (scheme study, TODO.md): DINO's reference viscosity
 # files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the flux-limited DST3 tracer
 # advection (scheme 33) in the forward sweep; data.autodiff sets useApproxAdvectionInAdMode so the
-# adjoint sweep linearises about the unlimited scheme 30 -- which only the approxAdv build honours
-# (scripts/build_tapAdj.sh -> build_tapAdj_approxAdv.sh since 2026-09-10; the nocheckpoint and
-# ckpAll builds silently run the exact, blow-up-prone adjoint of scheme 33 with this file). From
+# adjoint sweep linearises about the unlimited scheme 30, which every DINO adjoint build honours since
+# 2026-09-12 (from 2026-09-10 only the approxAdv build did); the submit body refuses an adjoint namelist
+# without the switch unless IMPACTS_ALLOW_EXACT_ADJOINT=1 (scripts/setup_params.sh). From
 # 2026-09-09 to 2026-09-10 production was scheme 30 in both sweeps; before that both viscosity
 # files at 2x (visc2x), kept in input_tap/variants/baseline/data_from180yrPk_visc2x. This file IS
 # the baseline: the 5-yr adjoint from the year-180 pickup of the production spin-up (nIter0=3162240;

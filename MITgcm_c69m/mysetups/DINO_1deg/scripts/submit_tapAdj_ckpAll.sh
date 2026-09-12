@@ -1,13 +1,15 @@
 #!/bin/bash
-# Submit the REFERENCE Tapenade adjoint (every call checkpointed).
+# Submit the DEFAULT DINO Tapenade adjoint (every call checkpointed).
 #                                  build_tapAdj_ckpAll/mitgcmuv_tap_adj
 #
-# Not the default: ./scripts/submit_tapAdj.sh is a symlink to
-# submit_tapAdj_approxAdv.sh since 2026-09-10 (to submit_tapAdj_nocheckpoint.sh
-# from 2026-09-02). Use this pair for a timing baseline, or when a configuration
-# change has invalidated the -nocheckpoint list (see build_tapAdj_ckpAll.sh).
-# Until 2026-09-02 this file WAS submit_tapAdj.sh. Build and submit script are
-# a pair, and the run token check below enforces it.
+# THE DEFAULT adjoint submit script since 2026-09-12: ./scripts/submit_tapAdj.sh
+# is a symlink to this file (to submit_tapAdj_approxAdv.sh from 2026-09-10, to
+# submit_tapAdj_nocheckpoint.sh from 2026-09-02). The adjoint-mode switches come
+# from input_tap/data.autodiff (GM/Redi out of the adjoint sweep, scheme 30 in
+# it); the submit body refuses a namelist without them unless
+# IMPACTS_ALLOW_EXACT_ADJOINT=1 (see build_tapAdj_ckpAll.sh). Until 2026-09-02
+# this file WAS submit_tapAdj.sh. Build and submit script are a pair, and the
+# run token check below enforces it.
 #
 # This file says WHAT to run; HOW is tools/lib/submit_body.sh, shared by every
 # submit script. Run it from the setup directory through the wrapper:

@@ -2,7 +2,7 @@
 # files on D and Z with the grid-Reynolds floor viscAhReMax=2., and the flux-limited DST3 tracer
 # advection (scheme 33, DINO's monotone family). The adjoint keeps scheme 33 in its forward sweep
 # and linearises about the unlimited scheme 30 in the adjoint sweep (input_tap/data.autodiff,
-# useApproxAdvectionInAdMode; the approxAdv build). From 2026-09-09 to 2026-09-10 production was
+# useApproxAdvectionInAdMode, which every adjoint build honours). From 2026-09-09 to 2026-09-10 production was
 # scheme 30 in both models (spin-up 31169, cancelled at year 35: AMOC 40 % weaker at 26N); before
 # that both viscosity files at 2x (visc2x, spin-up 30983), kept in
 # input/variants/baseline/data_from_rest_visc2x. This file IS the baseline: the 200-yr spin-up from

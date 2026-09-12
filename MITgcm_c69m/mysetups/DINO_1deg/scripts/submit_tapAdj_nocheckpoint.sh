@@ -3,12 +3,12 @@
 #                                  build_tapAdj_nocheckpoint/mitgcmuv_tap_adj
 #
 # THE DEFAULT adjoint submit script from 2026-09-02 to 2026-09-10 (the symlink
-# ./scripts/submit_tapAdj.sh now points at submit_tapAdj_approxAdv.sh). Since
-# the list of 2026-09-12 it takes the adjoint-mode switches of the live
-# input_tap/data.autodiff and gives the approxAdv adjoint bit for bit (31276 vs
-# 31269, 30 d, 1.41x faster) as long as vertical advection is explicit; the
-# submit body refuses a switching namelist unless the build records its list as
-# safe under the switches. Identical to submit_tapAdj_ckpAll.sh except
+# ./scripts/submit_tapAdj.sh points at submit_tapAdj_ckpAll.sh since 2026-09-12).
+# Since the list of 2026-09-12 it takes the adjoint-mode switches of the live
+# input_tap/data.autodiff and gives the checkpoint-everything adjoint bit for
+# bit (31276 vs 31269, 30 d, 1.41x faster); the submit body refuses a switching
+# namelist unless the build records its list as safe under the switches.
+# Identical to submit_tapAdj_ckpAll.sh except
 # for the executable it runs: the nocheckpoint build recomputes less and
 # stores more inside each time step (see build_tapAdj_nocheckpoint.sh). Build
 # and submit script are a pair, and the run token check below enforces it.

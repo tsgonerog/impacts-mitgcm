@@ -2,7 +2,8 @@
 # approxAdv_grdchkON unchanged, but the data.autodiff sibling sets useApproxAdvectionInAdMode=.FALSE.,
 # so the approxAdv build runs as the plain ckpAll adjoint. Run with submit_tapAdj_approxAdv.sh. It
 # separates what the switch does to run 31177's table from what the build, the viscosity configuration
-# and the limiter do.
+# and the limiter do. Since 2026-09-12 run it with submit_tapAdj.sh and IMPACTS_ALLOW_EXACT_ADJOINT=1: the
+# submit body refuses a scheme-33 adjoint namelist without the switch otherwise.
 # Model parameters
 # Continuous equation parameters
  &PARM01

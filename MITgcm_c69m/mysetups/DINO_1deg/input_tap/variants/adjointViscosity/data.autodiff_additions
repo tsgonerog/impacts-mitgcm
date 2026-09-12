@@ -1,20 +1,11 @@
-# =========================
-# pkg AUTODIFF parameters :
-# =========================
-#  inAdExact :: get an exact adjoint (no approximation) (def=.True.)
+# Lines that scripts/submit_tapAdj_adjVisc.sh inserts into the staged data.autodiff, before the
+# end of &AUTODIFF_PARM01: the boost's parameters only, so that the adjoint-mode switches
+# (useGMRediInAdMode, useApproxAdvectionInAdMode) are the staged namelist's. Not a namelist by
+# itself. The inAd*/outAd* values are read and applied by the sources in
+# code_tap/variants/adjointViscosity/, which build_tapAdj_adjVisc.sh compiles, and are assigned
+# unconditionally there, so none of them may be left out. Until 2026-09-12 this variant was a
+# complete data.autodiff (data.autodiff_adjointViscosity) that replaced the staged one.
 #
- &AUTODIFF_PARM01
-# inAdExact = .FALSE.,
- useKPPinAdMode = .FALSE.,
- useGMRediInAdMode = .FALSE.,
-# The live input_tap/data.autodiff's approximate advection (scheme 30 in the
-# adjoint sweep, since 2026-09-10), so that this file is the production adjoint
-# plus the viscosity boost rather than the exact adjoint of scheme 33 plus the
-# boost (added 2026-09-12; before, the boosted runs linearised about scheme 33).
- useApproxAdvectionInAdMode = .TRUE.,
-### useGGL90inAdMode = .FALSE.,
- useSALT_PLUMEinAdMode = .FALSE.,
-# useInOutAdvar = .TRUE.,
 # What each inAd* line reaches in THIS configuration (2026-09-09 review):
 #  - viscArNr(k) is read every step (calc_viscosity.F), so inAdviscArNr acts.
 #  - viscAhGrid adds viscAhGrid*L^2/(4 deltaT) inside MOM_CALC_VISC, which is
@@ -24,17 +15,15 @@
 #  - inAdviscA4Grid IS inert here: useBiharmonicVisc (set_parms.F:148) is
 #    fixed .FALSE. at initialisation because the forward namelist has no
 #    biharmonic term, and mom_vecinv never applies the A4 dissipation.
+#  - inAddiffKhT/S equal the forward diffKhT/S (500), so the lateral tracer
+#    diffusivity is not boosted; no inAd* scalar reaches the 3-D diffKr.
  inAdviscArNr       = 2.E-3,
  inAdviscAhGrid     = 2.5E-2,
  inAdviscA4Grid     = 0.05E0,
-##watch out for these units when using logdiffkr!!!
-# inAddiffKrNrT      = 1.E-4,
-# inAddiffKrNrS      = 1.E-4,
  inAddiffKhT        = 5.E2,
  inAddiffKhS        = 5.E2,
  inAddiffK4T        = 0.E10,
  inAddiffK4S        = 0.E10,
-# inAdviscFac        = 2.E0,
 # The outAd* values are written back at the END of every backward step
 # (AUTODIFF_INADMODE_UNSET_B) and are what every checkpoint replay of the
 # forward model then runs with, so each MUST equal the forward namelist's
@@ -45,33 +34,14 @@
 # (forward: 500): runs 31025-31138 replayed with those values.
  outAdviscArNr      = 1.2E-4,
  outAdviscAhGrid    = 0.,
-# outAdviscAhGrid    = 1.E-4,
  outAdviscA4Grid    = 0.E0,
-##watch out for these units when using logdiffkr!!!
-# outAddiffKrNrT     = 0.E-5,
-# outAddiffKrNrS     = 0.E-5,
  outAddiffKhT       = 5.E2,
  outAddiffKhS       = 5.E2,
  outAddiffK4T       = 0.E10,
  outAddiffK4S       = 0.E10,
-# outAdviscFac       = 1.E0,
-
-# CAB MAKE SURE THERE IS NO SWITCH FOR DYNAMICS,only Freedrift
-
-# this goes in data.seaice
-# SEAICEuseFREEDRIFT = .FALSE.,
-# SEAICEuseFREEDRIFTswitchInAd = .TRUE.,
-# SEAICEuseFREEDRIFTswitchInAd = .FALSE.,
-# SEAICEuseDYNAMICSswitchInAd = .FALSE.,
-# useSEAICEinAdMode = .TRUE.,
-# outSEAICEadjMODE    = 1,
-# inSEAICEadjMODE    = 1,
-# SIregFacInAd = 0.0,
-# SIregFacInFw = 1.0,
 # viscFacInAd multiplies ONLY the PARM05 viscAh[D/Z]file fields
 # (mom_calc_visc.F:509-511, AUTODIFF_ALLOW_VISCFACADJ in AUTODIFF_OPTIONS.h):
 # it is the stock, structure-preserving boost of DINO's A_h = U*dx/2 field,
 # and it needs the files to exist -- a scalar viscAh is not multiplied.
  viscFacInFw = 1.,
  viscFacInAd = 10.,
- &

@@ -1,6 +1,6 @@
 # grdchk_repair for the approximate-advection adjoint (2026-09-09): reference viscosity + viscAhReMax=2.
 # with the flux-limited scheme 33 in the forward model and, through the data.autodiff sibling's
-# useApproxAdvectionInAdMode=.TRUE. and the approxAdv build, the unlimited scheme 30 in the adjoint
+# useApproxAdvectionInAdMode=.TRUE. (then the approxAdv build; every adjoint build since 2026-09-12), the unlimited scheme 30 in the adjoint
 # sweep. The finite differences are of the scheme-33 forward, so the table measures the
 # approximation, not just the adjoint: compare with 31172 (scheme 30 in both, exact) and 31037.
 # Model parameters

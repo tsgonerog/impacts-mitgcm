@@ -34,6 +34,20 @@ HOOK_CHECKS=(
 # include.
 DUMP_CALLS=5
 
+# ---------- compiled-source assertions (adjoint builds) ----------
+# Every DINO adjoint build must compile the approximate-advection replacement that
+# input_tap/data.autodiff switches on (useApproxAdvectionInAdMode): for the horizontal
+# and explicit vertical fluxes in mods_tapenade_hooks/gad_advection.F, for implicit
+# vertical advection in code_tap/gad_implicit_r.F, each primal and adjoint. The name
+# occurs in neither vendored file's preprocessed form (gad_advection.f loses the block
+# to the TAMC guard, gad_implicit_r.f never had it), so its presence in each compiled
+# file is the evidence. Each entry is "<name> <compiled file> ..."; the build body fails
+# a build in which one of the files lacks the name. Since 2026-09-12, when the check
+# of the approxAdv build became every build's.
+COMPILED_NAME_CHECKS=(
+    "useApproxAdvectionInAdMode gad_advection.f gad_advection_b.f gad_implicit_r.f gad_implicit_r_b.f"
+)
+
 # ---------- naming a run of the live namelist ----------
 # The live input*/data has no tag of its own, so a run of it would be named by
 # duration alone. Derive the <start>_<viscosity> tokens from the namelist the
@@ -47,9 +61,9 @@ DUMP_CALLS=5
 # out of the adjoint sweep (2026-09-11; a forward namelist has no data.autodiff and gets no
 # GM token), and _approxAdv when that data.autodiff sets useApproxAdvectionInAdMode and
 # tempAdvScheme is 33, the flux-limited scheme the switch replaces in the adjoint sweep
-# (2026-09-12; the submit body drops it again for the approxAdv build, whose run token
-# already says it). Anything unrecognised gives liveData, so the name never claims a
-# setting the script could not read.
+# (2026-09-12; the submit body drops a token the run token already carries, as the
+# approxAdv build's did from 2026-09-10 to 2026-09-12). Anything unrecognised gives
+# liveData, so the name never claims a setting the script could not read.
 run_suffix_from_namelist() {
   local dir gm= ax=
   dir=$(dirname "$1")
@@ -123,4 +137,38 @@ link_pickup() {
   ln -s "$dir/pickup.$it.data" "pickup.$it.data"
   ln -s "$dir/pickup.$it.meta" "pickup.$it.meta"
   echo "pickup: $dir/pickup.$it"
+}
+
+# ---------- the adjoint is the approximate one, by design ----------
+# DINO's adjoint keeps GM/Redi, where data.pkg turns it on, out of the adjoint sweep
+# (useGMRediInAdMode=.FALSE.; since 2026-09-11) and linearises the flux-limited DST3
+# (scheme 33) as the unlimited DST3 (scheme 30) there (useApproxAdvectionInAdMode=.TRUE.;
+# since 2026-09-10): the exact adjoint of either blows up (stability_study: 31236 for GM,
+# 31166 against 31167 for the limiter). Both are data.autodiff switches that every DINO
+# adjoint build honours, so no build name can say which adjoint a run is; this makes it
+# explicit by refusing a staged adjoint namelist that does not set them. An exact adjoint
+# is then a deliberate choice, IMPACTS_ALLOW_EXACT_ADJOINT=1, as the records that need one
+# are (stability_study/*_gmOn, grdchk_repair/*_approxAdvOff). The submit body calls this in
+# the run directory once the namelists are staged (since 2026-09-12).
+check_staged_namelists() {
+  [[ "$RUN_MODE" == tapAdj ]] || return 0
+  if [[ "${IMPACTS_ALLOW_EXACT_ADJOINT:-0}" == 1 ]]; then
+    echo "NOTE: IMPACTS_ALLOW_EXACT_ADJOINT=1: the adjoint-mode switches are not required"
+    return 0
+  fi
+  local missing=""
+  if grep -qiE '^[[:space:]]*useGMRedi[[:space:]]*=[[:space:]]*\.?t' data.pkg 2>/dev/null \
+     && ! grep -qiE '^[[:space:]]*useGMRediInAdMode[[:space:]]*=[[:space:]]*\.?f' data.autodiff 2>/dev/null; then
+    missing="$missing useGMRediInAdMode=.FALSE."
+  fi
+  if grep -qiE '^[[:space:]]*(temp|salt)AdvScheme[[:space:]]*=[[:space:]]*33([^0-9]|$)' data \
+     && ! grep -qiE '^[[:space:]]*useApproxAdvectionInAdMode[[:space:]]*=[[:space:]]*\.?t' data.autodiff 2>/dev/null; then
+    missing="$missing useApproxAdvectionInAdMode=.TRUE."
+  fi
+  if [[ -n "$missing" ]]; then
+    echo "ERROR: DINO's adjoint is the approximate one by design, but the staged data.autodiff does not set:$missing"
+    echo "       Set it, or ask for the exact adjoint deliberately with IMPACTS_ALLOW_EXACT_ADJOINT=1."
+    exit 1
+  fi
+  echo "OK: the staged namelists set DINO's adjoint-mode switches (GM/Redi forward sweep only, scheme 30 in the adjoint sweep)."
 }

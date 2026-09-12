@@ -3,6 +3,9 @@
 # default (nocheckpoint) build, no data.autodiff sibling. Two questions: how well the exact adjoint of
 # the limiter agrees with finite differences at this viscosity (31037 answered it at 2x), and whether
 # the scheme-33 forward's perturbed runs are as noisy as run 31177's (the approximate adjoint's check).
+# Since 2026-09-12 a run of this tag stages the live input_tap/data.autodiff, which sets
+# useApproxAdvectionInAdMode=.TRUE., so it gives the approximate adjoint; the exact adjoint of run 31178
+# is now approxAdvOff_grdchkON with IMPACTS_ALLOW_EXACT_ADJOINT=1.
 # Model parameters
 # Continuous equation parameters
  &PARM01

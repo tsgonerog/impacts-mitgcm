@@ -2,11 +2,13 @@
 # Build the Tapenade ADJOINT with PROFILE-GUIDED -nocheckpoint tuning.
 #   sources : code_tap/ + input_tap/  ->  build_tapAdj_nocheckpoint/mitgcmuv_tap_adj
 #
-# THE DEFAULT adjoint build from 2026-09-02 to 2026-09-10; since then the
-# symlink ./scripts/build_tapAdj.sh points at build_tapAdj_approxAdv.sh. With
-# every call checkpointed the same adjoint is build_tapAdj_ckpAll.sh; given the
-# same namelist this build reproduces it bit for bit and faster (31054 vs 31052
-# at 30 d, 31055 vs 31039 at 5 yr, 1.5x, with the list of 2026-09-02).
+# THE DEFAULT adjoint build from 2026-09-02 to 2026-09-10; the symlink
+# ./scripts/build_tapAdj.sh then pointed at build_tapAdj_approxAdv.sh, and at
+# build_tapAdj_ckpAll.sh since 2026-09-12. With every call checkpointed the same
+# adjoint is build_tapAdj_ckpAll.sh; given the same namelist this build
+# reproduces it bit for bit and faster (31054 vs 31052 at 30 d, 31055 vs 31039
+# at 5 yr, 1.5x, with the list of 2026-09-02; 31276 vs 31269 at 30 d, 1.41x,
+# with the list of 2026-09-12 under the live switches).
 #
 # The adjoint-mode switches of the live input_tap/data.autodiff (GM/Redi kept
 # out of the adjoint sweep, scheme 30 in it) act only on what is recorded after
@@ -15,8 +17,8 @@
 # ones that read a switched variable checkpointed; post_build_checks verifies
 # that with tools/tapenade_profiling/check_nocheckpoint_switches.py and records
 # the result, without which the submit body refuses a namelist that switches.
-# The scheme swap for implicit vertical advection exists only in the approxAdv
-# build (see build_tapAdj_approxAdv.sh); the live namelist advects explicitly.
+# The scheme replacement for implicit vertical advection, code_tap/gad_implicit_r.F,
+# is compiled here too since 2026-09-12; the live namelist advects explicitly.
 #
 # The routine list is a profile of ONE configuration (run 31268 of 2026-09-12:
 # the live namelists, 27 ranks, this package set): the _FWD check below catches
