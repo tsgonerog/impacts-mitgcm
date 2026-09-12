@@ -3,19 +3,26 @@
 #   sources : code_tap/ + input_tap/  ->  build_tapAdj_nocheckpoint/mitgcmuv_tap_adj
 #
 # THE DEFAULT adjoint build from 2026-09-02 to 2026-09-10; since then the
-# symlink ./scripts/build_tapAdj.sh points at build_tapAdj_approxAdv.sh (the
-# live namelists keep scheme 33 in the forward model and switch the adjoint
-# sweep to scheme 30, which this build cannot do: the switch is a run-time
-# branch that split mode never re-evaluates, so with the live
-# input_tap/data.autodiff this build runs the exact, blow-up-prone adjoint of
-# scheme 33). The earlier default, with every call
-# checkpointed, is build_tapAdj_ckpAll.sh; this build is bitwise identical to
-# it in fc, adxx_* and ADJ* at 30 d (run 31054 vs 31052) and 5 yr (31055 vs
-# 31039) and 1.5x faster. The routine list is a profile of ONE configuration
-# (KPP/GM off, 27 ranks, this package set): the _FWD check below catches a
-# name that vanished, not a list that stopped being the right list, so
-# re-profile with build_tapAdj_profile.sh whenever the adjoint's package
-# set, physics or decomposition changes.
+# symlink ./scripts/build_tapAdj.sh points at build_tapAdj_approxAdv.sh. With
+# every call checkpointed the same adjoint is build_tapAdj_ckpAll.sh; given the
+# same namelist this build reproduces it bit for bit and faster (31054 vs 31052
+# at 30 d, 31055 vs 31039 at 5 yr, 1.5x, with the list of 2026-09-02).
+#
+# The adjoint-mode switches of the live input_tap/data.autodiff (GM/Redi kept
+# out of the adjoint sweep, scheme 30 in it) act only on what is recorded after
+# FORWARD_STEP applies them, at the start of its reverse sweep. A routine
+# FORWARD_STEP calls is recorded before them when split, so the list keeps the
+# ones that read a switched variable checkpointed; post_build_checks verifies
+# that with tools/tapenade_profiling/check_nocheckpoint_switches.py and records
+# the result, without which the submit body refuses a namelist that switches.
+# The scheme swap for implicit vertical advection exists only in the approxAdv
+# build (see build_tapAdj_approxAdv.sh); the live namelist advects explicitly.
+#
+# The routine list is a profile of ONE configuration (run 31268 of 2026-09-12:
+# the live namelists, 27 ranks, this package set): the _FWD check below catches
+# a name that vanished, not a list that stopped being the right list, so
+# re-profile with build_tapAdj_profile.sh whenever the adjoint's package set,
+# physics, switches or decomposition change.
 #
 # Same stock genmake2 and shared-hooks wiring as build_tapAdj_ckpAll.sh
 # (see there for where the ADJ* dump calls come from), with one Tapenade flag
@@ -37,8 +44,8 @@
 # the check below rejects it, so the list stays honest.
 #
 # This file says WHAT to build; HOW is tools/lib/build_body.sh. Run from the
-# setup directory: ./scripts/build_tapAdj_nocheckpoint.sh (or the symlink).
-# Pair with submit_tapAdj_nocheckpoint.sh (or its submit_tapAdj.sh symlink).
+# setup directory: ./scripts/build_tapAdj_nocheckpoint.sh
+# Pair with submit_tapAdj_nocheckpoint.sh.
 # The adjoint is mathematically the same as build_tapAdj_ckpAll's (same
 # values, stored instead of recomputed).
 
@@ -92,15 +99,15 @@ post_build_checks() {
     fi
     echo "OK: all ${#NOCP_LIST[@]} listed routines were generated in split (_FWD/_BWD) mode."
 
-    # Is the list consistent with the adjoint-mode switches? Recorded for the submit
-    # body, which refuses a namelist that flips a switch unless this says yes.
+    # Can the list be used with the adjoint-mode switches? Recorded for the submit body,
+    # which refuses a namelist that flips a switch unless this says yes.
     if python3 "$SETUP_DIR/../../../tools/tapenade_profiling/check_nocheckpoint_switches.py" . "$NOCP_FILE" > nocheckpoint_switches.txt 2>&1; then
         NOCP_SWITCH_FREE=yes
-        echo "OK: no listed routine reaches an adjoint-mode switch (nocheckpoint_switches.txt)."
+        echo "OK: no listed routine is recorded before the adjoint-mode switches and reads one (nocheckpoint_switches.txt)."
     else
         NOCP_SWITCH_FREE=no
-        echo "NOTE: listed routines reach an adjoint-mode switch; the submit body will refuse namelists that flip one:"
-        grep 'SWITCH' nocheckpoint_switches.txt || true
+        echo "NOTE: listed routines are recorded before the adjoint-mode switches and read one; the submit body will refuse namelists that flip a switch:"
+        grep -E 'SWITCH|ERROR' nocheckpoint_switches.txt || true
     fi
 }
 

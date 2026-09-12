@@ -1,49 +1,61 @@
 # Routines Tapenade must NOT checkpoint (differentiate in split _FWD/_BWD mode).
-# Read by build_tapAdj_nocheckpoint.sh and passed as  -nocheckpoint "<names>".
-# One name per line, lower case; '#' starts a comment.
+# Read by build_tapAdj_nocheckpoint.sh and build_tapAdj_hooksInTree.sh and passed
+# as  -nocheckpoint "<names>".  One name per line, lower case; '#' starts a comment.
 #
-# Selection rule: every callee whose measured time gain in the 30-day
-# profiling run 31053 (build_tapAdj_profile.sh, rank 0, 809 s of adjoint)
-# was >= 1 s, except Tapenade externals (cg2d, exch2_rl1_cube and the
-# hook externals re-declared in flow_tap_local have no source to split). Gains below 1 s print as zero in the
-# profile and were left out. The annotations are that run's numbers per
-# process: time saved over the run, and change in the adjoint's PEAK tape
-# ("free" = neutral or a memory gain). Sum: ~357 s of the 363 s the profile
-# attributes to checkpointing, at a summed peak-memory cost bound of ~54 MB
-# against a 923 MB peak. Re-profile before editing; see
-# tools/tapenade_profiling/README.md.
+# Derived on 2026-09-12 from the 31-day profiling run 31268 (build_tapAdj_profile.sh
+# with the live namelists: GM/Redi in the forward sweep only, scheme 33 forward and
+# scheme 30 in the adjoint sweep, explicit vertical advection, no KPP; rank 0, 837 MB
+# peak tape, 411 s of CPU attributed to checkpointing):
+#   1. every callee whose measured time gain was >= 1 s (parse_tapenade_profile.py
+#      --min-gain-s 1; gains below 1 s print as zero): 34 routines;
+#   2. minus the Tapenade externals cg2d, exch2_rl1_cube and
+#      dummy_in_stepping_uv_xyz_rl, which flow_tap declares and Tapenade cannot
+#      split: 31;
+#   3. minus the routines that must stay checkpointed under the adjoint-mode
+#      switches (check_nocheckpoint_switches.py --filter): 28. FORWARD_STEP applies
+#      the switches at the start of its reverse sweep, so a routine it calls is
+#      recorded before them when split and after them when checkpointed.
+#      thermodynamics (20 s), do_oceanic_phys (19 s, +21.4 MB) and dynamics (12 s,
+#      +9.3 MB) read useGMRedi, useApproxAdvectionInAdMode with inAdMode, or
+#      viscFacAdj somewhere below them, so they stay checkpointed; everything below
+#      them is recorded after the switches in either mode and is listed freely.
+# The annotations are run 31268's numbers per process: CPU time saved over the run,
+# and change in the adjoint's PEAK tape ("gain" = a memory saving). Sum: 354 s of the
+# 411 s, at a summed peak-memory cost bound of 16 MB against the 837 MB peak.
+#
+# Until 2026-09-12 this was the 33-routine list of profiling run 31053 (KPP
+# compiled, GM off, scheme 33 in both sweeps, implicit vertical advection). That list
+# no longer builds (kpp_calc_dummy went with pkg/kpp) and is not safe under the live
+# data.autodiff (9 of its routines are recorded before the switches and read one).
+# Re-profile and re-filter whenever the adjoint's package set, physics, switches or
+# decomposition change; tools/tapenade_profiling/README.md has the procedure.
 #
 # name                          gain [s]   peak-memory change
-timestep                      #   75      -31.1 MB (gain)
-forward_step                  #   71      neutral
-grad_sigma                    #   37      neutral
-mom_vecinv                    #   22      -0.2 MB (gain)
-calc_phi_hyd                  #   21      -8.6 MB (gain)
-thermodynamics                #   18      neutral
-do_oceanic_phys               #   17      +28.9 MB
-integrate_for_w               #   13      neutral
-dynamics                      #   12      +9.3 MB
-salt_integrate                #    9      neutral
-temp_integrate                #    8      +1.9 MB
-do_fields_blocking_exchanges  #    5      -1.1 MB (gain)
-calc_adv_flow                 #    4      -0.9 MB (gain)
-exch_xy_rl                    #    4      neutral
+timestep                      #  101      -31.1 MB (gain)
+forward_step                  #   75      neutral
+grad_sigma                    #   35      neutral
+calc_phi_hyd                  #   30      -8.6 MB (gain)
+mom_vecinv                    #   30      -0.2 MB (gain)
+integrate_for_w               #   17      -0.5 MB (gain)
+temp_integrate                #    9      +1.9 MB
+salt_integrate                #    8      neutral
+calc_adv_flow                 #    7      -0.9 MB (gain)
+impldiff                      #    5      +0.2 MB
+gad_calc_rhs                  #    4      neutral
 update_surf_dr                #    4      -1.3 MB (gain)
-kpp_calc_dummy                #    4      neutral
-mom_calc_visc                 #    4      neutral
-impldiff                      #    4      +0.2 MB
 gad_advection                 #    4      +5.8 MB
 do_stagger_fields_exchanges   #    3      -1.1 MB (gain)
-solve_pentadiagonal           #    3      neutral
-gad_calc_rhs                  #    2      neutral
+solve_tridiagonal             #    3      neutral
+exch_xy_rl                    #    2      neutral
+momentum_correction_step      #    2      neutral
+adams_bashforth2              #    2      neutral
 find_rho_2d                   #    2      neutral
+mom_calc_visc                 #    2      neutral
 solve_for_pressure            #    2      neutral
 ctrl_map_forcing              #    1      neutral
 load_fields_driver            #    1      -0.1 MB (gain)
-momentum_correction_step      #    1      neutral
-calc_3d_diffusivity           #    1      +0.2 MB
-gad_dst3fl_adv_x              #    1      neutral
-gad_dst3fl_adv_y              #    1      neutral
-gmredi_calc_tensor_dummy      #    1      neutral
-integr_continuity             #    1      +7.6 MB
-gad_dst3fl_impl_r             #    1      +0.4 MB
+tracers_correction_step       #    1      -0.4 MB (gain)
+integr_continuity             #    1      +7.1 MB
+calc_viscosity                #    1      neutral
+gad_dst3_adv_x                #    1      +0.4 MB
+gad_dst3_adv_r                #    1      +0.6 MB

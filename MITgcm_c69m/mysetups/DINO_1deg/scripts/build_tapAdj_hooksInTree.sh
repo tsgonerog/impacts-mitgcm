@@ -14,12 +14,14 @@
 # This definition builds the same setup against a git copy of checkpoint69m
 # in which they have been applied to the tree (branch tapenade-hooks), with
 # the shared directory left out (HOOKS_MODS empty), and its run must
-# reproduce the default build bitwise in fc, adxx_*, ADJ* and %MON -- run
-# 31107 against 31101 on 2026-09-05, when the same files were still
-# code_tap/ shadows. It is the proof that the directory and the tree form
-# are the same thing. Nothing in the vendored MITgcm/ is touched.
+# reproduce build_tapAdj_nocheckpoint's bitwise in fc, adxx_*, ADJ* and %MON --
+# run 31107 against 31101 on 2026-09-05, when that was the default build and
+# the same files were still code_tap/ shadows. It is the proof that the
+# directory and the tree form are the same thing. Nothing in the vendored
+# MITgcm/ is touched.
 #
-# Same -nocheckpoint list as the default build. HOOK_CHECKS and DUMP_CALLS
+# Same -nocheckpoint list, and the same check of it against the adjoint-mode
+# switches, as build_tapAdj_nocheckpoint.sh. HOOK_CHECKS and DUMP_CALLS
 # are the setup's own (scripts/setup_params.sh): the tree and the directory
 # generate the same calls.
 #
@@ -97,15 +99,15 @@ post_build_checks() {
     [ $bad -eq 0 ] || exit 1
     echo "OK: hooks compiled from $MITGCM_TREE; wrapper split; all ${#NOCP_LIST[@]} listed routines split."
 
-    # Is the list consistent with the adjoint-mode switches? Recorded for the submit
-    # body, which refuses a namelist that flips a switch unless this says yes.
+    # Can the list be used with the adjoint-mode switches? Recorded for the submit body,
+    # which refuses a namelist that flips a switch unless this says yes.
     if python3 "$SETUP_DIR/../../../tools/tapenade_profiling/check_nocheckpoint_switches.py" . "$NOCP_FILE" > nocheckpoint_switches.txt 2>&1; then
         NOCP_SWITCH_FREE=yes
-        echo "OK: no listed routine reaches an adjoint-mode switch (nocheckpoint_switches.txt)."
+        echo "OK: no listed routine is recorded before the adjoint-mode switches and reads one (nocheckpoint_switches.txt)."
     else
         NOCP_SWITCH_FREE=no
-        echo "NOTE: listed routines reach an adjoint-mode switch; the submit body will refuse namelists that flip one:"
-        grep 'SWITCH' nocheckpoint_switches.txt || true
+        echo "NOTE: listed routines are recorded before the adjoint-mode switches and read one; the submit body will refuse namelists that flip a switch:"
+        grep -E 'SWITCH|ERROR' nocheckpoint_switches.txt || true
     fi
 }
 

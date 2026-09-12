@@ -277,20 +277,22 @@ if declare -F stage_extra > /dev/null; then
   stage_extra
 fi
 
-# ---------- adjoint-mode switches need joint mode wherever they are read ----------
+# ---------- adjoint-mode switches and the -nocheckpoint list ----------
 # data.autodiff can flip a package flag between the sweeps (use<PKG>InAdMode=.FALSE. while
-# data.pkg sets use<PKG>=.TRUE.; DINO's GM/Redi since 2026-09-11) and swap the advection
-# scheme inside the adjoint sweep (useApproxAdvectionInAdMode; DINO since 2026-09-10). A
-# switch reaches the adjoint only where Tapenade re-runs a routine inside the backward
-# sweep, i.e. in joint mode: a routine differentiated in split mode (-nocheckpoint) replays
-# the forward sweep's tape, and if it reaches a switched variable while its joint callees
-# read the flipped value, the adjoint is neither the one nor the other (runs 31156/31157 of
-# the DINO stability study split do_oceanic_phys under the GM flip and blew up). So a build
-# with a -nocheckpoint list is accepted with a flip only if its build_info.txt records
-# nocheckpoint_switch_free=yes: build_tapAdj_nocheckpoint.sh checks its own list with
-# tools/tapenade_profiling/check_nocheckpoint_switches.py over the compiled sources (since
-# 2026-09-12). The list is read from the tap_extra line alone, because other lines of a
-# record may mention the option in prose.
+# data.pkg sets use<PKG>=.TRUE.; DINO's GM/Redi since 2026-09-11), swap the advection
+# scheme inside the adjoint sweep (useApproxAdvectionInAdMode; DINO since 2026-09-10) and
+# scale the viscosity files there (viscFacInAd). FORWARD_STEP applies the switches at the
+# start of its reverse sweep, so they reach only what is recorded after that: a checkpointed
+# routine's primal is re-run, recording, inside its _B routine, but a routine differentiated
+# in split mode (-nocheckpoint) is recorded where its caller records -- before the switches
+# when that is FORWARD_STEP or another such split routine. If one of those reads a switched
+# variable the adjoint is neither the one nor the other (runs 31156/31157 of the DINO
+# stability study split do_oceanic_phys under the GM flip and blew up; 31056 split dynamics
+# under the viscosity boost). So a build with a -nocheckpoint list is accepted with a flip
+# only if its build_info.txt records nocheckpoint_switch_free=yes, which the list builds'
+# post_build_checks write from tools/tapenade_profiling/check_nocheckpoint_switches.py over
+# the compiled sources (since 2026-09-12). The list is read from the tap_extra line alone,
+# because other lines of a record may mention the option in prose.
 if [[ "$RUN_MODE" = tapAdj && -f data.autodiff ]]; then
   flips=""
   for pkg in GMRedi KPP GGL90 SALT_PLUME SEAICE; do
@@ -301,6 +303,15 @@ if [[ "$RUN_MODE" = tapAdj && -f data.autodiff ]]; then
   done
   if grep -qiE '^[[:space:]]*useApproxAdvectionInAdMode[[:space:]]*=[[:space:]]*\.?t' data.autodiff; then
     flips="$flips useApproxAdvectionInAdMode"
+  fi
+  # viscFacAdj is viscFacInAd in the adjoint sweep and viscFacInFw otherwise (both default 1).
+  autodiff_real() {
+    awk -F= -v k="$1" 'tolower($1) ~ "^[[:space:]]*" tolower(k) "[[:space:]]*$" \
+        { v = $2; gsub(/[,[:space:]]/, "", v); gsub(/[dD]/, "e", v); x = v + 0; set = 1 }
+        END { print (set ? x : 1) }' data.autodiff
+  }
+  if [[ "$(autodiff_real viscFacInAd)" != "$(autodiff_real viscFacInFw)" ]]; then
+    flips="$flips viscFacInAd"
   fi
   if [[ -n "$flips" && "$(sed -n 's/^tap_extra=//p' "$build_info")" == *-nocheckpoint* ]] \
      && ! grep -q '^nocheckpoint_switch_free=yes' "$build_info"; then
