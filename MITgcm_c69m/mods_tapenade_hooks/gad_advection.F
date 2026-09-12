@@ -2,17 +2,6 @@
 #ifdef ALLOW_AUTODIFF
 # include "AUTODIFF_OPTIONS.h"
 #endif
-C
-C     code_tap/variants/approxAdvection/gad_advection.F (2026-09-09): the
-C     vendored pkg/generic_advdiff/gad_advection.F with ONE change, the CPP
-C     guard around the useApproxAdvectionInAdMode block (ALLOW_AUTODIFF_TAMC ->
-C     ALLOW_AUTODIFF), so that the adjoint sweep can replace the flux-limited
-C     DST3 (scheme 33) by the unlimited DST3 (scheme 30) under Tapenade as it
-C     does under TAF. The block is a run-time branch on inAdMode, which the
-C     mode-switch hooks set at the start of every backward step; it acts only
-C     where the primal is re-run inside the backward sweep (joint mode), so the
-C     build that compiles this file checkpoints every call (build_tapAdj_approxAdv.sh).
-C     See the README beside this file.
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 CBOP
@@ -199,8 +188,6 @@ C     make local copies to be tampered with if necessary
       advectionScheme = advectionSchArg
       vertAdvecScheme = vertAdvecSchArg
 #ifdef ALLOW_AUTODIFF
-C     approxAdvection variant: the guard was ALLOW_AUTODIFF_TAMC (TAF only), so
-C     under Tapenade this block was preprocessed out and the switch was inert.
       IF ( inAdMode .AND. useApproxAdvectionInAdMode ) THEN
 C     In AD-mode, we change non-linear, potentially unstable AD advection
 C     schemes to linear schemes with more stability. So far only DST3 with

@@ -15,14 +15,19 @@
 # flow and the switch is inert (runs 31158/31159 vs 31140/31152, byte-identical).
 #
 # What differs from build_tapAdj_ckpAll.sh is a further -mods directory,
-# code_tap/variants/approxAdvection/, listed ahead of code_tap/ so that its two
-# files shadow the vendored pkg/generic_advdiff/: gad_advection.F with the CPP
-# guard of the useApproxAdvectionInAdMode block changed from ALLOW_AUTODIFF_TAMC
-# (TAF only; the block was preprocessed out of every Tapenade build) to
-# ALLOW_AUTODIFF, and gad_implicit_r.F with the same replacement added for the
-# implicit vertical advection, which the vendored file does not cover. The
-# switch itself is set in data.autodiff (useApproxAdvectionInAdMode=.TRUE.);
-# with it .FALSE. this build is the ckpAll adjoint with a taped branch.
+# code_tap/variants/approxAdvection/, listed ahead of code_tap/ so that its
+# gad_implicit_r.F shadows the vendored pkg/generic_advdiff/ one: the same
+# replacement added for the implicit vertical advection, which the vendored file
+# does not cover under any AD tool. The horizontal and explicit vertical part --
+# the CPP guard of gad_advection.F's block widened from ALLOW_AUTODIFF_TAMC (TAF
+# only; the block was preprocessed out of every Tapenade build) to ALLOW_AUTODIFF
+# -- was in this directory too from 2026-09-09 and is in the shared
+# MITgcm_c69m/mods_tapenade_hooks/ since 2026-09-12, so every adjoint build
+# compiles it. With explicit vertical advection (the live input_tap/data since
+# 2026-09-10) this build and build_tapAdj_ckpAll.sh therefore give the same
+# adjoint. The switch itself is set in data.autodiff
+# (useApproxAdvectionInAdMode=.TRUE.); with it .FALSE. this build is the ckpAll
+# adjoint with taped branches.
 #
 # Why: the adjoint of the DST3 flux limiter (scheme 33) is what blows up the
 # 5-yr adjoints here (stability_study, 2026-09-09: 31166 vs 31167). The stock
@@ -35,8 +40,10 @@
 # THE DEFAULT adjoint build since 2026-09-10: ./scripts/build_tapAdj.sh is a
 # symlink to this file (and ./scripts/submit_tapAdj.sh to
 # submit_tapAdj_approxAdv.sh), because the live input_tap/data keeps scheme 33
-# and the live input_tap/data.autodiff sets the switch; the nocheckpoint and
-# ckpAll builds ignore the switch and run the exact adjoint of scheme 33.
+# and the live input_tap/data.autodiff sets the switch. The ckpAll build honours
+# the switch as well since 2026-09-12 (above); the nocheckpoint build's list
+# splits gad_advection, where the switch cannot act, and the submit body refuses
+# that build whenever data.autodiff sets it.
 # Pair with submit_tapAdj_approxAdv.sh (run token tapAdj_ckpAll_approxAdv).
 # This file says WHAT to build; HOW is tools/lib/build_body.sh. Run from the
 # setup directory: ./scripts/build_tapAdj_approxAdv.sh
@@ -50,14 +57,15 @@ PARALLEL=mpi
 MODS=(../code_tap/variants/approxAdvection ../code_tap)     # the variant FIRST
 TAP_EXTRA=""                                                # no -nocheckpoint, on purpose (see the header)
 CKP=ckpAll;         CKP_NOTE="every call checkpointed; the switch is a run-time branch that only joint mode re-evaluates"
-VARIANT=approxAdv;  VARIANT_NOTE="code_tap/variants/approxAdvection/ compiled ahead of code_tap/ (useApproxAdvectionInAdMode reachable); pair with submit_tapAdj_approxAdv.sh"
+VARIANT=approxAdv;  VARIANT_NOTE="code_tap/variants/approxAdvection/ compiled ahead of code_tap/ (useApproxAdvectionInAdMode also reaches the implicit vertical advection); pair with submit_tapAdj_approxAdv.sh"
 RUN_TOKEN=tapAdj_ckpAll_approxAdv
 
 # The variant must be what was compiled, and Tapenade must have differentiated
 # the branch: the switch's name occurs in neither vendored file's preprocessed
 # form (gad_advection.f loses the block to the TAMC guard, gad_implicit_r.f never
 # had it), so its presence in the compiled .f and in the generated _b.f is the
-# evidence.
+# evidence: for gad_advection that the shared hooks directory was compiled (since
+# 2026-09-12), for gad_implicit_r that this variant was.
 post_build_checks() {
     local f
     for f in gad_advection.f gad_implicit_r.f gad_advection_b.f gad_implicit_r_b.f; do

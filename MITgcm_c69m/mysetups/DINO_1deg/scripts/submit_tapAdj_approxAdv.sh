@@ -5,11 +5,12 @@
 # THE DEFAULT adjoint submit script since 2026-09-10: ./scripts/submit_tapAdj.sh
 # is a symlink to this file. The switch is useApproxAdvectionInAdMode=.TRUE. in
 # the live input_tap/data.autodiff (since 2026-09-10; a variant sibling can
-# override it), and the
-# build is the one whose gad_advection.F / gad_implicit_r.F make that switch
-# reachable under Tapenade -- see build_tapAdj_approxAdv.sh. With the switch
-# off this pair is the ckpAll adjoint. Build and submit script are a pair, and
-# the run token check below enforces it.
+# override it). Every adjoint build honours the switch for the horizontal and
+# explicit vertical fluxes since 2026-09-12 (gad_advection.F in
+# MITgcm_c69m/mods_tapenade_hooks/); this build adds the implicit vertical
+# advection (gad_implicit_r.F) -- see build_tapAdj_approxAdv.sh. With the
+# switch off this pair is the ckpAll adjoint. Build and submit script are a
+# pair, and the run token check below enforces it.
 #
 # This file says WHAT to run; HOW is tools/lib/submit_body.sh, shared by every
 # submit script. Run it from the setup directory through the wrapper:

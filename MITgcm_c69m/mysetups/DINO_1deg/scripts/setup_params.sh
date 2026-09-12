@@ -45,17 +45,24 @@ DUMP_CALLS=5
 # tempAdvScheme other than 33 -> _adv<n> are appended (2026-09-09), and _gmFwd when the
 # data.pkg beside the namelist turns GM/Redi on while the data.autodiff beside it keeps GM
 # out of the adjoint sweep (2026-09-11; a forward namelist has no data.autodiff and gets no
-# GM token). Anything unrecognised gives liveData, so the name never claims a setting the
-# script could not read.
+# GM token), and _approxAdv when that data.autodiff sets useApproxAdvectionInAdMode and
+# tempAdvScheme is 33, the flux-limited scheme the switch replaces in the adjoint sweep
+# (2026-09-12; the submit body drops it again for the approxAdv build, whose run token
+# already says it). Anything unrecognised gives liveData, so the name never claims a
+# setting the script could not read.
 run_suffix_from_namelist() {
-  local dir gm=
+  local dir gm= ax=
   dir=$(dirname "$1")
   if [[ -f "$dir/data.pkg" && -f "$dir/data.autodiff" ]] \
      && grep -qiE '^[[:space:]]*useGMRedi[[:space:]]*=[[:space:]]*\.?t' "$dir/data.pkg" \
      && grep -qiE '^[[:space:]]*useGMRediInAdMode[[:space:]]*=[[:space:]]*\.?f' "$dir/data.autodiff"; then
     gm=_gmFwd
   fi
-  awk -F'[=, ]+' -v gm="$gm" '
+  if [[ -f "$dir/data.autodiff" ]] \
+     && grep -qiE '^[[:space:]]*useApproxAdvectionInAdMode[[:space:]]*=[[:space:]]*\.?t' "$dir/data.autodiff"; then
+    ax=_approxAdv
+  fi
+  awk -F'[=, ]+' -v gm="$gm" -v ax="$ax" '
     { sub(/^[[:space:]]+/, ""); k=tolower($1) }   # strip the indent, else $1 is empty
     k=="niter0"      {n=$2+0}
     k=="viscahdfile" {d=$2; gsub(/\047/,"",d)}
@@ -73,6 +80,6 @@ run_suffix_from_namelist() {
       else v="liveData"
       if (r!="") { rr=r; sub(/\.0*$/,"",rr); gsub(/\./,"p",rr); v=v "_ReMax" rr }   # viscAhReMax=2. -> _ReMax2 (since 2026-09-09)
       if (a!="" && a!=33) v=v "_adv" a                                              # tempAdvScheme other than 33 -> _adv<n>
-      print s "_" v gm
+      print s "_" v gm ((a==33) ? ax : "")                                         # _approxAdv only where there is a scheme to replace
     }' "$1"
 }

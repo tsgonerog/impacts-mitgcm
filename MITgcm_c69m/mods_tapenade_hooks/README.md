@@ -3,11 +3,14 @@
 This directory holds the source changes that give a Tapenade-generated MITgcm
 adjoint the `ADJ*` sensitivity dumps, the `ADJetan` dump, the tangent-linear
 `G_J*` dumps and the adjoint-mode parameter switches that the TAF build gets
-from `pkg/autodiff`. It is used as a `-mods` directory by every adjoint build of
+from `pkg/autodiff`, and, since 2026-09-12, the one CPP guard that lets MITgcm's
+approximate-advection switch act once those switches exist. It is used as a
+`-mods` directory by every adjoint build of
 every setup under `mysetups/`, and it is, file for file, the proposal for
 including the same mechanism in MITgcm itself. Each file is either new to the
 tree or a copy of a tree file, under the tree file's own name, with lines
-added (two of them also remove stubs that nothing can call), and
+added (two of them also remove stubs that nothing can call, and one widens a
+CPP guard), and
 `check_against_tree.sh` verifies that shape and derives the patch series in
 `patches/` from it.
 
@@ -71,10 +74,12 @@ set no `adjDumpFreq` in their `data` namelist, so the hooks run but write no
 | `dummy_tap.F` | `pkg/tapenade/dummy_tap.F` | modify an existing file: the four unreachable stubs removed, the hook bodies added | +1034, −35 |
 | `dummy_in_stepping_tap.F` | `pkg/tapenade/dummy_in_stepping_tap.F` | new file | 113 |
 | `tapenade_ad_diff.list` | `pkg/tapenade/tapenade_ad_diff.list` | new file | 1 |
+| `gad_advection.F` | `pkg/generic_advdiff/gad_advection.F` | modify an existing file: one CPP guard widened, `ALLOW_AUTODIFF_TAMC` → `ALLOW_AUTODIFF` | +2, −2 |
 
 The same mapping, as data, is the `MAP` array in `check_against_tree.sh`.
-`patches/` holds it as two unified diffs against the vendored tree, generated
-by that script: `0001` carries `stubs_tap_adj.F` alone, `0002` the other six.
+`patches/` holds it as three unified diffs against the vendored tree, generated
+by that script: `0001` carries `stubs_tap_adj.F` alone, `0002` the six hook
+files, `0003` `gad_advection.F`.
 Every file that modifies a tree file carries that file's name, so a reader
 can diff it against the tree directly; the new files carry the names they
 would have in `pkg/tapenade`.
@@ -186,6 +191,33 @@ One line, `dummy_in_stepping_tap.f`, adding the wrapper to the set of files
 Tapenade differentiates. `genmake2` reads every `*_ad_diff.list` of every
 source directory, packages and `-mods` alike.
 
+### `gad_advection.F`: modify, one CPP guard widened
+
+Not a hook: the change that makes an existing `pkg/autodiff` parameter work
+once the mode switches above exist. `useApproxAdvectionInAdMode` (MITgcm pull
+request 404) replaces the flux-limited DST3 scheme (33) by the unlimited one
+(30) while `inAdMode` is true, so that the adjoint is linearised about a scheme
+whose adjoint is a well-behaved transport operator. `gad_advection.F`, which
+selects the horizontal fluxes and, with multi-dimensional advection, the
+explicit vertical ones, guards that block with `ALLOW_AUTODIFF_TAMC`, which
+every Tapenade experiment undefines in its `AUTODIFF_OPTIONS.h`; the switch
+therefore did nothing under Tapenade. `gad_calc_rhs.F` and
+`seaice/seaice_advection.F` already guard the same switch with
+`ALLOW_AUTODIFF`, and this file now does too. A TAF build defines both macros
+and a forward build neither, so both preprocess the file to exactly the text
+they did before.
+
+What the change does under Tapenade is what pull request 611 made it do under
+TAF: the routine is recomputed inside its adjoint with `inAdMode` true, so the
+tape and the adjoint are those of scheme 30 about the scheme-33 trajectory.
+Tapenade does that in joint mode, its default, after
+`AUTODIFF_INADMODE_SET_TAP_B` has set `inAdMode`. A routine differentiated in
+split mode (`-nocheckpoint`) replays the control flow taped in the forward
+sweep instead, so an adjoint built with a routine list must keep
+`gad_advection` and every routine above it in joint mode for the switch to
+act consistently. Without patch `0002`, `inAdMode` is never set under Tapenade
+and this patch changes nothing, which is why it comes last.
+
 ## What stays in the setups
 
 Everything in a setup's `code_tap/` is now configuration of that setup, not
@@ -259,11 +291,27 @@ runs the `--check` form.
   each DINO build, 212 in SOMA's, 165 in the gyre's), the four symbols gone
   from every executable, every build-body check passed. No run: the
   generated code is unchanged and the removed routines were never reached.
+- **The approximate-advection guard, `gad_advection.F`** (2026-09-12, patch
+  `0003`). Preprocessed with a TAF build's macros (`ALLOW_AUTODIFF`,
+  `ALLOW_AUTODIFF_TAMC`) and with a forward build's (neither), the file gives
+  exactly the text the tree's does; with Tapenade's or OpenAD's it gains the
+  eleven-line block. Every adjoint build that compiles this directory was
+  rebuilt and run once, `tools/compare_adj_runs.sh`, all EQUIVALENT: DINO's
+  `approxAdv` build, which had taken the same change from its variant
+  directory, 5 d from the production spin-up's year-180 pickup, run 31262
+  against 31259 (186 sensitivity fields, `fc`, 390 `%MON` lines); DINO's
+  `ckpAll` build, which now honours the switch, the same run, 31263 against
+  31259, identical as expected with explicit vertical advection; SOMA 5 d,
+  31265 against 31097; the barotropic gyre 180 d, 31266 against 31118 (3 604
+  fields). DINO's adjoint-viscosity build compiles against the ASTE headers.
+  The stock Tapenade verification experiments on the in-tree branch are in
+  `~/MITgcm_c69m_tapenade_hooks/results/approx_guard_20260912/`.
 
 ## Toward a pull request
 
-Two pull requests, in order: `0001` (implement the `ADEXCH_*` exchanges) and
-`0002` (the hooks). Both were prepared against checkpoint69m; the review of
+Three pull requests, in order: `0001` (implement the `ADEXCH_*` exchanges),
+`0002` (the hooks) and `0003` (the approximate-advection guard, which acts only
+once `0002` sets `inAdMode` under Tapenade). Both were prepared against checkpoint69m; the review of
 checkpoint69q on 2026-09-05 found the Tapenade infrastructure unchanged, and
 the OpenAD removal in MITgcm pull request 1029 will touch the same files, so
 rebase after it has landed and regenerate the patches with

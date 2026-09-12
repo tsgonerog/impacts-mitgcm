@@ -12,10 +12,12 @@
 # What "the shape of an upstream contribution" means here:
 #
 #   * every file in this directory is either NEW to the tree, or a copy of a
-#     tree file with lines ADDED and none removed -- with two declared
+#     tree file with lines ADDED and none removed -- with three declared
 #     exceptions: stubs_tap_adj.F, where the five ADEXCH_* stubs are replaced
-#     by implementations, and dummy_tap.F, where the four unreachable
-#     DUMMY_IN_STEPPING_B/_D and DUMMY_FOR_ETAN_B/_D stubs are removed;
+#     by implementations, dummy_tap.F, where the four unreachable
+#     DUMMY_IN_STEPPING_B/_D and DUMMY_FOR_ETAN_B/_D stubs are removed, and
+#     gad_advection.F, where the CPP guard of the useApproxAdvectionInAdMode
+#     block is widened from ALLOW_AUTODIFF_TAMC to ALLOW_AUTODIFF;
 #   * a file that has become identical to its tree counterpart is reported
 #     as "landed upstream": delete it here;
 #   * the patch series in patches/ is exactly what these files give against
@@ -54,9 +56,11 @@ MAP=(
     "dummy_tap.F             pkg/tapenade/dummy_tap.F              replace 0002"
     "dummy_in_stepping_tap.F pkg/tapenade/dummy_in_stepping_tap.F  new     0002"
     "tapenade_ad_diff.list   pkg/tapenade/tapenade_ad_diff.list    new     0002"
+    "gad_advection.F         pkg/generic_advdiff/gad_advection.F   replace 0003"
 )
 PATCH_TITLE_0001="Implement the ADEXCH adjoint halo exchanges of pkg/tapenade"
 PATCH_TITLE_0002="Tapenade output hooks: ADJ*/G_J* dumps and adjoint-mode switches"
+PATCH_TITLE_0003="Let useApproxAdvectionInAdMode act in Tapenade builds"
 
 fail=0
 ok()   { printf '  ok    %s\n' "$1"; }
@@ -105,7 +109,7 @@ for entry in "${MAP[@]}"; do
             elif [ "$kind" = add ]; then
                 ok "$f: $dest plus $added added lines, nothing removed"
             else
-                ok "$f: $dest with $added added, $removed removed (a declared exception: tree stubs replaced or removed)"
+                ok "$f: $dest with $added added, $removed removed (a declared exception)"
             fi ;;
     esac
 done
@@ -120,7 +124,7 @@ fi
 gen_patches() {   # $1 = output directory
     local out=$1 entry f dest kind num
     mkdir -p "$out"
-    for num in 0001 0002; do
+    for num in 0001 0002 0003; do
         local title; eval "title=\$PATCH_TITLE_$num"
         local file="$out/$num-$(echo "$title" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9\n' '-' | sed 's/-*$//; s/--*/-/g').patch"
         {

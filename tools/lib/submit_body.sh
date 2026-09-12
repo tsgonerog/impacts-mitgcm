@@ -218,6 +218,15 @@ if [[ -n "${EXPECT_RUN_TOKEN:-}" && "$run_token" != "$EXPECT_RUN_TOKEN" ]]; then
   echo "ERROR: $build_dir holds run_token=$run_token, but this submit script expects $EXPECT_RUN_TOKEN"
   echo "       (build and submit script are a pair; rebuild, or use the matching submit script)"; exit 1
 fi
+# A token the build record already carries is not repeated from a namelist-derived suffix:
+# the approxAdv build of a namelist that sets the approximate-advection switch stays
+# ..._gmFwd, as its runs were named before that token existed (2026-09-12). Tag-named runs
+# keep the tag byte for byte.
+if [[ -z "$test_cases" && -n "$suffix" ]]; then
+  kept=""
+  for t in ${suffix//_/ }; do [[ "_${run_token}_" == *"_${t}_"* ]] || kept="${kept}_$t"; done
+  suffix=$kept
+fi
 # Duration label: whole years as "<n>yr", otherwise "<n>d", so the run
 # directory matches the scratch naming convention (DINO: 366-day years, SOMA: 360).
 if (( duration_days % DAYS_PER_YEAR == 0 )); then
@@ -285,6 +294,31 @@ if [[ "$RUN_MODE" = tapAdj && -f data.pkg && -f data.autodiff ]] \
   echo "       $build_dir was built with a -nocheckpoint list, where that switch half-applies."
   echo "       Use the approxAdv or ckpAll build, or a variant with GM off (baseline/*_gmOff)."
   exit 1
+fi
+
+# ---------- the approximate-advection switch: joint mode, and its implicit half ----------
+# useApproxAdvectionInAdMode (data.autodiff) swaps the flux-limited DST3 for the unlimited one
+# inside the backward sweep. Every adjoint build compiles the swap for the horizontal and
+# explicit vertical fluxes since 2026-09-12 (gad_advection.F in mods_tapenade_hooks/), but it
+# acts only where Tapenade re-runs gad_advection in joint mode: a -nocheckpoint list that splits
+# it, or a routine above it, replays the limiter there while joint routines take the other
+# branch. The swap for the implicit vertical advection (gad_implicit_r.F) exists only in the
+# approxAdv build's variant directory.
+if [[ "$RUN_MODE" = tapAdj && -f data.autodiff ]] \
+   && grep -qiE '^[[:space:]]*useApproxAdvectionInAdMode[[:space:]]*=[[:space:]]*\.?t' data.autodiff; then
+  if [[ "$(sed -n 's/^tap_extra=//p' "$build_info")" == *-nocheckpoint* ]]; then
+    echo "ERROR: data.autodiff sets useApproxAdvectionInAdMode, but $build_dir was built with a"
+    echo "       -nocheckpoint list, where the switch cannot act on the split advection routines."
+    echo "       Use the approxAdv or ckpAll build, or a data.autodiff without the switch."
+    exit 1
+  fi
+  if grep -qiE '^[[:space:]]*(temp|salt)ImplVertAdv[[:space:]]*=[[:space:]]*\.?t' data \
+     && ! grep -q '^variant=approxAdv' "$build_info"; then
+    echo "ERROR: data.autodiff sets useApproxAdvectionInAdMode and data advects tracers implicitly"
+    echo "       in the vertical, which only the approxAdv build makes approximate (gad_implicit_r.F)."
+    echo "       Use scripts/submit_tapAdj_approxAdv.sh."
+    exit 1
+  fi
 fi
 
 # ---------- time stepping: patch the STAGED copy, not the tracked namelist ----------

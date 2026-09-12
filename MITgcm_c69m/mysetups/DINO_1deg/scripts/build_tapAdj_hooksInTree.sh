@@ -6,8 +6,9 @@
 #          -> build_tapAdj_hooksInTree/mitgcmuv_tap_adj
 #
 # WHY THIS BUILD EXISTS (2026-09-05, simplified 2026-09-07). The hooks that
-# give the adjoint its ADJ* output are the seven files of
-# MITgcm_c69m/mods_tapenade_hooks/, which every other adjoint build takes as
+# give the adjoint its ADJ* output are the files of
+# MITgcm_c69m/mods_tapenade_hooks/ (the seven hook files and, since
+# 2026-09-12, the approximate-advection guard in gad_advection.F), which every other adjoint build takes as
 # a -mods directory ahead of code_tap/ (the build body does that; the README
 # there says how). Those files are, file for file, the upstream proposal.
 # This definition builds the same setup against a git copy of checkpoint69m
@@ -43,7 +44,7 @@ NOCP_FILE="$SETUP_DIR/code_tap/tap_nocheckpoint.txt"
 HOOK_FILES=(model/src/forward_step.F model/src/integr_continuity.F
             pkg/tapenade/stubs_tap_adj.F pkg/tapenade/dummy_tap.F
             pkg/tapenade/dummy_in_stepping_tap.F pkg/tapenade/tapenade_ad_diff.list
-            tools/TAP_support/flow_tap)
+            tools/TAP_support/flow_tap pkg/generic_advdiff/gad_advection.F)
 
 pre_configure() {
     [ -x "$MITGCM_TREE/tools/genmake2" ] || { echo "ERROR: no MITgcm tree at $MITGCM_TREE (set IMPACTS_HOOKS_TREE)"; exit 1; }
@@ -76,7 +77,7 @@ pre_configure() {
 post_build_checks() {
     local bad=0 f
     # every hook source really came from the tree, and the shared directory did not ride in
-    for f in forward_step.F integr_continuity.F stubs_tap_adj.F dummy_tap.F dummy_in_stepping_tap.F; do
+    for f in forward_step.F integr_continuity.F stubs_tap_adj.F dummy_tap.F dummy_in_stepping_tap.F gad_advection.F; do
         case "$(readlink -f "$f")" in
             "$MITGCM_TREE"/*) ;;
             *) echo "ERROR: $f was compiled from $(readlink -f "$f"), not from $MITGCM_TREE"; bad=1 ;;
