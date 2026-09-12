@@ -376,6 +376,22 @@ also split, stay in: every call path to the last four passes a checkpointed
 routine. The build confirmed all 28 went split and recorded
 `nocheckpoint_switch_free=yes`.
 
+**Validation under the live switches** (2026-09-12, `tools/compare_adj_runs.sh`).
+30 days of `stability_study/from180yrPk_viscRef_ReMax2_gmFwd` from the REF_ReMax2
+leg's year-180 pickup, daily dumps: run 31276 of this build against 31269, the
+`approxAdv` build rebuilt the same day, **EQUIVALENT** — all 786 sensitivity
+files, `fc` (0.322297725058524) and the `%MON` stream identical — in **8:24
+against 11:53 on the same node (1.41×, −29 %)**; against 31234, that
+configuration's run of 2026-09-11, the same 786 files are identical (12:44; the
+staged `data.autodiff` differs in its comments). 5 days of the live namelist
+from the production spin-up's pickup: 31277 against the `approxAdv` run 31259,
+EQUIVALENT (1:40 against 2:11). The in-tree hooks with the same list
+(`build_tapAdj_hooksInTree.sh`): 31278 against 31277, EQUIVALENT. The 30-day
+pair is the test the rule needed: `temp_integrate`, `salt_integrate`,
+`gad_advection` and `gad_calc_rhs` read `useGMRedi` or the scheme switch and are
+split, below the checkpointed `thermodynamics`. The speed-up is smaller than
+2026-09-01's 1.50× by the 51 s the three checkpointed routines keep.
+
 ---
 
 ## Other levers, deliberately not pulled

@@ -3,18 +3,19 @@
 #                                  build_tapAdj_nocheckpoint/mitgcmuv_tap_adj
 #
 # THE DEFAULT adjoint submit script from 2026-09-02 to 2026-09-10 (the symlink
-# ./scripts/submit_tapAdj.sh now points at submit_tapAdj_approxAdv.sh). With
-# the live input_tap/data.autodiff this pair silently runs the EXACT adjoint of
-# the flux-limited scheme 33 -- the useApproxAdvectionInAdMode switch is inert
-# in split mode -- which blows up over long windows; use it with a scheme-30
-# namelist or for a deliberate exact-adjoint control. Identical to submit_tapAdj_ckpAll.sh except
+# ./scripts/submit_tapAdj.sh now points at submit_tapAdj_approxAdv.sh). Since
+# the list of 2026-09-12 it takes the adjoint-mode switches of the live
+# input_tap/data.autodiff and gives the approxAdv adjoint bit for bit (31276 vs
+# 31269, 30 d, 1.41x faster) as long as vertical advection is explicit; the
+# submit body refuses a switching namelist unless the build records its list as
+# safe under the switches. Identical to submit_tapAdj_ckpAll.sh except
 # for the executable it runs: the nocheckpoint build recomputes less and
 # stores more inside each time step (see build_tapAdj_nocheckpoint.sh). Build
 # and submit script are a pair, and the run token check below enforces it.
 #
 # This file says WHAT to run; HOW is tools/lib/submit_body.sh, shared by every
 # submit script. Run it from the setup directory through the wrapper:
-#     ../../../tools/submit.sh scripts/submit_tapAdj.sh
+#     ../../../tools/submit.sh scripts/submit_tapAdj_nocheckpoint.sh
 
 #SBATCH -J DINO_1deg_tapAdj_nocheckpoint   # job name: names the log file only; the run directory is named from build_info.txt
 #SBATCH -o logs/%x.%j.out                  # %x = job name, %j = job ID; relative to the setup directory, where tools/submit.sh runs sbatch

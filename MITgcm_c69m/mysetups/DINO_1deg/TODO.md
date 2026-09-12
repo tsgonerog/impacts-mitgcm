@@ -15,6 +15,52 @@
   first whether the forward legs start again from the 2× spin-up's year-170 state,
   as 31205–31219 did, or from 31203's own state; and give the variants a `_gmFwd`
   tag, because runs named by a variant tag carry no GM token.
+- [ ] **Decide whether the default adjoint pair becomes `_nocheckpoint`**
+  (2026-09-12). Under the live switches the nocheckpoint build now gives the
+  `approxAdv` adjoint bit for bit at 1.41× on 30 d (31276 vs 31269), which by
+  the 2026-09-02 ratio of 5-yr to 30-d speed-ups would bring a 5-yr adjoint
+  from about 14.5 h to about 10.5 h. Against it: it has no scheme swap for
+  implicit vertical advection (the live namelist advects explicitly; the submit
+  body refuses the combination), and its list must be re-profiled when the
+  physics or the switches change, which `approxAdv` never needs. Repointing is
+  `ln -sfn` of the two symlinks (setup README, "Switching the default adjoint").
+- [x] **Setup review after the configuration changes** (2026-09-12). (1) The
+  variant copies of tree files got a drift check: each
+  `code_tap/variants/*/` and `tools/tapenade_profiling/mods_profile/` records
+  the tree file and blob it copies in `TREE_BASE.txt`, and
+  `tools/check_variant_shadows.sh` (run by `tools/pre_push_check.sh`) fails
+  when a tree file changes under its copy. (2) The widened
+  `useApproxAdvectionInAdMode` guard of `gad_advection.F` moved from
+  `code_tap/variants/approxAdvection/` into `mods_tapenade_hooks/` (patch
+  `0003`), so every adjoint build honours the switch for the horizontal and
+  explicit vertical fluxes; on the in-tree branch (commit `95ee6a696`) the
+  stock `testreport -adm`/`-tlm` output is identical to the 2026-09-05 runs
+  without it; DINO 31262 and 31263 against 31259, SOMA 31265 against 31097 and
+  the gyre 31266 against 31118 are all EQUIVALENT. (3) `gad_implicit_r.F` stays
+  in the variant directory; the upstream issue is drafted in the project notes.
+  Scripts and inputs: `kpp` left `code_tap/packages.conf` (31270 ≡ 31259 and
+  31269 ≡ 31234 in every sensitivity file); every adjoint submit definition
+  links the pickup at the staged `nIter0` (`link_pickup` in
+  `scripts/setup_params.sh`) and refuses the production default for a
+  namelist of other settings (31273, refused before staging finished); the
+  submit body checks every adjoint-mode switch against a `-nocheckpoint`
+  build. Every forward and adjoint build of the three setups was rebuilt and
+  run once: DINO forward 31267 byte-identical to the spin-up 31203's first
+  61 d, the profile 31268 (its forward sweep's 30.5-d pickup identical to the
+  spin-up's), `adjVisc` 31271 (`fc` unchanged, finite), SOMA 31274 and the
+  gyre 31275 identical to their references. **The `-nocheckpoint` list was
+  stale:** `kpp_calc_dummy` no longer existed, and nine of its routines are
+  recorded before the adjoint-mode switches act and read them (the old build
+  was refused with the live namelist, 31272). Re-derived from profile 31268:
+  28 routines, 354 of 411 s, with `thermodynamics`, `do_oceanic_phys` and
+  `dynamics` kept checkpointed (`tools/tapenade_profiling/check_nocheckpoint_switches.py`;
+  the rule is in `tools/tapenade_profiling/README.md`, section 4). Under the
+  live switches the nocheckpoint build reproduces the `approxAdv` adjoint
+  bitwise: 31276 against 31269 (30 d, 786 sensitivity files, 8:24 against
+  11:53, 1.41×), 31277 against 31259 (5 d), and the in-tree hooks' 31278
+  against 31277. Runs filed under `runs/{forward,adjoint}/toolchain_validation/`
+  (31268 under `checkpointing_study/`); the two refusal tests' staging
+  directories deleted.
 - [x] **Project cleanup before the production runs** (2026-09-11). Scratch:
   deleted `_trash_20260903/` (22 GB: the per-rank `STDOUT.0001`–`0026` of 30
   kept runs, pruned on 2026-09-03, and four short test runs no document

@@ -2,9 +2,9 @@
 # Submit the REFERENCE Tapenade adjoint (every call checkpointed).
 #                                  build_tapAdj_ckpAll/mitgcmuv_tap_adj
 #
-# Not the default: since 2026-09-02 ./scripts/submit_tapAdj.sh is a symlink to
-# submit_tapAdj_nocheckpoint.sh, whose build is bitwise identical to this one
-# and 1.5x faster. Use this pair for a timing baseline, or when a configuration
+# Not the default: ./scripts/submit_tapAdj.sh is a symlink to
+# submit_tapAdj_approxAdv.sh since 2026-09-10 (to submit_tapAdj_nocheckpoint.sh
+# from 2026-09-02). Use this pair for a timing baseline, or when a configuration
 # change has invalidated the -nocheckpoint list (see build_tapAdj_ckpAll.sh).
 # Until 2026-09-02 this file WAS submit_tapAdj.sh. Build and submit script are
 # a pair, and the run token check below enforces it.

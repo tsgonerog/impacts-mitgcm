@@ -221,10 +221,13 @@ directory. All eight adjoints ran a third time on 2026-09-02 with the
 `-nocheckpoint` reruns were themselves deleted in the 2026-09-03 consolidation
 once the comparison reports had recorded the result.
 
-`tapenade_profiling/` (2026-09-01) is scripts and records rather than a
-notebook: the Tapenade checkpointing profile of the adjoint (run 31053,
-`-profile` build) parsed into a per-routine ranking, the 33-routine
-`-nocheckpoint` list derived from it, and the validation of that build against
+`tapenade_profiling/` (2026-09-01, extended 2026-09-12) is scripts and records
+rather than a notebook: the Tapenade checkpointing profile of the adjoint (run
+31053, `-profile` build) parsed into a per-routine ranking, the 33-routine
+`-nocheckpoint` list derived from it (in use until 2026-09-12; its successor,
+28 routines from profile 31268 of the live namelists, is bitwise identical to
+the `approxAdv` adjoint under the adjoint-mode switches at 1.41×, run 31276 vs
+31269), and the validation of that first build against
 the plain one — 30 days on the same node, run 31054 vs 31052: `fc` identical,
 all 32 `adxx_*` and 73 `ADJ*` files bitwise identical, 8:47 vs 13:13 wall time
 (1.5×); at 5 years (run 31055 vs 31039) again bitwise identical across fc,

@@ -8,13 +8,14 @@
  useKPPinAdMode = .FALSE.,
 # Live since 2026-09-11, when data.pkg turned GM/Redi on: GM acts in the forward sweep and in every
 # recomputation of it, and not in the adjoint sweep, where its linearisation blows up within days
-# (stability_study, 31236). Honoured only where Tapenade recomputes each routine inside the backward
-# sweep (approxAdv, ckpAll); a -nocheckpoint build applies it to half the recomputation and is refused.
+# (stability_study, 31236). It acts on what Tapenade records after FORWARD_STEP applies it: in every
+# checkpoint-everything build, and in the nocheckpoint build since its list of 2026-09-12 keeps the routines
+# that read it checkpointed (the submit body refuses a list build not recorded as safe).
  useGMRediInAdMode = .FALSE.,
 # Since 2026-09-10: the adjoint sweep linearises about the unlimited DST3 (scheme 30) while the
 # forward sweep keeps the flux-limited scheme 33 of data -- the flux limiter's adjoint is what
-# blew up every long adjoint here (stability_study, runs 31166/31167/31176). Honoured only by the
-# approxAdv build (code_tap/variants/approxAdvection/, the default build_tapAdj.sh); inert, and
-# therefore dangerous, with the nocheckpoint and ckpAll builds.
+# blew up every long adjoint here (stability_study, runs 31166/31167/31176). Honoured by every adjoint
+# build since 2026-09-12 for the horizontal and explicit vertical fluxes (gad_advection.F in
+# mods_tapenade_hooks/); implicit vertical advection needs the approxAdv build (gad_implicit_r.F).
  useApproxAdvectionInAdMode = .TRUE.,
  &

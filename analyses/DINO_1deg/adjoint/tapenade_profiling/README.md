@@ -37,6 +37,12 @@ default DINO adjoint from 2026-09-02 to 2026-09-10.
 | 31060–31067 | `build_tapAdj_nocheckpoint` | 5 yr × 8 | c2-4, c3-1, c7-4, c8-1–c8-4, c9-1 | **9:30:47–9:44:50** | the κ_v ensemble (REF + M1–M7) rerun on 2026-09-02, validation against its 2026-09-01 `ckpAll` runs 31039–31046 (14:02:37–15:39:13) |
 | 31025 | `build_tapAdj_adjVisc` (ckpAll + boost) | 30 d | — | 0:13:19 | boosted reference (from rest, live `input_tap/data`) |
 | 31056 | `build_tapAdj_adjVisc` + the list (**rejected**) | 30 d | c2-1 | 0:08:48 | split mode under the boost is **not** equivalent: `fc` identical, every sensitivity field differs at order one — the list was removed from that build again |
+| 31268 | `build_tapAdj_profile` | 31 d | — | 0:15:17 | the 2026-09-12 profile of the live namelists (`checkpointing_study/`) |
+| 31269 | `build_tapAdj_approxAdv` (rebuilt 2026-09-12) | 30 d | c1-1 | 0:11:53 | reference under the switches: `stability_study/from180yrPk_viscRef_ReMax2_gmFwd`; every sensitivity file identical to 31234 of 2026-09-11 (0:12:44, c1-1) |
+| 31276 | `build_tapAdj_nocheckpoint`, list of 2026-09-12 | 30 d | c1-1 | **0:08:24** | validation against 31269: EQUIVALENT |
+| 31259 | `build_tapAdj_approxAdv` | 5 d | — | 0:02:11 | reference: the live namelist from the production spin-up's year-180 pickup (2026-09-11) |
+| 31277 | `build_tapAdj_nocheckpoint`, list of 2026-09-12 | 5 d | — | 0:01:40 | validation against 31259: EQUIVALENT |
+| 31278 | `build_tapAdj_hooksInTree`, the same list | 5 d | — | 0:01:41 | the in-tree hooks against 31277: EQUIVALENT |
 
 ## Files
 
@@ -204,6 +210,14 @@ section 4, has the rule and the check; this is the record.
   called, or kept checkpointed) and adds `adams_bashforth2`, `calc_viscosity`,
   `gad_dst3_adv_r`, `gad_dst3_adv_x`, `solve_tridiagonal` and
   `tracers_correction_step`.
+- **Validation** (`tools/compare_adj_runs.sh`; the switches live in every run).
+  31276 against 31269, 30 d on the same node: EQUIVALENT — all 786 sensitivity
+  files, `fc` 0.322297725058524 and `%MON` identical — in 8:24 against 11:53
+  (1.41×); against 31234 the same 786 files are identical, and only the staged
+  `data.autodiff`'s comments differ. 31277 against 31259 (5 d, the live
+  namelist): EQUIVALENT, 1:40 against 2:11. 31278 (the in-tree hooks) against
+  31277: EQUIVALENT. The driver logs and comparison reports are in
+  `/scratch2/<user>/DINO_1deg_outputs/logs/validate_20260912_phaseD2/`.
 
 ## Re-running
 

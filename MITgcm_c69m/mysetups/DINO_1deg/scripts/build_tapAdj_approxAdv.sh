@@ -6,13 +6,15 @@
 #          -> build_tapAdj_approxAdv/mitgcmuv_tap_adj
 #
 # Same stock genmake2 and shared-hooks wiring as build_tapAdj_ckpAll.sh, and
-# like it EVERY call is checkpointed, on purpose: useApproxAdvectionInAdMode is
-# a run-time branch on inAdMode, which AUTODIFF_INADMODE_SET_TAP_B sets at the
-# start of every backward step, so it can only act where Tapenade re-runs the
-# primal inside the backward sweep (joint mode). The default build's
-# -nocheckpoint list puts gad_advection, gad_calc_rhs and the DST3 flux
-# routines in split mode, where the forward sweep tapes the limiter's control
-# flow and the switch is inert (runs 31158/31159 vs 31140/31152, byte-identical).
+# like it EVERY call is checkpointed. useApproxAdvectionInAdMode is a run-time
+# branch on inAdMode, which AUTODIFF_INADMODE_SET_TAP_B sets at the start of
+# every backward step, so it acts on what Tapenade records after that: every
+# checkpointed routine's re-run, and a split routine only below a checkpointed
+# caller. The -nocheckpoint list of 2026-09-02 also split thermodynamics, above
+# gad_advection, so the switch could not act there; the list of 2026-09-12
+# keeps thermodynamics checkpointed (tools/tapenade_profiling/README.md,
+# section 4). Before 2026-09-12 no plain Tapenade build compiled the switch at
+# all (the guard below; runs 31158/31159 vs 31140/31152, byte-identical).
 #
 # What differs from build_tapAdj_ckpAll.sh is a further -mods directory,
 # code_tap/variants/approxAdvection/, listed ahead of code_tap/ so that its
@@ -41,9 +43,9 @@
 # symlink to this file (and ./scripts/submit_tapAdj.sh to
 # submit_tapAdj_approxAdv.sh), because the live input_tap/data keeps scheme 33
 # and the live input_tap/data.autodiff sets the switch. The ckpAll build honours
-# the switch as well since 2026-09-12 (above); the nocheckpoint build's list
-# splits gad_advection, where the switch cannot act, and the submit body refuses
-# that build whenever data.autodiff sets it.
+# the switch as well since 2026-09-12 (above), and so does the nocheckpoint
+# build with its list of that day (31276 vs 31269, bitwise); neither has the
+# swap for implicit vertical advection.
 # Pair with submit_tapAdj_approxAdv.sh (run token tapAdj_ckpAll_approxAdv).
 # This file says WHAT to build; HOW is tools/lib/build_body.sh. Run from the
 # setup directory: ./scripts/build_tapAdj_approxAdv.sh
@@ -55,8 +57,8 @@ BUILD_DIR=build_tapAdj_approxAdv
 BUILD_MODE=tapAdj
 PARALLEL=mpi
 MODS=(../code_tap/variants/approxAdvection ../code_tap)     # the variant FIRST
-TAP_EXTRA=""                                                # no -nocheckpoint, on purpose (see the header)
-CKP=ckpAll;         CKP_NOTE="every call checkpointed; the switch is a run-time branch that only joint mode re-evaluates"
+TAP_EXTRA=""                                                # every call checkpointed; build_tapAdj_nocheckpoint.sh is the list build
+CKP=ckpAll;         CKP_NOTE="every call checkpointed"
 VARIANT=approxAdv;  VARIANT_NOTE="code_tap/variants/approxAdvection/ compiled ahead of code_tap/ (useApproxAdvectionInAdMode also reaches the implicit vertical advection); pair with submit_tapAdj_approxAdv.sh"
 RUN_TOKEN=tapAdj_ckpAll_approxAdv
 

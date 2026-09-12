@@ -209,17 +209,19 @@ the re-run compounds with nesting depth. `build_tapAdj_profile.sh` adds
 Tapenade's `-profile` — plus the runtime and reporting main program it needs,
 from `tools/tapenade_profiling/mods_profile/` — and its 30-day run writes a
 per-call-site table of the CPU time each checkpoint costs and the peak tape it
-would cost not to have it. For DINO (run 31053) that came to **45 % of the
-adjoint's CPU time**, almost all of it in routines whose split mode is
+would cost not to have it. For DINO (run 31053, 2026-09-01) that came to **45 %
+of the adjoint's CPU time**, almost all of it in routines whose split mode is
 memory-neutral or a memory gain (`timestep`, `forward_step`, `grad_sigma`,
-`mom_vecinv`, `calc_phi_hyd`, `thermodynamics`, …).
+`mom_vecinv`, `calc_phi_hyd`, `thermodynamics`, …); the profile of 2026-09-12
+(run 31268, the live namelists) finds 411 s per process on rank 0, in the same
+routines.
 
-`build_tapAdj_nocheckpoint.sh` acts on that: it passes the 33 routines in
-`code_tap/tap_nocheckpoint.txt` to Tapenade's `-nocheckpoint`, which
+`build_tapAdj_nocheckpoint.sh` acts on that: it passes the routines in
+`code_tap/tap_nocheckpoint.txt` (28 since 2026-09-12, 33 before) to Tapenade's `-nocheckpoint`, which
 differentiates them in split `_FWD`/`_BWD` mode instead, and refuses to finish
 unless every listed routine actually came out split. The time loop's binomial
 checkpointing (`C$AD BINOMIAL-CKP … 98 …` in `code_tap/the_main_loop.F`) is
-not involved. **Validated 2026-09-01: a 30-day run of this build (31054) is
+not involved. **Validated with the first list on 2026-09-01: a 30-day run of this build (31054) is
 bitwise identical to the plain build's (31052) in `fc`, all 32 `adxx_*` and
 all 73 `ADJ*` files, and runs in 8:47 instead of 13:13 (1.5×); at 5 years (31055 vs 31039) it is
 again bitwise identical — fc, 32 `adxx_*`, 4 393 `ADJ*` — in 9:35:58 instead
@@ -232,23 +234,44 @@ has the method and the numbers;
 three scripts (`parse_tapenade_profile.py`, `compare_adjoint_runs.py`,
 `compare_ensemble_ckpAll_vs_nocheckpoint.py`).
 
-**Since 2026-09-02 it is the default adjoint**: `build_tapAdj.sh` and
-`submit_tapAdj.sh` are symlinks to the `_nocheckpoint` pair, and the
-checkpoint-everything build is `build_tapAdj_ckpAll.sh` /
-`submit_tapAdj_ckpAll.sh` (until then it *was* `build_tapAdj.sh`). The
-`ckpAll` pair stays for three reasons: the profiler must see every checkpoint
-(a profile of the tuned build would only show the residual), it is the
-fallback if a configuration change invalidates the list, and it is the timing
-baseline. It is no longer needed as a correctness control. The list is a
-profile of **one** configuration (KPP/GM off, 27 ranks, this package set); the
-build's `_FWD` check catches a name that vanished, not a list that stopped
-being the right list, so re-profile whenever the adjoint's package set,
-physics or decomposition changes.
+**From 2026-09-02 to 2026-09-10 it was the default adjoint** (`build_tapAdj.sh`
+and `submit_tapAdj.sh` pointed at the `_nocheckpoint` pair; the default is now
+the `approxAdv` pair), and the checkpoint-everything build is
+`build_tapAdj_ckpAll.sh` / `submit_tapAdj_ckpAll.sh` (until then it *was*
+`build_tapAdj.sh`). The `ckpAll` pair stays for three reasons: the profiler
+must see every checkpoint (a profile of the tuned build would only show the
+residual), it is the fallback if a configuration change invalidates the list,
+and it is the timing baseline. The list is a profile of **one** configuration
+(since 2026-09-12 the live namelists — GM/Redi in the forward sweep, the
+approximate-advection switch, explicit vertical advection — with 27 ranks and
+this package set); the build's `_FWD` check catches a name that vanished, not a
+list that stopped being the right list, so re-profile whenever the adjoint's
+package set, physics, switches or decomposition change.
+
+**The list and the adjoint-mode switches (2026-09-12).** The switches of the
+live `input_tap/data.autodiff` — GM/Redi out of the adjoint sweep, scheme 30 in
+it — are applied by `FORWARD_STEP` at the start of its reverse sweep, so they
+reach only what is recorded after that: every checkpointed routine's re-run,
+but not a split routine reached from `FORWARD_STEP` through split routines
+only, which is recorded before. The list of 2026-09-02 split `thermodynamics`,
+`do_oceanic_phys` and `dynamics`, which read switched variables below them, and
+so gave neither adjoint under a switch (31156/31157, 31056). The list of
+2026-09-12 (profile 31268: the 34 callees ≥ 1 s, minus three externals, minus
+those three routines) has 28 routines and 354 of the 411 s;
+`tools/tapenade_profiling/check_nocheckpoint_switches.py` verifies it after
+every build and the build records `nocheckpoint_switch_free=yes`, without which
+the submit body refuses a namelist that flips a switch. **Validated under the
+live switches:** 31276 against the `approxAdv` build's 31269 (30 d,
+`stability_study/from180yrPk_viscRef_ReMax2_gmFwd`, same node) — all 786
+sensitivity files, `fc` and `%MON` identical, 8:24 against 11:53 (1.41×);
+31277 against 31259 (5 d, the live namelist) identical; the in-tree hooks'
+31278 against 31277 identical. The build has no swap for implicit vertical
+advection, which only the `approxAdv` build carries.
 
 The profiling build is a diagnostic — same numbers, 2 % slower — and compiles
 the plain sources without the list.
 
-**The adjVisc build does not carry the default `-nocheckpoint` list, on purpose.** Tried 2026-09-02: run 31056 (boost + list, 30 d from rest) vs 31025 (boost, every call checkpointed) — `fc` and all 441 `%MON` lines byte-identical, but all 66 `ADJ*` dumps and all 8 real `adxx_*` gradients differ at order one (RMS ratio 0.3–0.9), whereas the plain pair is bitwise identical under the same list. In joint mode Tapenade re-runs each routine's primal inside the backward sweep *after* `AUTODIFF_INADMODE_SET_B` has boosted the viscosities, so the boost reaches every recomputed intermediate; in split mode those intermediates were taped during the forward sweep at forward viscosities and the boost reaches only what the `_BWD` code reads live — a weaker, different regularisation. So the boosted adjoint stays a `ckpAll` build (run token `tapAdj_ckpAll_adjVisc`, 13 min per 30 d instead of 9), and 31056 stays on scratch as the record; report in `analyses/DINO_1deg/adjoint/tapenade_profiling/compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md`. Corollary: `-nocheckpoint` is a pure performance change only for an adjoint whose backward sweep leaves the primal's parameters alone.
+**The adjVisc build does not carry the `-nocheckpoint` list, on purpose.** Tried 2026-09-02: run 31056 (boost + list, 30 d from rest) vs 31025 (boost, every call checkpointed) — `fc` and all 441 `%MON` lines byte-identical, but all 66 `ADJ*` dumps and all 8 real `adxx_*` gradients differ at order one (RMS ratio 0.3–0.9), whereas the plain pair is bitwise identical under the same list. In joint mode Tapenade re-runs each routine's primal inside the backward sweep *after* `AUTODIFF_INADMODE_SET_B` has boosted the viscosities, so the boost reaches every recomputed intermediate; in split mode those intermediates were taped during the forward sweep at forward viscosities and the boost reaches only what the `_BWD` code reads live — a weaker, different regularisation. So the boosted adjoint stays a `ckpAll` build (run token `tapAdj_ckpAll_adjVisc`, 13 min per 30 d instead of 9), and 31056 stays on scratch as the record; report in `analyses/DINO_1deg/adjoint/tapenade_profiling/compare_30d_adjViscBoost_run31025_vs_nocheckpoint_run31056.md`. The exact condition came on 2026-09-12 (the paragraph above): that list split `dynamics` and `thermodynamics`, which are recorded before the boost acts and read what it changes.
 
 ## Run
 

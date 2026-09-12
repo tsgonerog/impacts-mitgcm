@@ -304,7 +304,11 @@ runs the `--check` form.
   31259, identical as expected with explicit vertical advection; SOMA 5 d,
   31265 against 31097; the barotropic gyre 180 d, 31266 against 31118 (3 604
   fields). DINO's adjoint-viscosity build compiles against the ASTE headers.
-  The stock Tapenade verification experiments on the in-tree branch are in
+  The stock Tapenade verification experiments on the in-tree branch with
+  the change (`testreport -adm` and `-tlm`, eight adjoint and six
+  tangent-linear experiments) give output identical to the study's runs of
+  2026-09-05 without it, timing lines aside — `global_oce_biogeo_bling`
+  failing its reference comparison in both, on NetCDF detection;
   `~/MITgcm_c69m_tapenade_hooks/results/approx_guard_20260912/`.
 
 ## Toward a pull request

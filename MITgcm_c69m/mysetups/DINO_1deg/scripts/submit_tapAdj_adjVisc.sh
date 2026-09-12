@@ -7,8 +7,8 @@
 # staged run directory, which is what actually turns the inAd*/outAd*
 # parameters on. Build and submit script are a pair - neither works as
 # intended without the other - and the run token check below enforces it. The
-# build checkpoints every call, like build_tapAdj_ckpAll.sh -- the default
-# build's -nocheckpoint list is NOT equivalent under the boost (2026-09-02, run
+# build checkpoints every call, like build_tapAdj_ckpAll.sh -- the
+# -nocheckpoint list of 2026-09-02 was NOT equivalent under the boost (run
 # 31056 vs 31025; see the build script) -- so its run directories are named
 # tapAdj_ckpAll_adjVisc_*.
 #

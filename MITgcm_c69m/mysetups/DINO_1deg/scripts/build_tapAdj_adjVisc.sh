@@ -4,8 +4,8 @@
 #
 # Same stock genmake2 and shared-hooks wiring as build_tapAdj_ckpAll.sh
 # (see there for where the ADJ* dump calls come from), and like it EVERY call
-# is checkpointed: this build deliberately does NOT carry the default build's
-# -nocheckpoint list. Tested 2026-09-02 (run 31056, this build + the list, vs
+# is checkpointed: this build deliberately does NOT carry the -nocheckpoint
+# list. Tested 2026-09-02 (run 31056, this build + that day's list, vs
 # 31025, without it): fc and the %MON stream byte-identical, but every ADJ*
 # dump and adxx_* gradient differed at order one -- while the plain pair is
 # bitwise identical under the same list. In joint mode Tapenade re-runs each
