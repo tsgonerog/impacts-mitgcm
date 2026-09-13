@@ -1,5 +1,15 @@
 # `kappa_v_ensemble/` — forward legs
 
+**Since 2026-09-13 the legs start from the spin-up 31329** (legs 31330 for `REF_ReMax2` and
+31331–31337 for `M1_ReMax2`–`M7_ReMax2`), a 170-year run from rest of the live `input/data` on
+`/scratch`, whose year-170 pickup the submission names with `IMPACTS_PICKUP_RUN_DIR`; the namelists
+are unchanged. It replaces the production spin-up 31203 as the starting state because `/scratch2`,
+which holds 31203, failed on 2026-09-12 at 18:45 and took with it a first submission from 31203
+(legs 31289–31296). The `REF_ReMax2` leg continues the spin-up to year 180 with the same settings,
+so its year-180 pickup is the spin-up's year-180 state. The member adjoints are `input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2_gmFwd_approxAdv`
+and the analysis `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/`. The paragraph below describes
+the 2026-09-10 runs, which started from the 2× spin-up 30983.
+
 **Since 2026-09-10 the members are `REF_ReMax2` and `M<k>_ReMax2`** (runs 31205 and
 31207, 31209, 31211, 31213, 31215, 31217, 31219; a first submission that morning,
 31183–31195, ran with implicit vertical advection, lost two members to it and was
@@ -71,7 +81,13 @@ adjoint run reads. **`nIter0` and the pickup are coupled by hand**:
 `stage_pickups` in `scripts/submit_frd.sh` links the 2× spin-up 30983's
 `pickup.0002986560` by default, `IMPACTS_PICKUP_RUN_DIR` and
 `IMPACTS_PICKUP_ITER` override it, and nothing reads the iteration from the
-namelist.
+namelist. The 2026-09-13 legs override it with the spin-up's run directory:
+
+```bash
+IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 \
+IMPACTS_PICKUP_RUN_DIR=<run directory of the spin-up> \
+    ../../../tools/submit.sh scripts/submit_frd.sh
+```
 
 Since 2026-09-09 the κ is the `diffKrT`/`diffKrS` pair in `PARM01`. Every
 member value is an exact power-of-two multiple of the reference `1.2E-5`, so

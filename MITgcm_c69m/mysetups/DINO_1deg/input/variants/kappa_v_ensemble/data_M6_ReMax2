@@ -10,6 +10,8 @@
 # (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column
 # (runs 31191/31193, diagnosed with 31198-31201; stability_study README); the explicit form, DINO's own
 # choice, survives, and the vertical CFL here is below 0.05.
+# Since 2026-09-13 this leg is run from the year-170 pickup of the spin-up 31329 (the live input/data from rest,
+# on /scratch), named with IMPACTS_PICKUP_RUN_DIR (run 31336); the settings below are unchanged.
 # Model parameters
 # Continuous equation parameters
  &PARM01

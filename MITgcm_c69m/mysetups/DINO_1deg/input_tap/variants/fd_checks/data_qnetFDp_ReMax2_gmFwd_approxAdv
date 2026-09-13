@@ -1,17 +1,8 @@
-# Ensemble member M2 under the 2026-09-10 production configuration: kappa_v = 6.0e-06 m2/s (0.5 x reference
-# 1.2e-05). Forward re-equilibration leg 2170 -> 2180 from the 2x spin-up's year-170 pickup (30983,
-# nIter0=2986560) with the reference viscosity files, viscAhReMax=2. and the flux-limited scheme 33
-# (input/variants/stability_study/data_from170yrPk_viscRef_ReMax2, whose 10-yr run 31164 is the reference
-# member): differs from it only in diffKrT/diffKrS and in pChkptFreq (raised so only the final pickup
-# at 3162240 is written, which the matching adjoint reads). The 2026-08 member data_M2, its
-# visc2x predecessor, was removed on 2026-09-12 (git history has it).
-# Since 2026-09-10 (later the same day) the vertical tracer advection is EXPLICIT (tempImplVertAdv=
-# saltImplVertAdv=.FALSE.): the implicit form of the flux-limited DST3 blew up two kappa-ensemble legs
-# (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column
-# (runs 31191/31193, diagnosed with 31198-31201; stability_study README); the explicit form, DINO's own
-# choice, survives, and the vertical CFL here is below 0.05.
-# Since 2026-09-13 this leg is run from the year-170 pickup of the spin-up 31329 (the live input/data from rest,
-# on /scratch), named with IMPACTS_PICKUP_RUN_DIR (run 31332); the settings below are unchanged.
+# Finite-difference check of the production adjoint's qnet gradient (2026-09-12): the live
+# input_tap/data with surfQnetFile raised by 0.003 W/m2 everywhere and at every forcing record,
+# nothing else changed. It starts from the production spin-up 31203's year-180 pickup, the submit
+# default, and is cancelled once the forward sweep has printed the cost; the central difference of
+# the pair is compared with the reference adjoint's sum(adxx_qnet) times 0.003.
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -27,8 +18,8 @@
 # (code*/CPP_OPTIONS.h) it initialises the 3-D diffKr array (ini_mixing.F)
 # that the xx_diffkr control perturbs; until 2026-09-09 the same constant
 # was read as a field from diffKrFile='dino_diffKr.bin'
- diffKrT=6.E-6,
- diffKrS=6.E-6,
+ diffKrT=1.2E-5,
+ diffKrS=1.2E-5,
  no_slip_sides=.FALSE.,
  no_slip_bottom=.FALSE.,
  bottomDragQuadratic = 3.0E-3
@@ -64,6 +55,8 @@
 # 
  useSingleCpuIO=.TRUE.,
  vectorInvariantMomentum=.TRUE.,
+# viscAhReMax: a floor A >= |u| dx / 2, DINO's own Re_dx = 2 criterion with the local
+# speed -- the reference file wherever |u| < 0.27 m/s, raised only in the jets (2026-09-09).
  viscAhReMax=2.,
  readBinaryPrec=64,
  writeBinaryPrec=32,
@@ -78,19 +71,23 @@
 
 # Time stepping parameters
  &PARM03
- nIter0=2986560,
- nTimeSteps=175680,
+ nIter0=3162240,
+ nTimeSteps=87840,
  deltaT=1800.,
- pChkptFreq=316224000.,
+ pChkptFreq=2635200.,
  chkptFreq=155520000.,
  dumpFreq=31104000.,
- monitorFreq=2635200.,
+ monitorFreq=432000.,
  monitorSelect=2,
  tauThetaClimRelax=561600.0,
  tauSaltClimRelax=561600.0,
  periodicExternalForcing=.TRUE.,
  externForcingPeriod=86400.,
  externForcingCycle=31536000.,
+#-adjMonitorFreq ==> monitors adj information inside STDOUT.0000 (or inside output_tap_adj.txt file for serial run)
+ adjMonitorFreq=432000.,
+#-adjDumpFreq ==> spit out adj fields along the way e.g., ADJTheta.0000000000.data
+ adjDumpFreq=432000.,
 #-for longer run (100 yrs)
 # endTime = 3110400000.,
 # monitorFreq=2592000.,
@@ -114,6 +111,7 @@
  &PARM05
  bathyFile='dino_bathy.bin',
  zonalWindFile='dino_utau.bin',
+ surfQnetFile='/scratch/tshahriar/DINO_1deg_outputs/analysis/kappa_v_ensemble_gmFwd/perturbed_forcing/qnet_p.bin',
  thetaClimFile='dino_T_star.bin',
  saltClimFile='dino_S_star.bin',
  surfQswFile='dino_q_solar.bin',

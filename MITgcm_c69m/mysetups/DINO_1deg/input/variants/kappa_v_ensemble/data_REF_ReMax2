@@ -4,6 +4,8 @@
 # EXPLICIT vertical tracer advection -- identical to the members data_M<k>_ReMax2 apart from diffKrT/diffKrS.
 # Needed because the earlier reference run 31164 used the implicit vertical advection that blew up two
 # members (see the stability_study README); its year-180 pickup is what the production adjoint reads.
+# Since 2026-09-13 this leg is run from the year-170 pickup of the spin-up 31329 (the live input/data from rest,
+# on /scratch), named with IMPACTS_PICKUP_RUN_DIR (run 31330); the settings below are unchanged.
 # Model parameters
 # Continuous equation parameters
  &PARM01
