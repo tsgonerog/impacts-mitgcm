@@ -33,12 +33,14 @@ IMPACTS_PICKUP_RUN_DIR=$O/runs/forward/DINO_1deg_frd_10yr_M3_ReMax2_run$leg \
     ../../../tools/submit.sh scripts/submit_tapAdj.sh --dependency=afterok:$leg
 ```
 
-The campaign of 2026-09-13, on `/scratch` and submitted as one dependency chain by
-`analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/submit_campaign.sh`: spin-up 31329, legs 31330
-(reference) and 31331–31337, adjoints 31338 (reference, from the reference leg's year 180) and
-31339–31345; the analysis is `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/`. A first
-submission of 2026-09-12 from the production spin-up 31203 (legs 31289–31296, adjoints 31297–31304)
-died when `/scratch2` failed.
+The campaign on `/scratch`, submitted as one dependency chain by
+`analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/submit_campaign.sh`: spin-up 31329 (2026-09-13)
+and the rerun of its last 61 days, 31365; legs 31366 (reference) and 31367–31373; adjoints 31374
+(reference, from the reference leg's year 180) and 31375–31381 (2026-09-14). The analysis is
+`analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/`. Two earlier chains did not run: the first,
+of 2026-09-12 from the production spin-up 31203 (legs 31289–31296, adjoints 31297–31304), died when
+`/scratch2` failed, and the second (31330–31362) was cancelled when 31329 could not write its final
+pickup.
 
 The earlier adjoint variants of this group (`M<k>` of 2026-08 and `M<k>_ReMax2` of
 2026-09-10, both GM-free) were removed on 2026-09-12; git history has them.

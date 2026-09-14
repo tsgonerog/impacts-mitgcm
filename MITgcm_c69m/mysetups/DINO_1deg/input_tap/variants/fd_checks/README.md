@@ -36,12 +36,14 @@ IMPACTS_PICKUP_RUN_DIR=$SCRATCH_ROOT/DINO_1deg_outputs/analysis/kappa_v_ensemble
     ../../../tools/submit.sh scripts/submit_tapAdj.sh --mail-type=NONE
 ```
 
-The campaign of 2026-09-13 on `/scratch` (`submit_campaign.sh` in the analysis suite): 31346 and
-31347 (κ_v), 31348–31355 (forcing, `+` then `−` for `fu`, `fv`, `qnet`, `empmr`), 31356 (the job
-that writes the perturbed pickups once the reference leg has finished) and 31357–31362 (Theta
-boxes), filed under `runs/adjoint/kappa_v_ensemble_gmFwd/`. Two earlier submissions did not
-finish: 31305–31312 were cancelled at start by a watcher error and deleted, and 31313–31328,
-which started from the production spin-up 31203, died when `/scratch2` failed on 2026-09-12. Do not put the
+The campaign of 2026-09-14 on `/scratch` (`submit_campaign.sh` in the analysis suite): 31382 and
+31383 (κ_v), 31384–31391 (forcing, `+` then `−` for `fu`, `fv`, `qnet`, `empmr`), 31392 (the job
+that writes the perturbed pickups once the reference leg has finished) and 31393–31398 (Theta
+boxes), filed under `runs/adjoint/kappa_v_ensemble_gmFwd/`. Three earlier submissions did not
+finish: 31305–31312 were cancelled at start by a watcher error and deleted, 31313–31328, which
+started from the production spin-up 31203, died when `/scratch2` failed on 2026-09-12, and
+31346–31362 were cancelled with their chain when the spin-up 31329 could not write its final
+pickup. Do not put the
 words the model prints before the cost value into a namelist comment: the model echoes
 every namelist into `STDOUT.0000`, and a script that searches for that line matches the
 comment.

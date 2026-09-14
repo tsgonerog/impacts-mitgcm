@@ -29,6 +29,9 @@ def esc(x):
 def fig(name, caption, cls='', alt=None, gif=False):
     """A figure block; copies the file into page/fig/. A GIF gets a still PNG for reduced motion."""
     src = (c.ANIMS if gif else c.FIGS) / (name + ('.gif' if gif else '.png'))
+    if not src.exists():          # a partial build leaves the figure out and says so in the log
+        print('missing figure, left out:', src.name)
+        return ''
     FIGDIR.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, FIGDIR / src.name)
     alt = esc(alt or caption.split('.')[0])

@@ -99,7 +99,7 @@ def adxx(run):
 @figure
 def leg_indices_vs_kappa():
     df = pd.read_csv(c.CACHE / 'leg_series.csv')
-    last = df[(df.run != 'spinup31203') & (df.iter > c.NITER0 - c.STEPS_PER_YEAR)]
+    last = df[(df.run != 'spinup') & (df.iter > c.NITER0 - c.STEPS_PER_YEAR)]
     m = last.groupby('run')[['jproxy', 'amoc26', 'Tmean']].mean().reindex(c.RUN_ORDER)
     x = [c.FACTOR[r] for r in c.RUN_ORDER]
     fig, axs = plt.subplots(1, 3, figsize=(10.5, 3.1))
@@ -130,15 +130,16 @@ def leg_timeseries():
             ax.plot(s.year, s[k], color=col, lw=1.4)
             ax.annotate('%s (%gx)' % (r, c.FACTOR[r]), (s.year.iloc[-1], s[k].iloc[-12:].mean()), xytext=(4, 0),
                         textcoords='offset points', fontsize=8, color=c.INK2, va='center')
-        sp = df[df.run == 'spinup31203']
+        sp = df[df.run == 'spinup']
         ax.plot(sp.year, sp[k], color=c.INK, lw=1.2)
         s = df[df.run == 'REF']
-        ax.plot(s.year, s[k], color=c.INK, lw=0.8, ls=(0, (1, 1.5)))
-        ax.annotate('reference', (sp.year.iloc[-1], sp[k].iloc[-12:].mean()), xytext=(4, 0), textcoords='offset points',
+        ax.plot(s.year, s[k], color=c.INK, lw=1.2)
+        ax.annotate('reference', (s.year.iloc[-1], s[k].iloc[-12:].mean()), xytext=(4, 0), textcoords='offset points',
                     fontsize=8, color=c.INK2, va='center')
         ax.set_title(lab, fontsize=9.5)
         ax.set_xlabel('model year')
-        ax.set_xlim(170, 181.6)
+        ax.set_xlim(150, 181.6)
+        ax.axvline(170, color=c.AXIS_C, lw=0.8)
     save(fig, 'leg_timeseries')
 
 
@@ -153,10 +154,15 @@ def leg_temperature_change():
         return np.array([np.nansum(np.where(wet[k], t[k], 0) * g['RAC']) / (wet[k] * g['RAC']).sum()
                          if wet[k].any() else np.nan for k in range(len(depth))])
 
+    def zmean(t):
+        n = wet.sum(axis=2)
+        return np.where(n > 0, np.nansum(np.where(wet, t, 0), axis=2) / np.maximum(n, 1), np.nan)
+
     ref = hmean(z['REF_T'])
     D = np.array([hmean(z[r + '_T']) - ref for r in c.MEMBERS])
-    fig = plt.figure(figsize=(10.5, 3.9))
-    ax = fig.add_axes([0.06, 0.14, 0.26, 0.74])
+    fig = plt.figure(figsize=(11, 4.0))
+    ax = fig.add_axes([0.06, 0.14, 0.20, 0.72])
+    cax = fig.add_axes([0.27, 0.14, 0.010, 0.72])
     vmax = c.robust_sym(D, 100)
     pm = ax.pcolormesh(np.arange(len(c.MEMBERS)), depth, D.T, cmap=c.diverging_cmap(), vmin=-vmax, vmax=vmax, shading='auto')
     ax.set_yscale('symlog', linthresh=200)
@@ -164,20 +170,20 @@ def leg_temperature_change():
     ax.set_xticks(range(len(c.MEMBERS)))
     ax.set_xticklabels(['%gx' % c.FACTOR[r] for r in c.MEMBERS], fontsize=8)
     ax.set_ylabel('depth [m]')
-    ax.set_title('horizontal-mean ΔT vs reference, year 180 [K]', fontsize=9.5)
+    ax.set_title('horizontal-mean ΔT, year 180', fontsize=9.5)
     ax.grid(False)
-    fig.colorbar(pm, ax=ax, pad=0.02, fraction=0.06)
+    fig.colorbar(pm, cax=cax).set_label('K', fontsize=8)
     for i, r in enumerate(['M1', 'M7']):
-        a = fig.add_axes([0.42 + i * 0.29, 0.14, 0.24, 0.74])
-        zm = lambda t: np.where(wet.sum(axis=2) > 0, np.nansum(np.where(wet, t, 0), axis=2) / np.maximum(wet.sum(axis=2), 1), np.nan)
-        dz = zm(z[r + '_T']) - zm(z['REF_T'])
+        a = fig.add_axes([0.37 + i * 0.32, 0.14, 0.24, 0.72])
+        ca = fig.add_axes([0.37 + i * 0.32 + 0.245, 0.14, 0.010, 0.72])
+        dz = zmean(z[r + '_T']) - zmean(z['REF_T'])
         vm = c.robust_sym(dz, 99.5)
         p2 = a.pcolormesh(g['lat'], depth, np.ma.masked_invalid(dz), cmap=c.diverging_cmap(), vmin=-vm, vmax=vm, shading='auto')
         a.invert_yaxis()
         a.set_xlabel('latitude [°]')
-        a.set_title('zonal-mean ΔT, %s (%gx) − reference [K]' % (r, c.FACTOR[r]), fontsize=9.5)
+        a.set_title('zonal-mean ΔT, %s (%gx) − reference' % (r, c.FACTOR[r]), fontsize=9.5)
         a.grid(False)
-        fig.colorbar(p2, ax=a, pad=0.02, fraction=0.06)
+        fig.colorbar(p2, cax=ca).set_label('K', fontsize=8)
     save(fig, 'leg_temperature_change')
 
 
@@ -285,7 +291,7 @@ def fd_checks():
         'kappa': -2.4511e3 / -2.0012e3, 'deepN': -4.4259e-3 / -5.5797e-3, 'midTrop': 5.0309e-3 / 4.8365e-3, 'soUpper': 3.7552e-3 / 2.5825e-3}
     names = ['kappa_v ±10 %', 'Theta, 40–50 N below 1500 m', 'Theta, 0–10 N 500–1500 m', 'Theta, 40–60 S 0–500 m']
     keys = ['kappa', 'deepN', 'midTrop', 'soUpper']
-    new = (df.adjoint / df.fd_central).values
+    new = (df.adjoint / df.fd_central).values[:len(names)]
     y = np.arange(len(names))[::-1]
     fig, ax = plt.subplots(figsize=(7.5, 2.9))
     ax.axvline(1.0, color=c.AXIS_C, lw=1)
@@ -300,6 +306,26 @@ def fd_checks():
     ax.set_xlabel('adjoint prediction / central finite difference')
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.28), ncol=1)
     save(fig, 'fd_checks')
+
+
+@figure
+def fd_forcing():
+    df = pd.read_csv(c.STATS / 'fd_checks.csv')
+    f = df[df.test.str.contains('everywhere')].reset_index(drop=True)
+    y = np.arange(len(f))[::-1]
+    fig, ax = plt.subplots(figsize=(7.5, 2.8))
+    ax.axvline(0, color=c.AXIS_C, lw=0.8)
+    lim = 1.15 * max(np.abs(f.fd_central).max(), np.abs(f.adjoint).max())
+    for yy, (_, r) in zip(y, f.iterrows()):
+        ax.plot([r.fd_central, r.adjoint], [yy, yy], color=c.AXIS_C, lw=1.2, zorder=1)
+    ax.plot(f.fd_central, y, 'o', color=c.INK, ms=7, mec=c.SURFACE, mew=1.5, label='central finite difference')
+    ax.plot(f.adjoint, y, 'o', color=c.SERIES[0], ms=7, mec=c.SURFACE, mew=1.5, label='adjoint prediction')
+    ax.set_xscale('symlog', linthresh=max(1e-5, 0.02 * lim))
+    ax.set_yticks(y)
+    ax.set_yticklabels([t.replace(' everywhere', '') for t in f.test], fontsize=8)
+    ax.set_xlabel('ΔJ for the perturbation')
+    ax.legend(fontsize=8, loc='upper center', bbox_to_anchor=(0.5, -0.3), ncol=2)
+    save(fig, 'fd_forcing')
 
 
 # ------------------------------------------------------------------ ensemble

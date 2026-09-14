@@ -54,3 +54,12 @@ impacts-mitgcm (<code>campaign.py</code>, <code>forward_state.py</code>, <code>a
 <code>make_figures.py</code>, <code>build_page.py</code>). Earlier campaigns are compared through the numbers in <code>previous_campaigns_reference.json</code>, copied from
 the tables on <code>/scratch2</code> before it failed.</p>
 """
+
+INCIDENTS = """
+<div class="note-box"><b>Two interruptions, neither of which touched the results.</b> The first submission (2026-09-12) started
+from 31203 on <code>/scratch2</code>; that filesystem failed at 18:45 the same evening and every running job with it, so the
+campaign was resubmitted on <code>/scratch</code> from the new spin-up 31329. That spin-up integrated all 170 years but could not
+write its final pickup, because the forward submit script links a default pickup of the same name into every run directory; its
+last 61 days were rerun from its own pickup two months earlier (31365), which reproduced every output file and monitor value of
+31329 bit for bit and wrote the year-170 state the legs start from.</div>
+"""

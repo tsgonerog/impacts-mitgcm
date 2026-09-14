@@ -69,7 +69,8 @@ def _job_map():
 
 
 _MAP = _job_map()
-SPINUP_JOB = next((j for j, role, _ in _MAP if role.startswith('spin-up')), None)
+SPINUP_JOB = next((j for j, role, _ in _MAP if role.startswith('spin-up 170')), None)
+SPINUP_END_JOB = next((j for j, role, _ in _MAP if role.startswith('spin-up end')), None)   # the rerun last 61 days, if any
 LEG_JOB = {tag.split('/')[-1].replace('_ReMax2', ''): j for j, role, tag in _MAP if role == 'forward leg'}
 ADJ_JOB = {('REF' if role.startswith('reference') else tag.split('/')[-1].split('_')[0]): j
            for j, role, tag in _MAP if role.startswith(('reference adjoint', 'member adjoint'))}

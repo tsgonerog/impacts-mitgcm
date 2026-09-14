@@ -20,6 +20,7 @@ O=$SCRATCH_ROOT/DINO_1deg_outputs
 A=$O/analysis/kappa_v_ensemble_gmFwd
 SUB=../../../tools/submit.sh
 env | grep -q '^IMPACTS_' && { echo "unset the IMPACTS_* variables in this shell first"; exit 1; }
+[ -z "${CAMPAIGN_SPINUP_JOB:-}" ] || [ -n "${CAMPAIGN_SPINUP_DIR:-}" ] || { echo "CAMPAIGN_SPINUP_JOB needs CAMPAIGN_SPINUP_DIR"; exit 1; }
 [ -f "$A/perturbed_forcing/empmr_m.bin" ] || { echo "perturbed forcing files missing in $A/perturbed_forcing"; exit 1; }
 mkdir -p "$A"
 cd "$SETUP"
@@ -29,9 +30,18 @@ printf 'job\trole\ttag\tpickup_from\tdepends_on\n' > "$MAP"
 jid() { tail -1 | grep -oE '^[0-9]+'; }
 row() { printf '%s\t%s\t%s\t%s\t%s\n' "$@" >> "$MAP"; }
 
-SPIN=$(IMPACTS_DURATION_DAYS=62220 $SUB scripts/submit_frd.sh --parsable | jid)
-SPIN_DIR=$O/runs/forward/DINO_1deg_frd_170yr_from_rest_viscRef_ReMax2_run$SPIN
-row "$SPIN" "spin-up 170 yr" "(live input/data)" "rest" "-"
+# CAMPAIGN_SPINUP_JOB and CAMPAIGN_SPINUP_DIR, when set, chain the campaign on an existing (or queued) run that holds
+# the year-170 pickup instead of submitting the spin-up (2026-09-14: the last 61 days of 31329, rerun)
+if [ -n "${CAMPAIGN_SPINUP_JOB:-}" ]; then
+  SPIN=$CAMPAIGN_SPINUP_JOB
+  SPIN_DIR=$CAMPAIGN_SPINUP_DIR
+  row 31329 "spin-up 170 yr (final pickup not written)" "(live input/data)" "rest" "-"
+  row "$SPIN" "spin-up end, last 61 d" "kappa_v_ensemble/spinupEnd_ReMax2" "31329 pickup 2983632" "-"
+else
+  SPIN=$(IMPACTS_DURATION_DAYS=62220 $SUB scripts/submit_frd.sh --parsable | jid)
+  SPIN_DIR=$O/runs/forward/DINO_1deg_frd_170yr_from_rest_viscRef_ReMax2_run$SPIN
+  row "$SPIN" "spin-up 170 yr" "(live input/data)" "rest" "-"
+fi
 
 declare -A LEG
 for t in REF M1 M2 M3 M4 M5 M6 M7; do

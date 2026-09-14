@@ -1,9 +1,13 @@
 # `kappa_v_ensemble/` — forward legs
 
-**Since 2026-09-13 the legs start from the spin-up 31329** (legs 31330 for `REF_ReMax2` and
-31331–31337 for `M1_ReMax2`–`M7_ReMax2`), a 170-year run from rest of the live `input/data` on
-`/scratch`, whose year-170 pickup the submission names with `IMPACTS_PICKUP_RUN_DIR`; the namelists
-are unchanged. It replaces the production spin-up 31203 as the starting state because `/scratch2`,
+**Since 2026-09-14 the legs start from the year-170 state of the spin-up 31329** (legs 31366 for
+`REF_ReMax2` and 31367–31373 for `M1_ReMax2`–`M7_ReMax2`), a 170-year run from rest of the live
+`input/data` on `/scratch`; the namelists are unchanged. 31329 integrated all 170 years but could
+not write its final pickup (`scripts/submit_frd.sh` links a default pickup of that name into every run
+directory), so its last 61 days were rerun from its own pickup two months earlier as 31365
+(`data_spinupEnd_ReMax2`, which differs from `input/data` only in `nIter0`): every output file both
+runs wrote is identical, and the legs start from 31365's `pickup.0002986560`, named with
+`IMPACTS_PICKUP_RUN_DIR`. It replaces the production spin-up 31203 as the starting state because `/scratch2`,
 which holds 31203, failed on 2026-09-12 at 18:45 and took with it a first submission from 31203
 (legs 31289–31296). The `REF_ReMax2` leg continues the spin-up to year 180 with the same settings,
 so its year-180 pickup is the spin-up's year-180 state. The member adjoints are `input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2_gmFwd_approxAdv`
@@ -81,7 +85,7 @@ adjoint run reads. **`nIter0` and the pickup are coupled by hand**:
 `stage_pickups` in `scripts/submit_frd.sh` links the 2× spin-up 30983's
 `pickup.0002986560` by default, `IMPACTS_PICKUP_RUN_DIR` and
 `IMPACTS_PICKUP_ITER` override it, and nothing reads the iteration from the
-namelist. The 2026-09-13 legs override it with the spin-up's run directory:
+namelist. The 2026-09-14 legs override it with the directory of 31365:
 
 ```bash
 IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 \

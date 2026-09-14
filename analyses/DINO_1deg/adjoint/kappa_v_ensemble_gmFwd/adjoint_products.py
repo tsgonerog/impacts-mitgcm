@@ -173,14 +173,14 @@ def tables():
 
     # member Delta J against the adjoint prediction: the kappa term and the initial-state term
     if len(ADJ) > 1:
-        spin = c.run_dir(c.SPINUP_JOB)
+        ref_leg = c.run_dir(c.LEG_JOB['REF'])      # the spin-up's continuation to year 180
         pk = 'pickup.%010d' % c.NITER0
 
         def state(d):
             a = c.read_mds(Path(d) / pk)
             return a[72:108], a[108:144]      # Theta, Salt records
 
-        th0, s0 = state(spin)
+        th0, s0 = state(ref_leg)
         dec = []
         fc_ref = fg.set_index('run').fc['REF']
         G = fg.set_index('run').G_dJdkappa_uniform

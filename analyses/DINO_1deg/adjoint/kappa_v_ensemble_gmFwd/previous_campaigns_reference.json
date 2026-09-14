@@ -2,34 +2,159 @@
  "_source": "Copied on 2026-09-13 from /scratch2/tshahriar/DINO_1deg_outputs/logs/deleted_run_records/analysis_tables_of_deleted_campaigns/ (kappa_v_ensemble/stats/member_status_table.csv, noise_floor.csv; kappa_v_ensemble_ReMax2_approxAdv/*.json) and analysis/gm_in_adjoint/fd_summary.md, read in the session of 2026-09-12 before /scratch2 failed.",
  "visc2x_2026_08": {
   "what": "2x viscosity files, implicit vertical advection, GM-free adjoint; legs from the 2x spin-up 30983 year 170; adjoints 31039-31046",
-  "factor": [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0],
-  "run": ["M1", "M2", "REF", "M3", "M4", "M5", "M6", "M7"],
-  "fc": [0.214102037482298, 0.259781466212249, 0.330992121938681, 0.264916783872838, 0.273085893331951, 0.302082512248082, 0.365433572596538, 0.510199266702466],
-  "status": ["blown", "stable", "reference", "stable", "blown", "blown", "degraded", "blown"],
-  "departure_lead_yr": [2.5546, null, null, null, 0.6967, 1.2842, null, 0.3552],
-  "noise_floor": {"std_inst_last100yr": 0.012092143507683464, "std_annual_last100yr": 0.00706712688968844, "source": "instantaneous pickups of 30983"}
+  "factor": [
+   0.25,
+   0.5,
+   1.0,
+   2.0,
+   4.0,
+   8.0,
+   16.0,
+   32.0
+  ],
+  "run": [
+   "M1",
+   "M2",
+   "REF",
+   "M3",
+   "M4",
+   "M5",
+   "M6",
+   "M7"
+  ],
+  "fc": [
+   0.214102037482298,
+   0.259781466212249,
+   0.330992121938681,
+   0.264916783872838,
+   0.273085893331951,
+   0.302082512248082,
+   0.365433572596538,
+   0.510199266702466
+  ],
+  "status": [
+   "blown",
+   "stable",
+   "reference",
+   "stable",
+   "blown",
+   "blown",
+   "degraded",
+   "blown"
+  ],
+  "departure_lead_yr": [
+   2.5546,
+   null,
+   null,
+   null,
+   0.6967,
+   1.2842,
+   null,
+   0.3552
+  ],
+  "noise_floor": {
+   "std_inst_last100yr": 0.012092143507683464,
+   "std_annual_last100yr": 0.00706712688968844,
+   "source": "instantaneous pickups of 30983"
+  }
  },
  "gmFree_ReMax2_2026_09_10": {
   "what": "reference viscosity + viscAhReMax=2, scheme 33 forward / 30 adjoint sweep, GM-free adjoint; legs from 30983 year 170; adjoints 31206-31220",
-  "factor": [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0],
-  "run": ["M1", "M2", "REF", "M3", "M4", "M5", "M6", "M7"],
-  "fc": [0.394398774849358, 0.390915695374722, 0.335016470827443, 0.247637665267403, 0.259426737390223, 0.290241879728344, 0.346898322346102, 0.488917619516368],
-  "G": [-1400324274278.779, 586705.5642607957, -3309.5780393727155, -266.33668576338215, 760.0911896950793, 734.8026013546227, 699.3226278804177, 670.2804786506479],
-  "fd": {"J_ref": 0.335016470827443, "J_p10": 0.331757563555399, "J_m10": 0.338329096568744, "fd_central": -2738.13875556042, "adjoint_G": -3309.5780393727155}
+  "factor": [
+   0.25,
+   0.5,
+   1.0,
+   2.0,
+   4.0,
+   8.0,
+   16.0,
+   32.0
+  ],
+  "run": [
+   "M1",
+   "M2",
+   "REF",
+   "M3",
+   "M4",
+   "M5",
+   "M6",
+   "M7"
+  ],
+  "fc": [
+   0.394398774849358,
+   0.390915695374722,
+   0.335016470827443,
+   0.247637665267403,
+   0.259426737390223,
+   0.290241879728344,
+   0.346898322346102,
+   0.488917619516368
+  ],
+  "G": [
+   -1400324274278.779,
+   586705.5642607957,
+   -3309.5780393727155,
+   -266.33668576338215,
+   760.0911896950793,
+   734.8026013546227,
+   699.3226278804177,
+   670.2804786506479
+  ],
+  "fd": {
+   "J_ref": 0.335016470827443,
+   "J_p10": 0.331757563555399,
+   "J_m10": 0.338329096568744,
+   "fd_central": -2738.13875556042,
+   "adjoint_G": -3309.5780393727155
+  }
  },
  "gm_test_2026_09_11": {
   "what": "GM in the forward sweep only (the current adjoint), from the REF_ReMax2 leg 31205's year 180; adjoint 31237 against finite differences of the GM model",
-  "J0": 0.329392210,
-  "kappa_dJdkappa": {"fd": -2.0012e3, "adjoint_31237": -2.4511e3},
-  "deepN": {"fd": -5.5797e-3, "adjoint_31237": -4.4259e-3},
-  "midTrop": {"fd": 4.8365e-3, "adjoint_31237": 5.0309e-3},
-  "soUpper": {"fd": 2.5825e-3, "adjoint_31237": 3.7552e-3}
+  "J0": 0.32939221,
+  "kappa_dJdkappa": {
+   "fd": -2001.2,
+   "adjoint_31237": -2451.1
+  },
+  "deepN": {
+   "fd": -0.0055797,
+   "adjoint_31237": -0.0044259
+  },
+  "midTrop": {
+   "fd": 0.0048365,
+   "adjoint_31237": 0.0050309
+  },
+  "soUpper": {
+   "fd": 0.0025825,
+   "adjoint_31237": 0.0037552
+  }
  },
  "structure_31237": {
   "what": "adjoint_products.py structure step on 31237 (2026-09-12, dev run)",
-  "identity_pattern_corr": 0.9886, "identity_regression_slope": 0.9805,
-  "within_level_rank_corr": {"|dT/dz|": 0.786, "|dS/dz|": 0.745, "|drho/dz|": 0.761, "identity": 0.938},
-  "dynamic_range_5yr_log10": {"p01": -15.8, "p50": -3.0, "p99": -0.24, "max": 1.17},
-  "frac_cells_50pct_5yr": 0.0089, "frac_cells_90pct_5yr": 0.126
+  "identity_pattern_corr": 0.9886,
+  "identity_regression_slope": 0.9805,
+  "within_level_rank_corr": {
+   "|dT/dz|": 0.786,
+   "|dS/dz|": 0.745,
+   "|drho/dz|": 0.761,
+   "identity": 0.938
+  },
+  "dynamic_range_5yr_log10": {
+   "p01": -15.8,
+   "p50": -3.0,
+   "p99": -0.24,
+   "max": 1.17
+  },
+  "frac_cells_50pct_5yr": 0.0089,
+  "frac_cells_90pct_5yr": 0.126
+ },
+ "spinup_31203": {
+  "jproxy_dynDiag_year185": 0.3470448519084625,
+  "noise_floor_years_100_200": {
+   "jproxy_mean": 0.35567382021912264,
+   "std_monthly": 0.0006100739694153337,
+   "std_annual": 0.00044750045798057185,
+   "trend_per_century": -0.024404686523607593
+  },
+  "_source": "forward_state.py spinup on 31203, 2026-09-12, before /scratch2 failed"
  }
 }

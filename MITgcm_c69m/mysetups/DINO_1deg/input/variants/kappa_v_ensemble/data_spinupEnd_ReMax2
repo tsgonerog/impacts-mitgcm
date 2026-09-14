@@ -1,18 +1,10 @@
-# Ensemble member M2 under the 2026-09-10 production configuration: kappa_v = 6.0e-06 m2/s (0.5 x reference
-# 1.2e-05). Forward re-equilibration leg 2170 -> 2180 from the 2x spin-up's year-170 pickup (30983,
-# nIter0=2986560) with the reference viscosity files, viscAhReMax=2. and the flux-limited scheme 33
-# (input/variants/stability_study/data_from170yrPk_viscRef_ReMax2, whose 10-yr run 31164 is the reference
-# member): differs from it only in diffKrT/diffKrS and in pChkptFreq (raised so only the final pickup
-# at 3162240 is written, which the matching adjoint reads). The 2026-08 member data_M2, its
-# visc2x predecessor, was removed on 2026-09-12 (git history has it).
-# Since 2026-09-10 (later the same day) the vertical tracer advection is EXPLICIT (tempImplVertAdv=
-# saltImplVertAdv=.FALSE.): the implicit form of the flux-limited DST3 blew up two kappa-ensemble legs
-# (8x and 16x) within two years by producing a +-100 K checkerboard in a convectively homogenised column
-# (runs 31191/31193, diagnosed with 31198-31201; stability_study README); the explicit form, DINO's own
-# choice, survives, and the vertical CFL here is below 0.05.
-# Since 2026-09-14 this leg is run from the year-170 state of the spin-up 31329 (the live input/data from rest, on
-# /scratch), whose last 61 days were rerun as 31365 to write that pickup; named with IMPACTS_PICKUP_RUN_DIR (run 31368).
-# The settings below are unchanged.
+# The last 61 days of the 170-yr spin-up 31329, rerun (2026-09-14): the live input/data with nIter0 moved to
+# 2983632, the spin-up's permanent pickup two months before its end, nothing else changed. 31329 integrated all
+# 2986560 steps but could not write its final pickup, because the run directory held a link of that name to the
+# default pickup of scripts/submit_frd.sh, whose target does not exist under /scratch. Run for 61 days with
+#   IMPACTS_TEST_CASE=kappa_v_ensemble/spinupEnd_ReMax2 IMPACTS_DURATION_DAYS=61 \
+#   IMPACTS_PICKUP_RUN_DIR=<31329's run directory> IMPACTS_PICKUP_ITER=2983632
+# it writes pickup.0002986560 as a real file; its dynDiag of the two months checks the restart against 31329's.
 # Model parameters
 # Continuous equation parameters
  &PARM01
@@ -28,8 +20,8 @@
 # (code*/CPP_OPTIONS.h) it initialises the 3-D diffKr array (ini_mixing.F)
 # that the xx_diffkr control perturbs; until 2026-09-09 the same constant
 # was read as a field from diffKrFile='dino_diffKr.bin'
- diffKrT=6.E-6,
- diffKrS=6.E-6,
+ diffKrT=1.2E-5,
+ diffKrS=1.2E-5,
  no_slip_sides=.FALSE.,
  no_slip_bottom=.FALSE.,
  bottomDragQuadratic = 3.0E-3
@@ -65,6 +57,8 @@
 # 
  useSingleCpuIO=.TRUE.,
  vectorInvariantMomentum=.TRUE.,
+# viscAhReMax: a floor A >= |u| dx / 2, DINO's own Re_dx = 2 criterion with the local
+# speed -- the reference file wherever |u| < 0.27 m/s, raised only in the jets (2026-09-09).
  viscAhReMax=2.,
  readBinaryPrec=64,
  writeBinaryPrec=32,
@@ -79,10 +73,10 @@
 
 # Time stepping parameters
  &PARM03
- nIter0=2986560,
- nTimeSteps=175680,
+ nIter0=2983632,
+ nTimeSteps=3513600,
  deltaT=1800.,
- pChkptFreq=316224000.,
+ pChkptFreq=2635200.,
  chkptFreq=155520000.,
  dumpFreq=31104000.,
  monitorFreq=2635200.,

@@ -66,8 +66,8 @@ def spinup():
     out['spinup_job'] = c.SPINUP_JOB
     out['years'] = [float(w.year.min()), float(w.year.max())]
     out['n_months'] = int(len(w))
-    out['note'] = ('std of 30.5-d means of the cost formula applied to 31203 dynDiag VVEL, years 100-200, '
-                   'linear trend removed; fc is one terminal 30-d mean, so std_monthly is its noise floor')
+    out['note'] = ('std of 30.5-d means of the cost formula applied to the spin-up\'s dynDiag VVEL, from year 100 to its '
+                   'end, linear trend removed; fc is one terminal 30-d mean, so std_monthly is its noise floor')
     (c.STATS / 'noise_floor.json').write_text(json.dumps(out, indent=1))
     print(json.dumps(out, indent=1))
 
@@ -89,21 +89,27 @@ def legs():
         prof[r + '_T'], prof[r + '_S'], prof[r + '_psi'] = th, sa, c.overturning(v, g)
     # the spin-up's own years 170-180 for the same indices
     sp = pd.read_csv(c.CACHE / 'spinup_series.csv')
-    sp = sp[(sp.iter > c.LEG_NITER0) & (sp.iter <= c.NITER0)].copy()
+    sp = sp[sp.iter > c.LEG_NITER0 - 20 * c.STEPS_PER_YEAR].copy()      # the spin-up's last 20 years, as context
     sp.insert(0, 'run', 'spinup')
     pd.concat(frames + [sp]).to_csv(c.CACHE / 'leg_series.csv', index=False)
     np.savez_compressed(c.CACHE / 'leg_final_profiles.npz', **prof)
-    # The REF leg continues the spin-up past year 170 with the same settings; the check against the earlier
-    # production spin-up 31203 (on /scratch2) compares its year-180 pickup, and the new spin-up's year-170 one.
+    # The rerun of the spin-up's last 61 days against the spin-up itself (every file both wrote, and the %MON blocks),
+    # and, once /scratch2 is readable, the new spin-up's year-170 and the REF leg's year-180 pickups against 31203's.
     res = {}
+    end = c.run_dir(c.SPINUP_END_JOB) if c.SPINUP_END_JOB else None
+    if end is not None:
+        both = sorted(p.name for p in end.glob('*.data') if (spin / p.name).exists() and not (end / p.name).is_symlink()
+                      and not (spin / p.name).is_symlink() and p.name.startswith(('dynDiag', 'surfDiag', 'atmDiag', 'viscDiag', 'pickup.0')))
+        same = [n for n in both if filecmp.cmp(end / n, spin / n, shallow=False)]
+        res['spinup_end_rerun_vs_spinup'] = dict(files_compared=both, identical=len(same), different=len(both) - len(same))
     ref = c.run_dir(c.LEG_JOB['REF'])
     old = c.EARLIER_OUTPUTS / 'runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203'
+    yr170 = (end or spin) / ('pickup.%010d.data' % c.LEG_NITER0)
     try:
-        for lab, a, b in (('spinup_year170_vs_31203', spin / ('pickup.%010d.data' % c.LEG_NITER0), old / ('pickup.%010d.data' % c.LEG_NITER0)),
-                          ('REF_leg_year180_vs_31203', ref / ('pickup.%010d.data' % c.NITER0), old / ('pickup.%010d.data' % c.NITER0))):
-            res[lab] = bool(filecmp.cmp(a, b, shallow=False))
+        res['spinup_year170_vs_31203'] = bool(filecmp.cmp(yr170, old / ('pickup.%010d.data' % c.LEG_NITER0), shallow=False))
+        res['REF_leg_year180_vs_31203'] = bool(filecmp.cmp(ref / ('pickup.%010d.data' % c.NITER0), old / ('pickup.%010d.data' % c.NITER0), shallow=False))
     except OSError as e:
-        res['not_compared'] = 'earlier spin-up 31203 not readable: %s' % e
+        res['vs_31203'] = 'not compared: 31203 not readable (%s)' % type(e).__name__
     (c.STATS / 'restart_check.json').write_text(json.dumps(res, indent=1))
     print(json.dumps(res, indent=1))
 
