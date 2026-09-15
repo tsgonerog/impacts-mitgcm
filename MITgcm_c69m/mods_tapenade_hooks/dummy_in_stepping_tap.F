@@ -34,17 +34,21 @@ C     The tangent-linear build gets the G_J* output of
 C     G_DUMMY_IN_STEPPING the same way.
 C
 C     One field per call keeps the argument list of every generated
-C     call fixed: Tapenade omits the derivative of an argument that
-C     is passive at the call site, so a field that is passive in a
-C     given configuration loses its call entirely rather than an
-C     argument in a shared list. The field set and its guards mirror
+C     call fixed: Tapenade generates the derivative call of an
+C     external only when one of its inputs is active, and a hook
+C     carrying several fields, some of which exist or are active
+C     only in some configurations, would be called with a
+C     configuration-dependent argument list. With one field per
+C     call, a field that is passive in a given configuration loses
+C     its call entirely rather than an argument in a shared list.
+C     The field set and its guards mirror
 C     ADDUMMY_IN_STEPPING (pkg/autodiff/addummy_in_stepping.F); the
 C     package-specific dumps of that routine (seaice, ptracers,
-C     shelfice, ggl90, ...) are not carried here yet.
-C
-C     FORWARD_STEP precedes the call with C$AD NOCHECKPOINT, so
-C     Tapenade differentiates this routine in split mode and stores
-C     each field once per time step instead of twice.
+C     shelfice, ggl90, ...) are not included. Adding a field is one
+C     guarded call here and, for a new field shape, one hook family
+C     in dummy_tap.F. Tapenade stores each field once per time step
+C     around its hook call, whether this routine is checkpointed
+C     (the default) or differentiated in split mode.
 C     \ev
 
 C     !USES:
@@ -91,7 +95,7 @@ C-----------------------------------------------------------------------
      &                               myTime, myIter, myThid )
         CALL DUMMY_IN_STEPPING_XY_RS( Qnet,  'ADJqnet ', 'ADJqnet.',
      &                               myTime, myIter, myThid )
-        CALL DUMMY_IN_STEPPING_XY_RS( EmPmR, 'ADJempmr', 'ADJempmr.',
+        CALL DUMMY_IN_STEPPING_XY_RS( EmPmR, 'ADJempmr', 'ADJempr.',
      &                               myTime, myIter, myThid )
 # ifdef SHORTWAVE_HEATING
         CALL DUMMY_IN_STEPPING_XY_RS( Qsw,   'ADJqsw  ', 'ADJqsw.',

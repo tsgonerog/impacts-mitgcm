@@ -1,48 +1,40 @@
 #include "CPP_EEOPTIONS.h"
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
-C--   Tapenade output hooks and adjoint-mode switches.
+C--   File dummy_tap.F: Tapenade output hooks and adjoint-mode switches
 C--
-C--   The routines below are the hand-written derivatives of the hooks
-C--   through which pkg/autodiff writes adjoint (ADJ*) and tangent-linear
-C--   (G_J*) output from a Tapenade-generated model, and of the two
-C--   adjoint-mode switches.
+C--   Hand-written derivatives of the hooks through which a Tapenade-
+C--   generated adjoint or tangent-linear model writes the ADJ* and G_J*
+C--   output that pkg/autodiff writes from a TAF-generated one, and of
+C--   the two adjoint-mode switches (AUTODIFF_INADMODE_SET / _UNSET).
 C--
 C--   TAF forces its hand-written adjoint of a hook such as
 C--   DUMMY_IN_STEPPING( myTime, myIter, myThid ) into the reverse sweep
-C--   with the ADNAME / REQUIRED flow directives. Tapenade has no such
-C--   directive: an external whose arguments are all passive is simply
-C--   absent from the generated adjoint. The Tapenade hooks below therefore
+C--   with the ADNAME and REQUIRED flow directives. Tapenade has no such
+C--   directive: an external whose arguments are all passive is absent
+C--   from the generated adjoint. The Tapenade hooks below therefore
 C--   carry the field they act on as an argument, and
-C--   tools/TAP_support/flow_tap declares that argument read-then-written;
-C--   Tapenade then generates the call to the hook's _B (adjoint), _D
-C--   (tangent) or _FWD/_BWD (adjoint of a caller differentiated without
-C--   checkpointing) routine at the mirror image of the forward call, with
-C--   the derivative of the field as an extra argument. The routines here
-C--   are those derivatives; every forward hook is a no-op. They are called
-C--   from DUMMY_IN_STEPPING_TAP (dummy_in_stepping_tap.F, the routine
-C--   Tapenade differentiates), from INTEGR_CONTINUITY (the etaN hook) and
-C--   from FORWARD_STEP (the mode switches).
+C--   tools/TAP_support/flow_tap declares that argument read-then-
+C--   written; Tapenade then generates the call to the hook's _B
+C--   (adjoint), _D (tangent) or _FWD/_BWD (adjoint when the hook itself
+C--   is differentiated without checkpointing, as -defaultnocheckpoint
+C--   does) routine at the mirror image of the forward call, with the
+C--   derivative of the field as an extra argument. The routines here
+C--   are those derivatives; every forward hook is a no-op. They are
+C--   called from DUMMY_IN_STEPPING_TAP (dummy_in_stepping_tap.F, the
+C--   routine Tapenade differentiates), from INTEGR_CONTINUITY (the etaN
+C--   hook) and from FORWARD_STEP (the mode switches).
 C--
 C--   One field per hook call keeps the argument list of every generated
-C--   call fixed, whatever the configuration: Tapenade omits the derivative
-C--   of an argument that is passive at the call site, so a hook carrying
-C--   several fields would be called with a configuration-dependent number
-C--   of arguments, which Fortran 77 cannot detect. With one field, a
-C--   passive field loses its call entirely and an active one is always
-C--   passed with its derivative.
-C--
-C--   checkpoint69m ships this file with four empty routines,
-C--   DUMMY_IN_STEPPING_B, DUMMY_IN_STEPPING_D, DUMMY_FOR_ETAN_B and
-C--   DUMMY_FOR_ETAN_D. They are not kept here. tools/TAP_support/flow_tap
-C--   declares DUMMY_IN_STEPPING and DUMMY_FOR_ETAN as externals whose
-C--   arguments are all read only, and Tapenade generates no call to a
-C--   derivative of such an external, in either mode; no generated file of
-C--   any adjoint or tangent-linear build references the four names.
-C--   Tapenade emits calls of those shapes only for a hook that is not
-C--   declared at all (DUMMY_FOR_ETAN_B( myTime, myTimeb, myIter, myThid ),
-C--   with myTime active), which is what the stubs recorded: a trace of
-C--   development before the flow declarations existed.
+C--   call fixed, whatever the configuration. Tapenade generates the
+C--   derivative call of an external only when one of its inputs is
+C--   active, and may leave the derivative of an argument out of that
+C--   call when it finds the adjoint unnecessary; a hook carrying several
+C--   fields, some of which exist or are active only in some
+C--   configurations, would therefore be called with a
+C--   configuration-dependent argument list, which Fortran 77 cannot
+C--   detect. With one field per call, a passive field loses its call
+C--   entirely and an active one is always passed with its derivative.
 C--
 C--   Contents:
 C--    o  DUMMY_IN_STEPPING_TAP_PREP, DUMMY_IN_STEPPING_TAP_TLM: helpers

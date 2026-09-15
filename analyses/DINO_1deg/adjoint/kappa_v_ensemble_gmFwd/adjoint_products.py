@@ -34,7 +34,7 @@ ADJ = dict(c.ADJ_JOB)
 
 
 def load32(d, var, it):
-    return c.read_mds(Path(d) / ('%s.%010d' % (var, it)), np.float32)
+    return c.read_mds(c.dump_base(d, var, it), np.float32)
 
 
 def verify():
@@ -60,7 +60,9 @@ def verify():
         else:
             row['fc'] = c.first_fc(d)
             if kind == 'adjoint':
-                row['ADJ_dumps_per_field'] = min(len(list(d.glob('%s.*.data' % v))) for v in c.ADJ_VARS if v != 'ADJetan')
+                row['ADJ_dumps_per_field'] = min(sum(len(list(d.glob('%s.*.data' % p)))
+                                                     for p in c.DUMP_FILE_ALIASES.get(v, (v,)))
+                                                 for v in c.ADJ_VARS if v != 'ADJetan')
                 row['ADJetan_dumps'] = len(list(d.glob('ADJetan.*.data')))
                 row['adxx_files'] = sum((d / ('%s.0000000000.data' % v)).exists() for v in c.ADXX_VARS)
                 mon = re.findall(r'%MON ad_\w+\s*=\s*(\S+)', out)

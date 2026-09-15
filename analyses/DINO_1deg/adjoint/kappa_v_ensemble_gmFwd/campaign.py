@@ -217,8 +217,24 @@ def weights(var):
     return ra * g['wet' + pt][0]
 
 
+# The freshwater-flux dump was written as ADJempmr.* until 2026-09-14 and as
+# ADJempr.* (the TAF spelling, taken over when mods_tapenade_hooks was
+# re-synced from the upstream branch) from then on; runs of either vintage are
+# read through dump_base, which keeps 'ADJempmr' as the field's name.
+DUMP_FILE_ALIASES = {'ADJempmr': ('ADJempmr', 'ADJempr')}
+
+
+def dump_base(d, var, it):
+    """path stem <run dir>/<prefix>.<it> of a dump, whichever prefix the run wrote"""
+    for prefix in DUMP_FILE_ALIASES.get(var, (var,)):
+        base = Path(d) / ('%s.%010d' % (prefix, it))
+        if base.with_suffix('.data').exists():
+            return base
+    return Path(d) / ('%s.%010d' % (var, it))
+
+
 def adj(job, var, it):
-    return read_mds(run_dir(job) / ('%s.%010d' % (var, it)))
+    return read_mds(dump_base(run_dir(job), var, it))
 
 
 def adxx(job, var):

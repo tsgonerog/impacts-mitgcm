@@ -17,11 +17,13 @@ CPP guard), and
 Until 2026-09-07 the same mechanism lived in each setup's `code_tap/` as ten
 shadow files (DINO) or seven (SOMA), in a design that widened the argument
 lists of the existing hooks. That design worked here but could not be
-submitted: Tapenade omits the derivative of an argument that is passive at the
-call site, so a hand-written adjoint with a fixed argument list matches only
-the configurations in which every field is active. The files here use one
-external call per field instead; a passive field loses its call, an active one
-is always passed with its derivative. The design was developed and tested in
+submitted: Tapenade generates the derivative call of an external only when one
+of its inputs is active and may leave a derivative out of the call when it finds
+it unnecessary, and some fields exist or are active only in some configurations,
+so a hand-written adjoint with a fixed argument list matches only some
+configurations. The files here use one external call per field instead; a
+passive field loses its call, an active one is always passed with its
+derivative. The design was developed and tested in
 a copy of checkpoint69m outside this repository (`~/MITgcm_c69m_tapenade_hooks/`,
 branch `tapenade-hooks`, written up in `README.md` there and in the project
 notes under `references/tapenade_hooks/`), and this directory is that branch
@@ -67,12 +69,12 @@ set no `adjDumpFreq` in their `data` namelist, so the hooks run but write no
 
 | File here | Destination in MITgcm | Kind of change | Lines |
 | --- | --- | --- | --- |
-| `forward_step.F` | `model/src/forward_step.F` | modify an existing file: additions only | +18 |
+| `forward_step.F` | `model/src/forward_step.F` | modify an existing file: additions only | +20 |
 | `integr_continuity.F` | `model/src/integr_continuity.F` | modify an existing file: additions only | +5 |
-| `stubs_tap_adj.F` | `pkg/tapenade/stubs_tap_adj.F` | modify an existing file: five stubs replaced by implementations | +172, −19 |
+| `stubs_tap_adj.F` | `pkg/tapenade/stubs_tap_adj.F` | modify an existing file: five stubs replaced by implementations | +173, −19 |
 | `flow_tap` | `tools/TAP_support/flow_tap` | modify an existing file: additions only | +68 |
-| `dummy_tap.F` | `pkg/tapenade/dummy_tap.F` | modify an existing file: the four unreachable stubs removed, the hook bodies added | +1034, −35 |
-| `dummy_in_stepping_tap.F` | `pkg/tapenade/dummy_in_stepping_tap.F` | new file | 113 |
+| `dummy_tap.F` | `pkg/tapenade/dummy_tap.F` | modify an existing file: the four unreachable stubs removed, the hook bodies added | +997, −6 |
+| `dummy_in_stepping_tap.F` | `pkg/tapenade/dummy_in_stepping_tap.F` | new file | 117 |
 | `tapenade_ad_diff.list` | `pkg/tapenade/tapenade_ad_diff.list` | new file | 1 |
 | `gad_advection.F` | `pkg/generic_advdiff/gad_advection.F` | modify an existing file: one CPP guard widened, `ALLOW_AUTODIFF_TAMC` → `ALLOW_AUTODIFF` | +2, −2 |
 
@@ -90,8 +92,7 @@ own (see "Toward a pull request" below).
 
 Three blocks under `#ifdef ALLOW_TAPENADE`, each directly after the TAF hook
 call it mirrors: a call to `AUTODIFF_INADMODE_UNSET_TAP` at the start of the
-step, a `C$AD NOCHECKPOINT` directive and a call to `DUMMY_IN_STEPPING_TAP` in
-the `ALLOW_AUTODIFF_MONITOR` block, and a call to `AUTODIFF_INADMODE_SET_TAP`
+step, a call to `DUMMY_IN_STEPPING_TAP` in the `ALLOW_AUTODIFF_MONITOR` block, and a call to `AUTODIFF_INADMODE_SET_TAP`
 at the end of the step. The stock three-argument calls to `DUMMY_IN_STEPPING`,
 `AUTODIFF_INADMODE_UNSET` and `AUTODIFF_INADMODE_SET` stay as they are, so TAF
 and OpenAD builds see no change. The mode switches carry `etaN` as an argument
@@ -139,9 +140,13 @@ mirror `ADDUMMY_IN_STEPPING`: `theta`, `salt`, `wVel`, the `uVel`/`vVel` pair;
 `fu`/`fv`, `Qnet`, `EmPmR` and, under `SHORTWAVE_HEATING`, `Qsw`, all only
 without `pkg/seaice` and `pkg/exf`; `diffKr` under `ALLOW_DIFFKR_CONTROL`. The
 package-specific dumps of the TAF routine (sea ice, passive tracers, shelf ice,
-GGL90, ...) are not carried yet. The `C$AD NOCHECKPOINT` directive before its
-call makes Tapenade differentiate it in split mode, so each field is stored
-once per time step instead of twice.
+GGL90, ...) are not carried yet. Tapenade stores each field once per time step
+around its hook call, as the checkpoint snapshot of the wrapper call; until
+2026-09-15 a `C$AD NOCHECKPOINT` directive put the wrapper in split mode
+instead, which a measurement showed to store exactly the same (the push moves
+from the call site into the wrapper's `_FWD`), so it was dropped. The
+freshwater-flux dump is named `ADJempr.`, as `ADDUMMY_IN_STEPPING` names it
+(`ADJempmr.` until 2026-09-15).
 
 ### `dummy_tap.F`: modify, stubs removed and bodies added
 
@@ -314,18 +319,38 @@ runs the `--check` form.
 
 ## Toward a pull request
 
-Three pull requests, in order: `0001` (implement the `ADEXCH_*` exchanges),
-`0002` (the hooks) and `0003` (the approximate-advection guard, which acts only
-once `0002` sets `inAdMode` under Tapenade). All three were prepared against checkpoint69m; the review of
-checkpoint69q on 2026-09-05 found the Tapenade infrastructure unchanged, and
-the OpenAD removal in MITgcm pull request 1029 will touch the same files, so
-rebase after it has landed and regenerate the patches with
-`--tree=<checkout of master>`. Open points for the maintainers: whether the
-bodies stay in `dummy_tap.F` or are split as `exch_tap_b.F`/`exch_tap_d.F`
-are; whether the four unreachable stubs of `dummy_tap.F` are removed, as
-here, or kept; the `_TAP` suffix of the new routine names; and whether the
-package-specific dumps of `ADDUMMY_IN_STEPPING` should follow in the same
-change or a later one.
+**Since 2026-09-14 the proposal lives as a branch on MITgcm master**, and this
+directory is re-synced from it (2026-09-15): `~/MITgcm_tapenade_hooks_upstream/MITgcm`,
+branch `tapenade-hooks`, three commits on `master` at `d861cd501` (checkpoint69q
+plus eight commits), also exported as patches beside the clone. The commits are
+the three patches here: `0001` (implement the `ADEXCH_*` exchanges), `0002`
+(the hooks, plus a section in `doc/autodiff/autodiff.rst`) and `0003` (the
+approximate-advection guard, which acts only once `0002` sets `inAdMode` under
+Tapenade). Two pull requests are recommended, `0001` alone and then `0002` +
+`0003`. The procedure, commit messages, PR titles and descriptions, the
+validation records to cite and the questions the maintainers are likely to ask
+are in the project notes, `references/tapenade_hooks/upstream_pr/README.md`;
+the report `references/tapenade_hooks/report/` (Overleaf project
+`6aa86ec91af31eda7e3cae87`) has the design and the validation in full.
+
+Validation on master (2026-09-14, pristine clone against the branch):
+16 TAF and 6 forward configurations preprocess to the same 18 437 sources (54
+differ, all by the build date or a comment line); 22 forward testreport runs
+identical; the 10 Tapenade adjoint and 7 tangent-linear runs give the same
+digits and the same output, and write the `ADJ*`, `G_J*` and adjoint
+diagnostics where `adjDumpFreq` asks for them; the first-iteration `ADJ*` dump
+equals `adxx_*` in every cell of every experiment with an initial-condition
+control; the adjoint diagnostics as snapshots are bit-identical to the dumps;
+the two gfortran CI experiments pass. Two decisions were taken there and carried
+back here: the `C$AD NOCHECKPOINT` directive is dropped (see
+`dummy_in_stepping_tap.F` above) and the freshwater-flux dump keeps the TAF
+file name `ADJempr.`.
+
+Open points for the maintainers: whether the bodies stay in `dummy_tap.F` or
+are split as `exch_tap_b.F`/`exch_tap_d.F` are; whether the four unreachable
+stubs of `dummy_tap.F` are removed, as here, or kept; the `_TAP` suffix of the
+new routine names; the field coverage (the package-specific dumps of
+`ADDUMMY_IN_STEPPING`); and MNC output, which the per-field hooks do not write.
 
 One related gap stays out of the series on purpose: the approximate-advection
 switch does not reach implicit vertical advection (`gad_implicit_r.F`), under

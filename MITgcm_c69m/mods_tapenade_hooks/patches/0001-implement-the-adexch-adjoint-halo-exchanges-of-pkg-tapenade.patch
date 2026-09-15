@@ -6,31 +6,32 @@ Apply from the tree's root with: git apply -p1 0001-implement-the-adexch-adjoint
 
 --- a/pkg/tapenade/stubs_tap_adj.F
 +++ b/pkg/tapenade/stubs_tap_adj.F
-@@ -9,6 +9,23 @@
+@@ -9,6 +9,24 @@
  C--    *_D: tlm
  C--    *_FWD, *_BWD: adjoint with no checkpointing
  C--
-+C--   The five ADEXCH_* routines implement the adjoint halo exchanges that
-+C--   pkg/autodiff applies to an adjoint field before writing it, to fold
-+C--   the tile-overlap contributions into the interior points that own them
-+C--   (called from addummy_in_stepping.F, copy_ad_uv_outp.F, monitor_ad.F
-+C--   and the Tapenade output hooks in dummy_tap.F). They used to be no-op
-+C--   stubs, which left partial sums pinned to every internal tile edge of
-+C--   a dumped adjoint field on a multi-tile decomposition. Each one now
-+C--   composes, in reverse order, the *_AD twins of the exchanges its
-+C--   forward counterpart calls (EXCH2_R{L,S}{1,2}_CUBE_AD with pkg/exch2,
-+C--   the EXCH1_*_AD family otherwise), mirroring eesupp/src/exch_3d_rl.F,
++C--   The five ADEXCH_* routines are the adjoint halo exchanges that the
++C--   adjoint output routines of pkg/autodiff (addummy_in_stepping.F,
++C--   copy_ad_uv_outp.F, monitor_ad.F, ...) apply to an adjoint field
++C--   before writing it, to fold the tile-overlap contributions into the
++C--   interior points that own them. Each one composes, in reverse
++C--   order, the *_AD twins of the exchanges its forward counterpart
++C--   calls (EXCH2_R{L,S}{1,2}_CUBE_AD with pkg/exch2, the EXCH1_*_AD
++C--   family otherwise), mirroring eesupp/src/exch_3d_rl.F,
 +C--   exch_uv_3d_rl.F, exch_xy_rs.F, exch_uv_xy_rs.F and exch_xy_rl.F.
++C--   Without them a dumped adjoint field keeps partial sums on every
++C--   internal tile edge of a multi-tile decomposition.
 +C--   Two limitations: the cubed-sphere corner fix-ups of the forward UV
 +C--   wrappers (pkg/exch2/exch2_uv_3d_rl.F, active only under
-+C--   useCubedSphereExchange) are not adjointed, so the fold is incomplete
-+C--   next to facet corners; and under DISCONNECTED_TILES the forward
-+C--   exchange (EXCH0_*) has no adjoint counterpart, so no fold is applied.
++C--   useCubedSphereExchange) are not adjointed, so the fold is
++C--   incomplete next to facet corners; and under DISCONNECTED_TILES the
++C--   forward exchange (EXCH0_*) has no adjoint counterpart, so no fold
++C--   is applied.
 +C--
  C--    Contents:
  C--    o  GLOBAL_MAX_R8_B
  C--    o  GLOBAL_SUM_TILE_RL_B
-@@ -145,51 +162,187 @@
+@@ -145,51 +163,187 @@
        END
  
  C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|

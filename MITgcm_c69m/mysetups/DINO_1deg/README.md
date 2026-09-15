@@ -898,9 +898,9 @@ stock `adjoint_tap` options throughout):
    an external).
 4. **Tapenade does the rest.** Seeing active data enter and leave each hook,
    it generates the `_B` call of every active field hook in
-   `dummy_in_stepping_tap_b.f` (as a split-mode `_FWD`/`_BWD` pair, because
-   the call site carries `C$AD NOCHECKPOINT`, so each field is stored once
-   per step), `DUMMY_FOR_ETAN_TAP_B(etaN, etaNb, ...)` in
+   `dummy_in_stepping_tap_b.f` (as `DUMMY_IN_STEPPING_TAP_B`; each field is
+   stored once per step as the checkpoint snapshot of the wrapper call),
+   `DUMMY_FOR_ETAN_TAP_B(etaN, etaNb, ...)` in
    `integr_continuity_b.f`, and the two mode switches in `forward_step_b.f`,
    each at the exact reverse-sweep mirror of its forward call: the dumps
    where TAF's ADNAME directives insert theirs, the mode switches at each

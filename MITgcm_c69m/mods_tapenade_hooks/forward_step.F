@@ -124,6 +124,7 @@ C     !CALLING SEQUENCE:
 C     FORWARD_STEP
 C       |
 C       |-- AUTODIFF_INADMODE_UNSET
+C       |-- AUTODIFF_INADMODE_UNSET_TAP
 C       |
 C       |-- SHELFICE_REMESHING
 C       |
@@ -147,6 +148,7 @@ C       |-- CHEAPAML
 C       |
 C       |-- CTRL_MAP_FORCING
 C       |-- DUMMY_IN_STEPPING
+C       |-- DUMMY_IN_STEPPING_TAP
 C       |
 C       |-- CPL_EXPORT_IMPORT_DATA
 C       |
@@ -232,6 +234,7 @@ C       |
 C       |-- DO_WRITE_PICKUP
 C       |
 C       |-- AUTODIFF_INADMODE_SET
+C       |-- AUTODIFF_INADMODE_SET_TAP
 C       |
 C       |-- SHOWFLOPS_INLOOP
 
@@ -434,7 +437,8 @@ C--   Reset the model iteration counter and the model time.
 # ifdef ALLOW_TAPENADE
 C     Tapenade counterpart of the hook above (pkg/tapenade/dummy_tap.F):
 C     etaN, an active field, makes Tapenade generate the reverse-sweep
-C     call to ADAUTODIFF_INADMODE_UNSET at the mirror image of this point.
+C     call to ADAUTODIFF_INADMODE_UNSET at the mirror image of this
+C     point.
       CALL AUTODIFF_INADMODE_UNSET_TAP( etaN, myTime, myIter, myThid )
 # endif
 #endif
@@ -583,10 +587,8 @@ C--   Add control vector for forcing and parameter fields
 #ifdef ALLOW_AUTODIFF_MONITOR
       CALL DUMMY_IN_STEPPING( myTime, myIter, myThid )
 # ifdef ALLOW_TAPENADE
-C     Tapenade counterpart of the hook above (pkg/tapenade): one field
-C     hook per output field, differentiated in split mode (C$AD directive)
-C     so that each field is stored once per time step.
-C$AD NOCHECKPOINT
+C     Tapenade counterpart of the hook above (pkg/tapenade): one hook
+C     call per output field, with the field as an argument.
       CALL DUMMY_IN_STEPPING_TAP( myTime, myIter, myThid )
 # endif
 #endif

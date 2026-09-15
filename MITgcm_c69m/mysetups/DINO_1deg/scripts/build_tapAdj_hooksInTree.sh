@@ -86,9 +86,9 @@ post_build_checks() {
         esac
     done
     if grep -q 'mods_tapenade_hooks' Makefile; then echo "ERROR: Makefile references mods_tapenade_hooks"; bad=1; fi
-    # the wrapper was differentiated in split mode (the C$AD NOCHECKPOINT directive honoured)
-    grep -qE '^ *SUBROUTINE DUMMY_IN_STEPPING_TAP_FWD\(' dummy_in_stepping_tap_b.f \
-        || { echo "ERROR: DUMMY_IN_STEPPING_TAP was not split (no _FWD): the C\$AD NOCHECKPOINT directive was not honoured"; bad=1; }
+    # the wrapper's adjoint was generated (checkpointed by default since 2026-09-15: _B, not _FWD/_BWD)
+    grep -qE '^ *SUBROUTINE DUMMY_IN_STEPPING_TAP_B\(' dummy_in_stepping_tap_b.f \
+        || { echo "ERROR: no DUMMY_IN_STEPPING_TAP_B in dummy_in_stepping_tap_b.f: the wrapper's adjoint was not generated"; bad=1; }
     # every listed routine went split, as in build_tapAdj_nocheckpoint.sh
     local missing="" r R
     for r in "${NOCP_LIST[@]}"; do
@@ -97,7 +97,7 @@ post_build_checks() {
     done
     [ -z "$missing" ] || { echo "ERROR: no _FWD/_BWD pair was generated for:$missing"; bad=1; }
     [ $bad -eq 0 ] || exit 1
-    echo "OK: hooks compiled from $MITGCM_TREE; wrapper split; all ${#NOCP_LIST[@]} listed routines split."
+    echo "OK: hooks compiled from $MITGCM_TREE; wrapper adjoint generated; all ${#NOCP_LIST[@]} listed routines split."
 
     # Can the list be used with the adjoint-mode switches? Recorded for the submit body,
     # which refuses a namelist that flips a switch unless this says yes.

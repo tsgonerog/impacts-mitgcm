@@ -6,34 +6,57 @@ Apply from the tree's root with: git apply -p1 0002-tapenade-output-hooks-adj-g-
 
 --- a/model/src/forward_step.F
 +++ b/model/src/forward_step.F
-@@ -431,6 +431,12 @@
+@@ -124,6 +124,7 @@
+ C     FORWARD_STEP
+ C       |
+ C       |-- AUTODIFF_INADMODE_UNSET
++C       |-- AUTODIFF_INADMODE_UNSET_TAP
+ C       |
+ C       |-- SHELFICE_REMESHING
+ C       |
+@@ -147,6 +148,7 @@
+ C       |
+ C       |-- CTRL_MAP_FORCING
+ C       |-- DUMMY_IN_STEPPING
++C       |-- DUMMY_IN_STEPPING_TAP
+ C       |
+ C       |-- CPL_EXPORT_IMPORT_DATA
+ C       |
+@@ -232,6 +234,7 @@
+ C       |-- DO_WRITE_PICKUP
+ C       |
+ C       |-- AUTODIFF_INADMODE_SET
++C       |-- AUTODIFF_INADMODE_SET_TAP
+ C       |
+ C       |-- SHOWFLOPS_INLOOP
+ 
+@@ -431,6 +434,13 @@
  
  #ifdef ALLOW_AUTODIFF
        CALL AUTODIFF_INADMODE_UNSET( myTime, myIter, myThid )
 +# ifdef ALLOW_TAPENADE
 +C     Tapenade counterpart of the hook above (pkg/tapenade/dummy_tap.F):
 +C     etaN, an active field, makes Tapenade generate the reverse-sweep
-+C     call to ADAUTODIFF_INADMODE_UNSET at the mirror image of this point.
++C     call to ADAUTODIFF_INADMODE_UNSET at the mirror image of this
++C     point.
 +      CALL AUTODIFF_INADMODE_UNSET_TAP( etaN, myTime, myIter, myThid )
 +# endif
  #endif
  
  #ifdef ALLOW_LONGSTEP
-@@ -576,6 +582,13 @@
+@@ -576,6 +586,11 @@
  
  #ifdef ALLOW_AUTODIFF_MONITOR
        CALL DUMMY_IN_STEPPING( myTime, myIter, myThid )
 +# ifdef ALLOW_TAPENADE
-+C     Tapenade counterpart of the hook above (pkg/tapenade): one field
-+C     hook per output field, differentiated in split mode (C$AD directive)
-+C     so that each field is stored once per time step.
-+C$AD NOCHECKPOINT
++C     Tapenade counterpart of the hook above (pkg/tapenade): one hook
++C     call per output field, with the field as an argument.
 +      CALL DUMMY_IN_STEPPING_TAP( myTime, myIter, myThid )
 +# endif
  #endif
  
  #ifdef COMPONENT_MODULE
-@@ -1205,6 +1218,11 @@
+@@ -1205,6 +1220,11 @@
  
  #ifdef ALLOW_AUTODIFF
        CALL AUTODIFF_INADMODE_SET( myTime, myIter, myThid )
@@ -138,53 +161,45 @@ Apply from the tree's root with: git apply -p1 0002-tapenade-output-hooks-adj-g-
    shape: (param 1, param 2, param 3, param 4, param 5, param 6, param 7, param 8, param 9, param 10, param 11)
 --- a/pkg/tapenade/dummy_tap.F
 +++ b/pkg/tapenade/dummy_tap.F
-@@ -1,37 +1,1036 @@
+@@ -1,37 +1,1028 @@
  #include "CPP_EEOPTIONS.h"
  
 -      SUBROUTINE DUMMY_IN_STEPPING_D( myTime, myIter, myThid )
 +C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
-+C--   Tapenade output hooks and adjoint-mode switches.
++C--   File dummy_tap.F: Tapenade output hooks and adjoint-mode switches
 +C--
-+C--   The routines below are the hand-written derivatives of the hooks
-+C--   through which pkg/autodiff writes adjoint (ADJ*) and tangent-linear
-+C--   (G_J*) output from a Tapenade-generated model, and of the two
-+C--   adjoint-mode switches.
++C--   Hand-written derivatives of the hooks through which a Tapenade-
++C--   generated adjoint or tangent-linear model writes the ADJ* and G_J*
++C--   output that pkg/autodiff writes from a TAF-generated one, and of
++C--   the two adjoint-mode switches (AUTODIFF_INADMODE_SET / _UNSET).
 +C--
 +C--   TAF forces its hand-written adjoint of a hook such as
 +C--   DUMMY_IN_STEPPING( myTime, myIter, myThid ) into the reverse sweep
-+C--   with the ADNAME / REQUIRED flow directives. Tapenade has no such
-+C--   directive: an external whose arguments are all passive is simply
-+C--   absent from the generated adjoint. The Tapenade hooks below therefore
++C--   with the ADNAME and REQUIRED flow directives. Tapenade has no such
++C--   directive: an external whose arguments are all passive is absent
++C--   from the generated adjoint. The Tapenade hooks below therefore
 +C--   carry the field they act on as an argument, and
-+C--   tools/TAP_support/flow_tap declares that argument read-then-written;
-+C--   Tapenade then generates the call to the hook's _B (adjoint), _D
-+C--   (tangent) or _FWD/_BWD (adjoint of a caller differentiated without
-+C--   checkpointing) routine at the mirror image of the forward call, with
-+C--   the derivative of the field as an extra argument. The routines here
-+C--   are those derivatives; every forward hook is a no-op. They are called
-+C--   from DUMMY_IN_STEPPING_TAP (dummy_in_stepping_tap.F, the routine
-+C--   Tapenade differentiates), from INTEGR_CONTINUITY (the etaN hook) and
-+C--   from FORWARD_STEP (the mode switches).
++C--   tools/TAP_support/flow_tap declares that argument read-then-
++C--   written; Tapenade then generates the call to the hook's _B
++C--   (adjoint), _D (tangent) or _FWD/_BWD (adjoint when the hook itself
++C--   is differentiated without checkpointing, as -defaultnocheckpoint
++C--   does) routine at the mirror image of the forward call, with the
++C--   derivative of the field as an extra argument. The routines here
++C--   are those derivatives; every forward hook is a no-op. They are
++C--   called from DUMMY_IN_STEPPING_TAP (dummy_in_stepping_tap.F, the
++C--   routine Tapenade differentiates), from INTEGR_CONTINUITY (the etaN
++C--   hook) and from FORWARD_STEP (the mode switches).
 +C--
 +C--   One field per hook call keeps the argument list of every generated
-+C--   call fixed, whatever the configuration: Tapenade omits the derivative
-+C--   of an argument that is passive at the call site, so a hook carrying
-+C--   several fields would be called with a configuration-dependent number
-+C--   of arguments, which Fortran 77 cannot detect. With one field, a
-+C--   passive field loses its call entirely and an active one is always
-+C--   passed with its derivative.
-+C--
-+C--   checkpoint69m ships this file with four empty routines,
-+C--   DUMMY_IN_STEPPING_B, DUMMY_IN_STEPPING_D, DUMMY_FOR_ETAN_B and
-+C--   DUMMY_FOR_ETAN_D. They are not kept here. tools/TAP_support/flow_tap
-+C--   declares DUMMY_IN_STEPPING and DUMMY_FOR_ETAN as externals whose
-+C--   arguments are all read only, and Tapenade generates no call to a
-+C--   derivative of such an external, in either mode; no generated file of
-+C--   any adjoint or tangent-linear build references the four names.
-+C--   Tapenade emits calls of those shapes only for a hook that is not
-+C--   declared at all (DUMMY_FOR_ETAN_B( myTime, myTimeb, myIter, myThid ),
-+C--   with myTime active), which is what the stubs recorded: a trace of
-+C--   development before the flow declarations existed.
++C--   call fixed, whatever the configuration. Tapenade generates the
++C--   derivative call of an external only when one of its inputs is
++C--   active, and may leave the derivative of an argument out of that
++C--   call when it finds the adjoint unnecessary; a hook carrying several
++C--   fields, some of which exist or are active only in some
++C--   configurations, would therefore be called with a
++C--   configuration-dependent argument list, which Fortran 77 cannot
++C--   detect. With one field per call, a passive field loses its call
++C--   entirely and an active one is always passed with its derivative.
 +C--
 +C--   Contents:
 +C--    o  DUMMY_IN_STEPPING_TAP_PREP, DUMMY_IN_STEPPING_TAP_TLM: helpers
@@ -1183,7 +1198,7 @@ Apply from the tree's root with: git apply -p1 0002-tapenade-output-hooks-adj-g-
 +      END
 --- /dev/null
 +++ b/pkg/tapenade/dummy_in_stepping_tap.F
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,117 @@
 +#include "TAPENADE_OPTIONS.h"
 +#ifdef ALLOW_AUTODIFF
 +# include "AUTODIFF_OPTIONS.h"
@@ -1220,17 +1235,21 @@ Apply from the tree's root with: git apply -p1 0002-tapenade-output-hooks-adj-g-
 +C     G_DUMMY_IN_STEPPING the same way.
 +C
 +C     One field per call keeps the argument list of every generated
-+C     call fixed: Tapenade omits the derivative of an argument that
-+C     is passive at the call site, so a field that is passive in a
-+C     given configuration loses its call entirely rather than an
-+C     argument in a shared list. The field set and its guards mirror
++C     call fixed: Tapenade generates the derivative call of an
++C     external only when one of its inputs is active, and a hook
++C     carrying several fields, some of which exist or are active
++C     only in some configurations, would be called with a
++C     configuration-dependent argument list. With one field per
++C     call, a field that is passive in a given configuration loses
++C     its call entirely rather than an argument in a shared list.
++C     The field set and its guards mirror
 +C     ADDUMMY_IN_STEPPING (pkg/autodiff/addummy_in_stepping.F); the
 +C     package-specific dumps of that routine (seaice, ptracers,
-+C     shelfice, ggl90, ...) are not carried here yet.
-+C
-+C     FORWARD_STEP precedes the call with C$AD NOCHECKPOINT, so
-+C     Tapenade differentiates this routine in split mode and stores
-+C     each field once per time step instead of twice.
++C     shelfice, ggl90, ...) are not included. Adding a field is one
++C     guarded call here and, for a new field shape, one hook family
++C     in dummy_tap.F. Tapenade stores each field once per time step
++C     around its hook call, whether this routine is checkpointed
++C     (the default) or differentiated in split mode.
 +C     \ev
 +
 +C     !USES:
@@ -1277,7 +1296,7 @@ Apply from the tree's root with: git apply -p1 0002-tapenade-output-hooks-adj-g-
 +     &                               myTime, myIter, myThid )
 +        CALL DUMMY_IN_STEPPING_XY_RS( Qnet,  'ADJqnet ', 'ADJqnet.',
 +     &                               myTime, myIter, myThid )
-+        CALL DUMMY_IN_STEPPING_XY_RS( EmPmR, 'ADJempmr', 'ADJempmr.',
++        CALL DUMMY_IN_STEPPING_XY_RS( EmPmR, 'ADJempmr', 'ADJempr.',
 +     &                               myTime, myIter, myThid )
 +# ifdef SHORTWAVE_HEATING
 +        CALL DUMMY_IN_STEPPING_XY_RS( Qsw,   'ADJqsw  ', 'ADJqsw.',

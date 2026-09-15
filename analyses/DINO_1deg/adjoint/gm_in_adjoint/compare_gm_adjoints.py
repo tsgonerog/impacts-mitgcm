@@ -215,10 +215,13 @@ def main():
         for it in sel:
             arrs, nd, shape = {}, None, None
             for l in labels:
-                base = os.path.join(runs[l], '%s.%010d' % (name, it))
-                if os.path.exists(base + '.data'):
-                    nd, arrs[l] = read_mds(base)
-                    shape = arrs[l].shape
+                # the freshwater-flux dump is ADJempmr.* in runs before 2026-09-15, ADJempr.* after
+                for prefix in ({'ADJempmr': ('ADJempmr', 'ADJempr')}.get(name, (name,))):
+                    base = os.path.join(runs[l], '%s.%010d' % (prefix, it))
+                    if os.path.exists(base + '.data'):
+                        nd, arrs[l] = read_mds(base)
+                        shape = arrs[l].shape
+                        break
             if ref in arrs:
                 entries.append((lead_of(it), it, arrs, mask_for(masks, point, nd, shape)))
         if entries:
