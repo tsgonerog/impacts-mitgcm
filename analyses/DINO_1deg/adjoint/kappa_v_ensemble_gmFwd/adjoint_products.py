@@ -246,6 +246,8 @@ def fd():
                              J0=J0, fd_central=fdc, fd_plus=J[ctl + '_p'] - J0, fd_minus=J0 - J[ctl + '_m'],
                              adjoint=pred, adjoint_rel_err=(pred - fdc) / abs(fdc) if fdc else np.nan))
     df = pd.DataFrame(rows)
+    if len(df):   # how far the two one-sided differences disagree, relative to the central one: >1 means noise
+        df['one_sided_spread'] = (df.fd_plus - df.fd_minus).abs() / df.fd_central.abs()
     df.to_csv(c.STATS / 'fd_checks.csv', index=False)
     print(df.to_string())
 
