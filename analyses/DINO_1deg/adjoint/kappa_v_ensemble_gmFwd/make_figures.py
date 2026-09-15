@@ -64,7 +64,7 @@ def map_panel(ax, f2d, title, vmax=None, cbar=True, units=''):
     ax.grid(False)
     ax.tick_params(labelsize=7.5)
     if cbar:
-        cb = ax.figure.colorbar(pm, ax=ax, orientation='horizontal', pad=0.07, fraction=0.05, aspect=16)
+        cb = ax.figure.colorbar(pm, ax=ax, orientation='horizontal', pad=0.1, fraction=0.05, aspect=16)
         cb.ax.tick_params(labelsize=7)
         cb.set_label(('%s  ×1e%d' % (units, e)) if e else units, fontsize=7.5)
     return pm
@@ -198,15 +198,16 @@ def ref_rms_vs_lead():
     fig, axs = plt.subplots(2, 3, figsize=(10.5, 5.2), sharex=True)
     for ax, v in zip(axs.ravel(), vars_):
         s = ts[(ts.run == 'REF') & (ts['var'] == v)].sort_values('lead_yr')
-        ax.plot(s.lead_yr, s.rms, color=c.SERIES[0], lw=1.6, label='reference (from 31203)')
+        ax.plot(s.lead_yr, s.rms, color=c.SERIES[0], lw=1.6, label='reference adjoint')
         if prev is not None:
             q = prev[(prev.run == 'REF') & (prev['var'] == v)].sort_values('lead_yr')
             ax.plot(q.lead_yr, q.rms, color=c.MUTED, lw=1.1, label='31237 (from 31205)')
         ax.set_yscale('log')
         ax.set_title('%s  RMS [dJ %s]' % (v, units[v]), fontsize=9)
     for ax in axs[1]:
-        ax.set_xlabel('lead before the end of the cost window [yr]')
-    axs[0, 0].legend(loc='lower right')
+        ax.set_xlabel('lead [yr]')
+    if prev is not None:
+        axs[0, 0].legend(loc='lower right')
     save(fig, 'ref_rms_vs_lead')
 
 
@@ -242,6 +243,7 @@ def ref_ADJtheta_depth_lead():
         for j, L in enumerate(leads):
             f = np.where(m[k], z['ADJtheta_L%.3f' % L][k], np.nan)
             map_panel(axs[i, j], f, 'ADJtheta, %d m, lead %s' % (round(-c.grid()['RC'][k]), lead_lab[L]), units='dJ/K')
+    fig.subplots_adjust(hspace=0.36)
     save(fig, 'ref_ADJtheta_depth_lead')
 
 
@@ -298,7 +300,7 @@ def fd_checks():
     ax.plot([prev[k] for k in keys], y, 'o', color=c.SERIES[1], ms=7, mec=c.SURFACE, mew=1.5,
             label='2026-09-11: adjoint 31237 vs FD, from 31205')
     ax.plot(new[:len(names)], y[:len(new)], 'o', color=c.SERIES[0], ms=8, mec=c.SURFACE, mew=1.5,
-            label='this campaign: reference adjoint vs FD, from 31203')
+            label='this campaign: reference adjoint vs FD, from the reference leg 31366')
     for yy, v in zip(y, new):
         ax.annotate('%+.0f %%' % (100 * (v - 1)), (v, yy), xytext=(0, 7), textcoords='offset points', ha='center', fontsize=8, color=c.INK2)
     ax.set_yticks(y)
@@ -337,8 +339,7 @@ def fc_vs_kappa():
     sig = nf['jproxy']['std_monthly']
     fig, ax = plt.subplots(figsize=(7.5, 3.8))
     ref = float(fg[fg.run == 'REF'].fc.iloc[0])
-    ax.axhspan(ref - 2 * sig, ref + 2 * sig, color=c.SERIES[0], alpha=0.10, lw=0)
-    series = [('this campaign (GM forward sweep, from 31203)', fg.factor, fg.fc, c.SERIES[0]),
+    series = [('this campaign (GM/Redi in the forward sweep, legs from the new spin-up)', fg.factor, fg.fc, c.SERIES[0]),
               ('2026-09-10 (GM-free adjoint, legs from 30983)', old['gmFree_ReMax2_2026_09_10']['factor'], old['gmFree_ReMax2_2026_09_10']['fc'], c.SERIES[1]),
               ('2026-08 (2x viscosity, GM-free adjoint)', old['visc2x_2026_08']['factor'], old['visc2x_2026_08']['fc'], c.SERIES[2])]
     for lab, x, yv, col in series:
@@ -350,7 +351,6 @@ def fc_vs_kappa():
     ax.set_xticklabels(['%g' % v for v in xs])
     ax.set_xlabel('κ_v / 1.2e-5')
     ax.set_ylabel('J (fc) over the 5-yr window')
-    ax.annotate('±2σ internal variability of J', (0.26, ref + 2 * sig), xytext=(2, 3), textcoords='offset points', fontsize=8, color=c.INK2)
     ax.legend(loc='upper center', fontsize=8)
     save(fig, 'fc_vs_kappa')
 
@@ -403,7 +403,6 @@ def member_pattern_corr():
 def kappa_gradient():
     fg = pd.read_csv(c.STATS / 'fc_gradient.csv').sort_values('factor')
     fd = pd.read_csv(c.STATS / 'fd_checks.csv')
-    old = json.loads((c.STATS / 'previous_campaigns.json').read_text())
     fig, ax = plt.subplots(figsize=(7.5, 3.6))
     ax.axhline(0, color=c.AXIS_C, lw=0.8)
     ax.plot(fg.factor, fg.G_dJdkappa_uniform, '-o', color=c.SERIES[0], ms=5, mec=c.SURFACE, mew=1.5,
@@ -415,17 +414,16 @@ def kappa_gradient():
     kap = fd[fd.test.str.startswith('kappa')]
     if len(kap):
         ax.plot([1.0], [kap.fd_central.iloc[0] / (0.1 * c.KAPPA0)], 'D', color=c.INK, ms=6, mec=c.SURFACE, mew=1.5,
-                label='central FD, κ_v ±10 % from 31203')
-    o = old['gmFree_ReMax2_2026_09_10']
-    ax.plot(o['factor'], o['G'], '-', color=c.MUTED, lw=1, label='adjoint, 2026-09-10 GM-free ensemble')
+                label='central finite difference, κ_v ±10 % at the reference')
     ax.set_xscale('log', base=2)
-    ax.set_yscale('symlog', linthresh=1e3)
+    ax.set_yscale('symlog', linthresh=300)
+    ax.set_ylim(-2e4, 3e3)
     xs = sorted(c.FACTOR.values())
     ax.set_xticks(xs)
     ax.set_xticklabels(['%g' % v for v in xs])
     ax.set_xlabel('κ_v / 1.2e-5')
     ax.set_ylabel('dJ/dκ_v [per m²/s]')
-    ax.legend(fontsize=7.5, loc='lower right')
+    ax.legend(fontsize=7.5, loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=1)
     save(fig, 'kappa_gradient')
 
 
@@ -436,7 +434,6 @@ def dJ_decomposition():
     sig = nf['jproxy']['std_monthly']
     x = np.arange(len(d))
     fig, ax = plt.subplots(figsize=(7.5, 3.4))
-    ax.axhspan(-2 * sig, 2 * sig, color=c.MUTED, alpha=0.12, lw=0)
     ax.axhline(0, color=c.AXIS_C, lw=0.8)
     ax.plot(x, d.dJ_measured, 'o', color=c.INK, ms=7, mec=c.SURFACE, mew=1.5, label='measured ΔJ = J(member) − J(reference)')
     ax.plot(x, d.dJ_kappa_refgrad, 's', color=c.SERIES[0], ms=6, mec=c.SURFACE, mew=1.5, label='adjoint: reference gradient × Δκ_v')
@@ -445,9 +442,10 @@ def dJ_decomposition():
     ax.set_xticks(x)
     ax.set_xticklabels(['%s %gx' % (r, f) for r, f in zip(d.run, d.factor)], fontsize=8)
     ax.set_yscale('symlog', linthresh=0.02)
+    cols = ['dJ_measured', 'dJ_kappa_refgrad', 'dJ_predicted_refgrad_plus_state']
+    ax.set_ylim(1.6 * float(d[cols].min().min()), 1.6 * float(d[cols].max().max()))
     ax.set_ylabel('ΔJ')
-    ax.legend(fontsize=7.5, loc='upper left')
-    ax.annotate('±2σ', (len(d) - 0.6, 2 * sig), fontsize=8, color=c.INK2)
+    ax.legend(fontsize=7.5, loc='upper center', bbox_to_anchor=(0.5, -0.16), ncol=1)
     save(fig, 'dJ_decomposition')
 
 
@@ -455,7 +453,7 @@ def dJ_decomposition():
 def member_adxx_maps():
     g = c.grid()
     runs = ['M2', 'REF', 'M3', 'M5', 'M7']
-    vars_ = [('adxx_diffkr', 'κ_v (column sum)'), ('adxx_qnet', 'Qnet')]
+    vars_ = [('adxx_diffkr', '∂J/∂κ_v, column sum'), ('adxx_qnet', '∂J/∂Qnet')]
     fig, axs = plt.subplots(len(vars_), len(runs), figsize=(10.5, 9.5), sharex=True, sharey=True)
     for i, (v, t) in enumerate(vars_):
         ref = adxx('REF')[v]
@@ -467,7 +465,8 @@ def member_adxx_maps():
             if z is None:
                 axs[i, j].set_visible(False)
                 continue
-            map_panel(axs[i, j], col(z[v]), '%s, %s' % (t, c.LABEL[r]), vmax=vmax)
+            map_panel(axs[i, j], col(z[v]), c.LABEL[r] if i == 0 else '', vmax=vmax)
+        axs[i, 0].set_ylabel(t, fontsize=9)
     save(fig, 'member_adxx_maps')
 
 
@@ -499,13 +498,12 @@ def target_structure():
     ax = fig.add_axes([0.06, 0.16, 0.36, 0.72])
     for v, col in (('ADJdiffkr', c.SERIES[0]), ('ADJtheta', c.SERIES[1])):
         q = ld[ld['var'] == v].sort_values('lead_yr')
-        ax.plot(q.lead_yr, q.corr_with_5yr, color=col, lw=1.6)
-        ax.annotate(v, (q.lead_yr.iloc[len(q) // 3], q.corr_with_5yr.iloc[len(q) // 3]), xytext=(4, 6),
-                    textcoords='offset points', fontsize=8, color=c.INK2)
+        ax.plot(q.lead_yr, q.corr_with_5yr, color=col, lw=1.6, label=v)
     ax.set_ylim(-0.1, 1.02)
+    ax.legend(loc='upper left', fontsize=8)
     ax.set_xlabel('lead [yr]')
-    ax.set_title('pattern correlation with the 5-yr accumulation', fontsize=9.5)
-    ax2 = fig.add_axes([0.53, 0.16, 0.44, 0.72])
+    ax.set_title('pattern correlation with the same field at 5-yr lead', fontsize=9.5)
+    ax2 = fig.add_axes([0.60, 0.16, 0.37, 0.72])
     lp = ts['local_predictors']
     names = list(lp)
     vals = [lp[n].get('spearman_abs_within_levels', lp[n].get('spearman_abs', np.nan)) for n in names]
@@ -516,9 +514,11 @@ def target_structure():
         ax2.annotate('%.2f' % v, (v, yy), xytext=(4 if v >= 0 else -4, 0), textcoords='offset points',
                      ha='left' if v >= 0 else 'right', va='center', fontsize=8, color=c.INK2)
     ax2.set_yticks(y)
-    ax2.set_yticklabels(names, fontsize=8.5)
+    short = {'|dT/dz|': '|∂T/∂z|', '|dS/dz|': '|∂S/∂z|', '|drho/dz| (N^2 proxy)': '|∂ρ/∂z|',
+             'adjoint identity (window-mean state)': 'adjoint identity'}
+    ax2.set_yticklabels([short.get(n, n) for n in names], fontsize=8.5)
     ax2.set_xlim(min(0, min(vals) - 0.1), 1.0)
-    ax2.set_xlabel('rank correlation with |∂J/∂κ_v| within each level, mean over the upper 25')
+    ax2.set_xlabel('rank correlation with |∂J/∂κ_v| within levels (mean of the upper 25)')
     ax2.set_title('what predicts the target locally?', fontsize=9.5)
     save(fig, 'target_structure')
 

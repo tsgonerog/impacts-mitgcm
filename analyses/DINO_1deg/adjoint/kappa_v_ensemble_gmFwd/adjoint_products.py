@@ -226,7 +226,7 @@ def fd():
         fdc = 0.5 * (J['REFp10'] - J['REFm10'])
         rows.append(dict(test='kappa_v +10 %', J_plus=J['REFp10'], J_minus=J['REFm10'], J0=J0, fd_central=fdc,
                          fd_plus=J['REFp10'] - J0, fd_minus=J0 - J['REFm10'], adjoint=pred,
-                         adjoint_rel_err=(pred - fdc) / abs(fdc)))
+                         adjoint_rel_err=pred / fdc - 1))
     for name, spec in c.THETA_BOXES.items():
         if name + '_p' in J and name + '_m' in J:
             k0, k1, j0, j1, i0, i1 = spec['box']
@@ -237,14 +237,14 @@ def fd():
             fdc = 0.5 * (J[name + '_p'] - J[name + '_m'])
             rows.append(dict(test='Theta +%g K, %s' % (spec['amp'], spec['what']), J_plus=J[name + '_p'],
                              J_minus=J[name + '_m'], J0=J0, fd_central=fdc, fd_plus=J[name + '_p'] - J0,
-                             fd_minus=J0 - J[name + '_m'], adjoint=pred, adjoint_rel_err=(pred - fdc) / abs(fdc)))
+                             fd_minus=J0 - J[name + '_m'], adjoint=pred, adjoint_rel_err=pred / fdc - 1))
     for ctl, (v, amp, unit, what) in c.FORCING_TESTS.items():
         if ctl + '_p' in J and ctl + '_m' in J:
             pred = float(z[v][c.mask(v)].sum()) * amp
             fdc = 0.5 * (J[ctl + '_p'] - J[ctl + '_m'])
             rows.append(dict(test='%s +%g %s everywhere' % (what, amp, unit), J_plus=J[ctl + '_p'], J_minus=J[ctl + '_m'],
                              J0=J0, fd_central=fdc, fd_plus=J[ctl + '_p'] - J0, fd_minus=J0 - J[ctl + '_m'],
-                             adjoint=pred, adjoint_rel_err=(pred - fdc) / abs(fdc) if fdc else np.nan))
+                             adjoint=pred, adjoint_rel_err=pred / fdc - 1 if fdc else np.nan))
     df = pd.DataFrame(rows)
     if len(df):   # how far the two one-sided differences disagree, relative to the central one: >1 means noise
         df['one_sided_spread'] = (df.fd_plus - df.fd_minus).abs() / df.fd_central.abs()

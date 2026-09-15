@@ -1,34 +1,61 @@
 # TODO — DINO_1deg
 
-- [ ] **Production adjoint under the current setup** (kept on the list 2026-09-11,
-  to start after the project cleanup): the 5-yr adjoint of the live `input_tap/`
-  namelist, GM/Redi in the forward sweep (runs named `_gmFwd`), with the default
-  pair (`ckpAll` since 2026-09-12, which compiles what the `approxAdv` pair
-  did), from the production spin-up 31203's year-180 pickup
-  (`IMPACTS_PICKUP_RUN_DIR` at
-  `runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203`,
-  `IMPACTS_PICKUP_ITER=3162240`); about 14.5 h. It replaces 31204 (GM off,
-  cancelled). It was also to measure, against 31206, what the ensemble legs' 2×
-  tropical thermocline does to the pathways; 31206 and its leg 31205 were
-  deleted on 2026-09-12 (entry below), so that comparison needs a reference
-  adjoint of the rerun ensemble, if its legs again start from the 2× state
-  (next item).
-- [ ] **κ_v ensemble under the current setup** (kept on the list 2026-09-11, to
-  start after the cleanup; rewritten 2026-09-12): both earlier ensembles, the
-  2026-08 one at 2× viscosity (legs 30996–31002, adjoints 31039–31046) and the
-  2026-09-10 one (legs 31205–31219, odd; GM-free adjoints 31206–31220, even),
-  were deleted on 2026-09-12 with their analysis suites (entries below). Rerun
-  the ensemble from scratch under the cleaned setup, forward legs and adjoints,
-  with GM in the adjoint's forward sweep (about 14.5 h per adjoint). Only
-  `input/variants/kappa_v_ensemble/data_REF_ReMax2` and `data_M<k>_ReMax2`
-  remain for the forward legs. Decide first whether the legs start again from
-  the 2× spin-up 30983's year-170 state, as both ensembles did (the forward
-  definition's default pickup), or from 31203's own state. The adjoint
-  variants were removed on 2026-09-12, so the rerun first recreates them as
-  `kappa_v_ensemble/M<k>_ReMax2_gmFwd`: the live `input_tap/data` with
-  `diffKrT`/`diffKrS` set to the member's κ, the values in the forward variants
-  `data_M<k>_ReMax2`. The `_gmFwd` goes into the tag because runs named by a
-  variant tag carry no GM token.
+- [ ] **Stop `scripts/submit_frd.sh` linking a default pickup into runs from rest**
+  (2026-09-14). `stage_pickups` links 30983's `pickup.0002986560` into every forward
+  run directory, and a run from rest that reaches iteration 2986560 writes its own
+  pickup through that link. Under `/scratch` the target does not exist, and the
+  spin-up 31329 failed at its final write (its last 61 days were rerun as 31365).
+  On `/scratch2` the target exists, so 31203 may have overwritten 30983's year-170
+  pickup when it passed year 170 on 2026-09-11: check that file's modification
+  time when `/scratch2` is readable. The fix is to link nothing for `nIter0 = 0`,
+  as `link_pickup` does for the adjoints; a change to the submit definition, for
+  the user to approve.
+- [ ] **Merge the `/scratch` tree into `/scratch2` when it is readable again**
+  (2026-09-15). The κ_v campaign ran in `/scratch/tshahriar/DINO_1deg_outputs/`
+  (its `README.md` lists the tree): `runs/forward/spinup_170yr_viscRef_ReMax2/`,
+  `runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/` and
+  `analysis/kappa_v_ensemble_gmFwd/`. Move them into the main tree, relink the
+  pickup links (absolute paths), and compare 31365's year-170 and 31366's year-180
+  pickups with 31203's (`forward_state.py legs` does it).
+- [ ] **Find why the adjoint's surface-flux gradients fail their finite-difference
+  checks** (2026-09-15). From the reference leg 31366's year 180, uniform perturbations
+  of every forcing record (`input_tap/variants/fd_checks/`, 31384–31391) give adjoint
+  predictions 2660 (net heat flux), 148 (meridional stress) and 13 (E−P−R) times the
+  central finite differences, while zonal stress is within −29 % and κ_v and the
+  Theta boxes within ±30 %. For the first two both one-sided responses are at least
+  80 times below the prediction; the E−P−R difference is clean. The model damps
+  surface heat and freshwater anomalies through its 6.5-day restoring
+  (`tauThetaClimRelax`, `tauSaltClimRelax`); check how the adjoint of the surface
+  forcing and the restoring handles them before these gradients are used.
+- [x] ~~**Production adjoint under the current setup**~~ (done 2026-09-15, run
+  31374 on `/scratch`): the 5-yr adjoint of the live `input_tap/` namelist with the
+  default `ckpAll` pair, GM/Redi in the forward sweep. It starts from the year-180
+  state of the reference leg 31366, which continues the spin-up 31329 from year
+  170 (31203 was unreadable after `/scratch2` failed on 2026-09-12). 13 h 13 min,
+  finite throughout. J = 0.347046, and the monthly cost proxy of its forward sweep
+  at year 185 equals 31203's to ten digits, so the new chain reproduces the
+  production spin-up. Finite differences from the same state
+  (`input_tap/variants/fd_checks/`, 31382–31398), as adjoint over FD minus one:
+  dJ/dκ_v −2227 against −1840 per m² s⁻¹ (+21 %, as the +22 % of the 2026-09-11
+  test from 31205's state and the +21 % of the GM-free adjoint against the GM-free
+  model on 2026-09-10: a systematic bias, most likely from the unlimited advection
+  scheme in the adjoint sweep, which all three share); Theta in the deep North Atlantic −22 %, the tropics +4 %, the upper
+  Southern Ocean +30 %; zonal stress −29 %. The meridional-stress and net heat-flux
+  gradients predict responses 148 and 2660 times the finite differences, and the
+  E−P−R gradient 13 times a clean one: those three are not usable (open item above). Analysis: `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/`,
+  page https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF.
+- [x] ~~**κ_v ensemble under the current setup**~~ (done 2026-09-15, on `/scratch`):
+  legs 31366–31373, 10 yr from the year-170 state of the new spin-up 31329 (by way
+  of 31365), that is, the production configuration's own state rather than the 2×
+  spin-up's; member adjoints 31375–31381
+  (`input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2_gmFwd_approxAdv`) from each
+  leg's year 180. All seven member adjoints and the reference stay finite over five
+  years (four of seven blew up in the 2026-08 ensemble, the 0.25× and
+  0.5× members in the 2026-09-10 one). J from 0.25× to 32×: 0.400, 0.389,
+  0.347 (reference), 0.291, 0.294, 0.325, 0.385, 0.522, the U-shape of the legs'
+  state and of both earlier ensembles, against a monthly internal variability of
+  5.6×10⁻⁴. Analysis: `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/`; page
+  https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF.
 - [ ] **Decide whether the default adjoint pair becomes `_nocheckpoint`**
   (2026-09-12). Under the live switches the nocheckpoint build now gives the
   `approxAdv` adjoint bit for bit at 1.41× on 30 d (31276 vs 31269), which by
@@ -260,7 +287,8 @@
   means `useGMRedi=.TRUE.` and `input/data.gmredi` in `input_tap/`, in the
   `approxAdv` or `ckpAll` build only. The table is in
   `input_tap/variants/stability_study/README.md`.
-- [ ] **Production campaign under the 2026-09-10 configuration** (branch
+- [x] ~~**Production campaign under the 2026-09-10 configuration**~~ (closed 2026-09-15 with the two entries
+  above it that were all that was left of it) (branch
   `dino-stability-study`): scheme 33 in the forward model, reference viscosity
   + `viscAhReMax=2.`, GM on, **explicit vertical tracer advection**; the
   adjoint keeps scheme 33 in its forward sweep and linearises about scheme 30

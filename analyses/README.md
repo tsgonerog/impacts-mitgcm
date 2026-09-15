@@ -29,7 +29,8 @@ analyses/
 │   │   └── advection_scheme_30_vs_33_from170yrPk.ipynb  scheme 30 against scheme 33
 │   └── adjoint/
 │       ├── tapenade_profiling/          checkpoint profile + -nocheckpoint validation
-│       └── gm_in_adjoint/               GM/Redi in the adjoint's forward sweep only (scripts)
+│       ├── gm_in_adjoint/               GM/Redi in the adjoint's forward sweep only (scripts)
+│       └── kappa_v_ensemble_gmFwd/      the κ_v ensemble and 5-yr adjoint under the current setup, FD checks (scripts)
 ├── SOMA_1deg/                        secondary configuration (62 x 62 x 31)
 │   └── adjoint_sensitivity_control_set.ipynb
 ├── barotropic_gyre/                  the tutorial gyre with a passive temperature (62 x 62 x 1)
@@ -43,8 +44,9 @@ analyses/
     └── strip_animation_outputs.py    keeps notebooks under GitHub's size limit
 ```
 
-Two directories carry their own `README.md` — `adjoint/tapenade_profiling/`
-and `adjoint/gm_in_adjoint/`. Read those for the run tables inside each.
+Three directories carry their own `README.md` — `adjoint/tapenade_profiling/`,
+`adjoint/gm_in_adjoint/` and `adjoint/kappa_v_ensemble_gmFwd/`. Read those for the
+run tables inside each.
 
 ## Scratch layout
 
@@ -76,6 +78,20 @@ job produced it:
 ├── runs/{forward,adjoint}/          five validation runs, no campaign level yet
 └── executables/
 ```
+
+**A second DINO tree on `/scratch`, since 2026-09-13.** `/scratch2` failed on 2026-09-12 at 18:45, so the
+κ_v campaign of `adjoint/kappa_v_ensemble_gmFwd/` ran with `SCRATCH_ROOT=/scratch/<user>`, in a tree of the
+same shape:
+
+```
+/scratch/<user>/DINO_1deg_outputs/
+├── runs/forward/spinup_170yr_viscRef_ReMax2/   the spin-up 31329 and the rerun of its last 61 days, 31365
+├── runs/forward/kappa_v_ensemble_gmFwd/        the eight 10-yr legs (31366–31373)
+├── runs/adjoint/kappa_v_ensemble_gmFwd/        the eight 5-yr adjoints (31374–31381), the FD sweeps (31382–31398)
+└── analysis/kappa_v_ensemble_gmFwd/            products, figures, animations, perturbed pickups and forcing, job_map.tsv
+```
+
+It is to be merged into the `/scratch2` tree once that filesystem is readable again.
 
 **The rules that make this scale.**
 
@@ -236,6 +252,16 @@ was deleted on 2026-09-12, so the script no longer re-runs and
 run table; the runs are filed under `runs/adjoint/stability_study/`, the
 outputs under `analysis/gm_in_adjoint/`.
 
+`kappa_v_ensemble_gmFwd/` (2026-09-13 to 2026-09-15) is scripts: the κ_v ensemble
+(0.25× to 32× the reference) and the 5-year production adjoint rerun with the
+configuration the 2026-09-12 cleanup left on `main`, all from a new 170-year
+spin-up, with finite-difference checks of the adjoint gradients for κ_v, Theta in
+three boxes and four surface controls. `submit_campaign.sh` submits the chain,
+`run_analysis.sh` files the runs and produces the products, figures, animations
+and the published page, and the page's numbers are read from the stats files.
+Its `README.md` has the scripts and the job chain; the runs and outputs are on
+`/scratch` (see "Scratch layout").
+
 ### Where the outputs go
 
 **No figures or animations live in this repository.** Every notebook writes its
@@ -254,7 +280,7 @@ so the output follows the run automatically if it is ever moved again. Nothing
 needs editing in two places.
 
 The deliberate exceptions are the notebooks and scripts that read several runs
-(the stability study, the GM/Redi test), which write to
+(the stability study, the GM/Redi test, the κ_v campaign of 2026-09-13), which write to
 `/scratch2/<user>/DINO_1deg_outputs/analysis/<campaign>/` instead of into any
 one run; the retired `kappa_v_ensemble/` suite did the same. Its two
 publication figures are kept with the project notes, as LaTeX sources for the

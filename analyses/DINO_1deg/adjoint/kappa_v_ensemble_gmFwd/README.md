@@ -6,14 +6,8 @@ analysis of both for the neural-network surrogate (does κ_v have to be a surrog
 control gradients can be trusted as targets). Scripts, no notebook; products, figures and animations
 go to scratch `analysis/kappa_v_ensemble_gmFwd/`.
 
-**Status (2026-09-14): the adjoints are running.** `/scratch2`, which holds the production spin-up
-31203, failed on 2026-09-12 at 18:45 and took a first submission from 31203 with it; the campaign
-was resubmitted on `/scratch` from a new 170-year spin-up (31329). 31329 could not write its final
-pickup, because `scripts/submit_frd.sh` links a default pickup of that name into every run directory,
-so its last 61 days were rerun as 31365 (every output file identical to 31329's) and the chain was
-submitted again from it: legs 31366–31373 (finished), adjoints 31374–31381 (until about 2026-09-15
-04:00) and the finite-difference sweeps 31382–31398 (finished). The reference adjoint's year-185
-cost proxy equals 31203's to ten digits, so the new chain reproduces the production spin-up.
+**Status (2026-09-15): finished.** Every run completed and was filed (`job_map.tsv` on `/scratch`), and `run_analysis.sh` (job 31413) produced the products, figures and animations. The page is published at
+https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuild it with `python3 build_page.py` and republish `page/`.
 
 ## Scripts, in the order they are used
 

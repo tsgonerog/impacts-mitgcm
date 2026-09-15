@@ -33,10 +33,14 @@ CONSISTENCY = [
      'and data.exch2 are identical.'),
     ('Spin-up', "31329 runs the live input/data; 31203's staged namelists differ from it only by the now commented-out "
      "useKPP and useMNC, both .FALSE. in 31203."),
-    ('Forward executable', 'build_frd (after KPP and the C-D scheme left the package list) reproduces 31203 bit for '
-     'bit over 61 days: run 31280, 50 output files and all %MON values.'),
-    ('Adjoint executable', 'build_tapAdj_ckpAll, the default pair; the only source change after its build is a '
-     'two-line comment in code_tap/gad_implicit_r.F (its preprocessed text is otherwise identical).'),
+    ('Forward executable', 'build_frd, compiled once (2026-09-12, commit 290da58) and used by the spin-up, its rerun and all eight '
+     'legs: one checksum in every run directory. The build without KPP and the C-D scheme reproduces the one before bit for bit '
+     '(run 31280 against 31267, 61 days from rest: 58 output files and every %MON line).'),
+    ('Adjoint executable', 'build_tapAdj_ckpAll, compiled once (2026-09-12, commit 290da58) and used by all eight adjoints and the '
+     'sixteen finite-difference sweeps: one checksum in every run directory. The only source change between its build and the runs '
+     'is a two-line comment in code_tap/gad_implicit_r.F.'),
+    ('Reproduction of the production spin-up', "The monthly cost proxy of the reference adjoint's forward sweep at year 185 equals "
+     "that of 31203 at the same month to ten digits (0.3470448519)."),
     ('Adjoint-mode switches', 'Every adjoint staged data.autodiff with useGMRediInAdMode=.FALSE. and '
      'useApproxAdvectionInAdMode=.TRUE.; the submit body checked both before each run.'),
     ('Controls', 'Eight declared (Theta, Salt, κ_v in 3-D; Qnet, E−P−R, Qsw and both surface stresses in 2-D), '
