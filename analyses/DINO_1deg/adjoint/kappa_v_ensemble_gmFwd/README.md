@@ -68,7 +68,7 @@ The films with a running total are embedded in the deck with `poster=last`, beca
 
 ```bash
 PY=~/tools_and_software/miniforge3/envs/py38/bin/python3
-DECK=~/Proj_ImPACTS/impacts-notes/references/dino_adjoint_sensitivities/slides/figures
+DECK=~/Proj_ImPACTS/impacts-notes/references/dino_sensitivity_vs_mixing/slides/figures
 $PY make_films.py profiles                       # -> cache/level_rms_profiles.npz + the level figure
 $PY make_films.py reference members --deck $DECK  # 30 films, ~35 min; the deck's copies land in $DECK
 $PY build_explorer.py                            # -> analysis/<campaign>/explorer/ (32 MB)
