@@ -1,0 +1,54 @@
+# Sub-monthly sampling check of the overturning (2026-09-16) -- the diagnostics half
+# of variability_check/from190yrPk_viscRef_ReMax2_dailyDiag. See the head of
+# data_from190yrPk_viscRef_ReMax2_dailyDiag for why this run exists.
+#
+# The same field, VVEL, written at three sampling rates in one run, so the three
+# series are of one ocean and differ only in how they were sampled:
+#
+#   dynDiag   30.5-day mean       frequency = +2635200.   12 records   the production stream
+#   vvelDay   1-day mean          frequency =   +86400.  366 records
+#   vvelQd    6-hour SNAPSHOT     frequency =   -21600.  1464 records
+#
+# A negative frequency is a snapshot, a positive one a time average over that
+# interval (the header of the tree's data.diagnostics says so). etanQd carries
+# ETAN at the same 6 hours: the free surface is where a fast barotropic
+# adjustment would show first, and it costs 40 kB a record.
+#
+# dynDiag keeps the production stream's name, frequency and field list, so this
+# run's monthly series is directly comparable with the spin-ups'.
+ &DIAGNOSTICS_LIST
+  fields(1:5,1)  = 'ETAN    ','TRELAX  ','SRELAX  ','MXLDEPTH', 'PHIBOT',
+  fileName(1) = 'surfDiag',
+  frequency(1) = 2635200.,
+
+  fields(1:7,2)  = 'THETA   ','SALT    ','PHIHYD  ','RHOAnoma'
+                   'UVEL    ','VVEL    ','WVEL    ',
+  fileName(2) = 'dynDiag',
+  frequency(2) = 2635200.,
+
+  fields(1:3,3)  = 'oceTAUX ', 'oceTAUY ','oceQnet ',
+  fileName(3) = 'atmDiag',
+  frequency(3) = 2635200.,
+
+  fields(1:2,4)  = 'VISCAHZ ', 'VISCAHD ',
+  fileName(4) = 'viscDiag',
+  frequency(4) = 2635200.,
+
+  fields(1:1,5)  = 'VVEL    ',
+  fileName(5) = 'vvelDay',
+  frequency(5) = 86400.,
+
+  fields(1:1,6)  = 'VVEL    ',
+  fileName(6) = 'vvelQd',
+  frequency(6) = -21600.,
+
+  fields(1:1,7)  = 'ETAN    ',
+  fileName(7) = 'etanQd',
+  frequency(7) = -21600.,
+ &
+
+#--------------------
+# Parameter for Diagnostics of per level statistics:
+#--------------------
+ &DIAG_STATIS_PARMS
+ &

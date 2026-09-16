@@ -42,6 +42,7 @@ without KPP.
 | [`stability_study/`](stability_study/) | Why 2× viscosity stabilises the forward model, and what else does: restarts of the 2× spin-up's year-170 pickup |
 | [`from70yrPk_sweep/`](from70yrPk_sweep/) | `viscAr` × `diffKr` × advection sweep restarted from the 70-year pickup |
 | [`kappa_v_ensemble/`](kappa_v_ensemble/) | The vertical-mixing perturbation ensemble of the surrogate proposal — forward legs |
+| [`variability_check/`](variability_check/) | How much of the overturning's variability the 30.5-day `dynDiag` averaging hides: one year with `VVEL` written monthly, daily and 6-hourly at once |
 
 ## Adding to this
 
