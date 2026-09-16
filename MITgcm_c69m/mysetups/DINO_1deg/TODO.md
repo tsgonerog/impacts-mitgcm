@@ -1057,9 +1057,12 @@
   against 31428 (5 d, 176 fields, `fc` `-9.21812947379697E-03`, 390 `%MON`
   lines), the gyre 31431 against 31430 (180 d, 3 244 fields). `profile` and
   `hooksInTree` were rebuilt only, every build-body check passing. Driver
-  and logs: `/scratch/tshahriar/tapenade_hooks_upstream/logs/revalidate/`
-  (`revalidate.log` has one line per verdict, `<name>_compare.log` and
-  `<name>_build.log` the detail). The nine new runs sit unfiled under
+  and logs: `DINO_1deg_outputs/logs/revalidate_20260916_hooks_resync/`
+  (`revalidate_builds.sh`; `revalidate.log` has one line per verdict,
+  `<name>_compare.log` and `<name>_build.log` the detail, and
+  `dino_build_ckpAll_resync.log` is the earlier `ckpAll` rebuild), copied
+  there from the upstream test tree on `/scratch`, which holds nothing else
+  that is not reproducible. The nine new runs sit unfiled under
   `runs/adjoint/` of their setup's output tree on `/scratch2`, each new run
   carrying its `comparison_vs_*.txt`, and belong under
   `toolchain_validation/` (DINO 31423–31427, SOMA 31428/31429, gyre
