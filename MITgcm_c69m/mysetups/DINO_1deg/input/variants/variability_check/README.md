@@ -4,7 +4,7 @@ One question, one run. Every DINO forward run writes its `dynDiag` stream as a
 **30.5-day time average** (`frequency(2) = 2635200.` — a positive frequency is an
 average, a negative one a snapshot), so every AMOC series this project has drawn
 is a series of monthly means. The slide deck
-`impacts-notes/references/dino_kappa_v_campaign/slides` reports that successive
+`impacts-notes/references/dino_adjoint_sensitivities/slides` reports that successive
 months of the current setup differ by 0.003 Sv at 26° N, against 0.047 Sv in the
 previous setup, and the obvious objection is that the averaging, not the ocean,
 is what is smooth.
@@ -67,6 +67,6 @@ cannot be asked about overturning variability — only about its sensitivity.** 
 variability ever becomes the question, that wind file is where to start.
 
 The figure and the table come from the slide deck's figure script in the notes
-repository (`references/dino_kappa_v_campaign/slides/figures/make_slide_figures.py
+repository (`references/dino_adjoint_sensitivities/slides/figures/make_slide_figures.py
 sampling`), which writes `amoc_sampling_check.png` and `amoc_sampling_stats.json`;
 the numbers above are the whole result, so nothing here depends on that repository.

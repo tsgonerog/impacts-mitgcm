@@ -6,7 +6,7 @@ analysis of both for the neural-network surrogate (does κ_v have to be a surrog
 control gradients can be trusted as targets). Scripts, no notebook; products, figures and animations
 go to scratch `analysis/kappa_v_ensemble_gmFwd/`.
 
-**Status (2026-09-15): finished.** Every run completed and was filed, and `run_analysis.sh` (job 31413) produced the products, figures and animations. The runs and their products were moved back to `/scratch2` on 2026-09-15, where `job_map.tsv` is. The page is published at
+**Status (2026-09-15): finished.** Every run completed and was filed, and `run_analysis.sh` (job 31413) produced the products, figures and animations. The runs and their products were moved back to `/scratch2` on 2026-09-15, where `job_map.tsv` is. The campaign's own spin-up, 31329 with its rerun last 61 days 31365, was deleted on 2026-09-16: every output file of both was byte-identical to the production spin-up 31203's first 170 years (`logs/deleted_run_records/spinup_170yr_viscRef_ReMax2__deletion_evidence.txt`). `campaign.py` names 31203 as the spin-up, `forward_state.py spinup` stops at year 170 so the recorded noise floor reproduces, and `job_map.tsv` keeps both rows as the record of what ran. The page is published at
 https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuild it with `python3 build_page.py` and republish `page/`.
 
 ## Scripts, in the order they are used
@@ -68,7 +68,7 @@ The films with a running total are embedded in the deck with `poster=last`, beca
 
 ```bash
 PY=~/tools_and_software/miniforge3/envs/py38/bin/python3
-DECK=~/Proj_ImPACTS/impacts-notes/references/dino_kappa_v_campaign/slides/figures
+DECK=~/Proj_ImPACTS/impacts-notes/references/dino_adjoint_sensitivities/slides/figures
 $PY make_films.py profiles                       # -> cache/level_rms_profiles.npz + the level figure
 $PY make_films.py reference members --deck $DECK  # 30 films, ~35 min; the deck's copies land in $DECK
 $PY build_explorer.py                            # -> analysis/<campaign>/explorer/ (32 MB)

@@ -49,8 +49,11 @@ def spinup():
     c.ensure_dirs()
     d = c.run_dir(c.SPINUP_JOB)
     df = series(d)
+    # the spin-up up to the legs' start (year 170): 31203 runs on to year 200, and the recorded
+    # noise floor (computed 2026-09-14 from 31329, byte-identical to 31203's first 170 years) is 100-170
+    df = df[df.iter <= c.LEG_NITER0].reset_index(drop=True)
     df.to_csv(c.CACHE / 'spinup_series.csv', index=False)
-    # internal variability over the last 100 years, after removing a linear trend
+    # internal variability over the last 70 years before the legs, after removing a linear trend
     w = df[df.year > 100].copy()
     t = w.year.values
     out = {}
@@ -96,6 +99,11 @@ def legs():
     # The rerun of the spin-up's last 61 days against the spin-up itself (every file both wrote, and the %MON blocks),
     # and the new spin-up's year-170 and the REF leg's year-180 pickups against the production spin-up 31203's.
     res = {}
+    if c.SPINUP_JOB == 31203:
+        # Since 2026-09-16 the spin-up IS 31203, so comparing its pickups with 31203's would compare a file with
+        # itself. The check that mattered was made on 2026-09-14 against 31329/31365 and is kept as recorded.
+        print('restart_check.json kept as recorded: the spin-up is 31203 itself since 2026-09-16')
+        return
     end = c.run_dir(c.SPINUP_END_JOB) if c.SPINUP_END_JOB else None
     if end is not None:
         both = sorted(p.name for p in end.glob('*.data') if (spin / p.name).exists() and not (end / p.name).is_symlink()

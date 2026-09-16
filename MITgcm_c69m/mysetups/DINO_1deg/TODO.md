@@ -10,6 +10,23 @@
   time when `/scratch2` is readable. The fix is to link nothing for `nIter0 = 0`,
   as `link_pickup` does for the adjoints; a change to the submit definition, for
   the user to approve.
+- [x] ~~**Delete the κ_v campaign's own spin-up, a copy of 31203**~~ (done 2026-09-16).
+  `runs/forward/spinup_170yr_viscRef_ReMax2/` held 31329 (170 yr from rest, run on `/scratch`
+  while `/scratch2` was down) and 31365 (its last 61 days, rerun to write the year-170
+  pickup). Every one of their output files was compared with `cmp` against the file of
+  the same name in 31203: 23 228 and 86 identical, none different. The only files without
+  a counterpart are instantaneous state snapshots written at a run's first or last step
+  (iterations 2983632 and 2986560), which duplicate the identical pickup there. So the
+  72 GB directory was 31203's first 170 years, and it was deleted. First, 31365's real
+  `pickup.0002986560.{data,meta}` was moved into 31203 in place of its symlink into 30983,
+  so 31203 owns its year-170 state (the file in 30983's directory is now a second copy),
+  and the 16 pickup links of the legs 31366–31373 were repointed there. The records are in
+  `logs/deleted_run_records/` with `spinup_170yr_viscRef_ReMax2__deletion_evidence.txt`;
+  `campaign.py` names 31203 as the spin-up; `data_spinupEnd_ReMax2` was removed.
+  The same day the leftovers of the campaign's first submission (2026-09-12, killed when
+  `/scratch2` failed) went too: the partial legs 31289–31296, the adjoint and sweep
+  directories 31297 and 31313–31326, none of which had written a cost, and
+  `analysis/kappa_v_ensemble_gmFwd_cancelled_20260912/` — about 23 GB, records kept.
 - [x] ~~**How much of the overturning's variability the 30.5-day averaging hides**~~
   (done 2026-09-16, run 31434). Every forward run writes `dynDiag` as a 30.5-day time
   average, so every AMOC series this project has drawn is a series of monthly means, and

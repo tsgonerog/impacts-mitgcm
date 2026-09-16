@@ -5,7 +5,7 @@
     python make_films.py reference     # one film per ADJ* variable of the reference adjoint (31374)
     python make_films.py members       # ADJtheta and ADJdiffkr, one film per ensemble member, plus the 8-panel films
     python make_films.py all
-    python make_films.py reference --deck ~/Proj_ImPACTS/impacts-notes/references/dino_kappa_v_campaign/slides/figures
+    python make_films.py reference --deck ~/Proj_ImPACTS/impacts-notes/references/dino_adjoint_sensitivities/slides/figures
 
 Each film is written twice: a **multi-page PDF**, one page per frame, which the beamer deck plays with
 the `animate` package, and a **GIF** for the web page and for anyone without a PDF viewer that

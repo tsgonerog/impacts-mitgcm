@@ -31,7 +31,10 @@ jid() { tail -1 | grep -oE '^[0-9]+'; }
 row() { printf '%s\t%s\t%s\t%s\t%s\n' "$@" >> "$MAP"; }
 
 # CAMPAIGN_SPINUP_JOB and CAMPAIGN_SPINUP_DIR, when set, chain the campaign on an existing (or queued) run that holds
-# the year-170 pickup instead of submitting the spin-up (2026-09-14: the last 61 days of 31329, rerun)
+# the year-170 pickup instead of submitting the spin-up (2026-09-14: the last 61 days of 31329, rerun). Both 31329 and
+# 31365 were deleted on 2026-09-16 as byte-identical to 31203's first 170 years: a rerun would chain on
+#   CAMPAIGN_SPINUP_JOB=31203 CAMPAIGN_SPINUP_DIR=<31203's run directory>
+# and the two job_map rows below, which record what ran in 2026-09, would not apply.
 if [ -n "${CAMPAIGN_SPINUP_JOB:-}" ]; then
   SPIN=$CAMPAIGN_SPINUP_JOB
   SPIN_DIR=$CAMPAIGN_SPINUP_DIR

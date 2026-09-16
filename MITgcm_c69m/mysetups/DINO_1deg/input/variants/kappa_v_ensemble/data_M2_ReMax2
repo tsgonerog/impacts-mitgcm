@@ -12,6 +12,8 @@
 # choice, survives, and the vertical CFL here is below 0.05.
 # Since 2026-09-14 this leg is run from the year-170 state of the spin-up 31329 (the live input/data from rest, on
 # /scratch), whose last 61 days were rerun as 31365 to write that pickup; named with IMPACTS_PICKUP_RUN_DIR (run 31368).
+# 31329 and 31365 were deleted on 2026-09-16 as byte-identical to the production spin-up 31203's first 170
+# years; the same year-170 state is 31203's pickup.0002986560, where the leg's pickup link now points.
 # The settings below are unchanged.
 # Model parameters
 # Continuous equation parameters

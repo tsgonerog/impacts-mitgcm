@@ -41,7 +41,8 @@ The campaign of 2026-09-14 on `/scratch` (`submit_campaign.sh` in the analysis s
 that writes the perturbed pickups once the reference leg has finished) and 31393–31398 (Theta
 boxes), filed under `runs/adjoint/kappa_v_ensemble_gmFwd/`. Three earlier submissions did not
 finish: 31305–31312 were cancelled at start by a watcher error and deleted, 31313–31328, which
-started from the production spin-up 31203, died when `/scratch2` failed on 2026-09-12, and
+started from the production spin-up 31203, died when `/scratch2` failed on 2026-09-12 (their
+directories were deleted on 2026-09-16, having written no cost), and
 31346–31362 were cancelled with their chain when the spin-up 31329 could not write its final
 pickup. Do not put the
 words the model prints before the cost value into a namelist comment: the model echoes

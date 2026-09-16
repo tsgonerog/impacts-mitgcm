@@ -69,8 +69,13 @@ def _job_map():
 
 
 _MAP = _job_map()
-SPINUP_JOB = next((j for j, role, _ in _MAP if role.startswith('spin-up 170')), None)
-SPINUP_END_JOB = next((j for j, role, _ in _MAP if role.startswith('spin-up end')), None)   # the rerun last 61 days, if any
+# The campaign was submitted with its own 170-year spin-up, 31329, whose last 61 days were rerun as 31365
+# (job_map.tsv keeps both rows as the record of what ran). Every output file of the two was byte-identical
+# to the production spin-up 31203's first 170 years, so they were deleted on 2026-09-16, 31365's year-170
+# pickup was moved into 31203 and the legs' pickup links repointed there. The spin-up is 31203; it runs on
+# to year 200, so anything that means "the spin-up up to the legs' start" must stop at LEG_NITER0 itself.
+SPINUP_JOB = 31203
+SPINUP_END_JOB = None     # was 31365, the rerun last 61 days; deleted with 31329
 LEG_JOB = {tag.split('/')[-1].replace('_ReMax2', ''): j for j, role, tag in _MAP if role == 'forward leg'}
 ADJ_JOB = {('REF' if role.startswith('reference') else tag.split('/')[-1].split('_')[0]): j
            for j, role, tag in _MAP if role.startswith(('reference adjoint', 'member adjoint'))}

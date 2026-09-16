@@ -7,9 +7,13 @@ not write its final pickup (`scripts/submit_frd.sh` links a default pickup of th
 directory), so its last 61 days were rerun from its own pickup two months earlier as 31365
 (`data_spinupEnd_ReMax2`, which differs from `input/data` only in `nIter0`): every output file both
 runs wrote is identical, and the legs start from 31365's `pickup.0002986560`, named with
-`IMPACTS_PICKUP_RUN_DIR`. It replaces the production spin-up 31203 as the starting state because `/scratch2`,
+`IMPACTS_PICKUP_RUN_DIR`. **31329 and 31365 were deleted on 2026-09-16**: every output file both wrote was
+byte-identical to 31203's own, so they were a copy of 31203's first 170 years. 31365's `pickup.0002986560` was
+moved into 31203's directory first, the legs' pickup links now point there, and `data_spinupEnd_ReMax2`, which
+only ever produced 31365, was removed with them (git history has it). The legs were run from 31329's state
+because `/scratch2`,
 which holds 31203, failed on 2026-09-12 at 18:45 and took with it a first submission from 31203
-(legs 31289–31296). The `REF_ReMax2` leg continues the spin-up to year 180 with the same settings,
+(legs 31289–31296, killed about 3.7 years in; deleted 2026-09-16). The `REF_ReMax2` leg continues the spin-up to year 180 with the same settings,
 so its year-180 pickup is the spin-up's year-180 state. The member adjoints are `input_tap/variants/kappa_v_ensemble/data_M<k>_ReMax2_gmFwd_approxAdv`
 and the analysis `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/`. The paragraph below describes
 the 2026-09-10 runs, which started from the 2× spin-up 30983.
@@ -85,7 +89,8 @@ adjoint run reads. **`nIter0` and the pickup are coupled by hand**:
 `stage_pickups` in `scripts/submit_frd.sh` links the 2× spin-up 30983's
 `pickup.0002986560` by default, `IMPACTS_PICKUP_RUN_DIR` and
 `IMPACTS_PICKUP_ITER` override it, and nothing reads the iteration from the
-namelist. The 2026-09-14 legs override it with the directory of 31365:
+namelist. The 2026-09-14 legs overrode it with the directory of 31365; a rerun would name 31203's, which holds
+the same year-170 state:
 
 ```bash
 IMPACTS_TEST_CASE=kappa_v_ensemble/M3_ReMax2 \

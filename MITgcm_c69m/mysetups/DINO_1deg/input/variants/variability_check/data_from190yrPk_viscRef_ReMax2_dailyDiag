@@ -4,7 +4,7 @@
 # (data.diagnostics frequency(2)=2635200.), so the AMOC series drawn from the
 # 200-year spin-ups is a series of monthly means and says nothing about what
 # happens inside a month. The slide deck
-# impacts-notes/references/dino_kappa_v_campaign/slides reports 0.003 Sv of
+# impacts-notes/references/dino_adjoint_sensitivities/slides reports 0.003 Sv of
 # month-to-month change at 26N in the current setup, and the question is whether
 # the ocean really is that steady or the averaging hides the variability.
 #

@@ -51,7 +51,7 @@ CONSISTENCY = [
 ]
 
 PROVENANCE = """
-<p>Model output: <code>/scratch2/tshahriar/DINO_1deg_outputs/runs/forward/</code> (<code>spinup_170yr_viscRef_ReMax2/</code> and <code>kappa_v_ensemble_gmFwd/</code>)
+<p>Model output: <code>/scratch2/tshahriar/DINO_1deg_outputs/runs/forward/</code> (<code>spinup_200yr_viscRef_ReMax2/</code>, whose first 170 years the campaign's own spin-up reproduced bit for bit before it was deleted on 2026-09-16, and <code>kappa_v_ensemble_gmFwd/</code>)
 and <code>runs/adjoint/kappa_v_ensemble_gmFwd/</code> (adjoints and finite-difference sweeps).
 Products, figures and animations: <code>analysis/kappa_v_ensemble_gmFwd/</code>, with the job map in
 <code>job_map.tsv</code>. Analysis code: <code>analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/</code> in
