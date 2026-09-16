@@ -391,8 +391,9 @@ def reference_text(fg, ts, nf):
     peak = r.loc[r.rms.idxmax()]
     fin = bool((ts[ts.run == 'REF'].finite_frac == 1).all())
     return ('<p>The reference adjoint runs the live <code>input_tap/data</code> for five years from the reference leg\'s year-180 state. '
-            'Its cost, J = %.6f, is the forward model\'s: the monthly cost proxy of its forward sweep at year 185 equals that of the '
-            'production spin-up 31203 at the same month to ten digits, so the new spin-up and its continuation reproduce 31203. The '
+            'Its cost, J = %.6f, is the forward model\'s, and the state it starts from is the production spin-up\'s: the year-170 '
+            'pickup of the new spin-up and the year-180 pickup of the reference leg are byte-identical to 31203\'s own, and the monthly '
+            'cost proxy of the adjoint\'s forward sweep at year 185 equals 31203\'s to ten digits. The '
             'adjoint %s: the RMS of ADJtheta peaks at %s per K at a lead of %.0f days and falls to %s at one year and %s at five years%s.</p>'
             '<p>At a lead of 30 days the temperature sensitivity lies on the cost section and along the two boundaries that close it, the '
             'western boundary north of 26° N and the eastern boundary south of it, upstream along the paths of boundary waves. After a '

@@ -5,7 +5,7 @@ analysis/kappa_v_ensemble_gmFwd/ under OUTPUTS), submitted by submit_campaign.sh
 
 * a 170-yr spin-up from rest of the live input/data (reference viscosity files, viscAhReMax=2., scheme 33
   with explicit vertical advection, GM/Redi on); it replaces the production spin-up 31203, unreadable since
-  /scratch2 failed on 2026-09-12;
+  /scratch2 failed on 2026-09-12; both trees were merged back into /scratch2 on 2026-09-15;
 * forward legs, 10 yr from the spin-up's year 170, one per κ_v (input/variants/kappa_v_ensemble/
   data_<m>_ReMax2); the REF leg is the spin-up's own continuation to year 180;
 * 5-yr adjoints (the approximate adjoint: GM/Redi in the forward sweep only, scheme 30 in the adjoint
@@ -26,8 +26,8 @@ from pathlib import Path
 
 import numpy as np
 
-OUTPUTS = Path(os.environ.get('CAMPAIGN_OUTPUTS', '/scratch/tshahriar/DINO_1deg_outputs'))   # /scratch2 was down from 2026-09-12 18:45
-EARLIER_OUTPUTS = Path('/scratch2/tshahriar/DINO_1deg_outputs')                              # where the earlier campaigns' runs are
+OUTPUTS = Path(os.environ.get('CAMPAIGN_OUTPUTS', '/scratch2/tshahriar/DINO_1deg_outputs'))  # the campaign's runs, moved back 2026-09-15
+EARLIER_OUTPUTS = Path('/scratch/tshahriar/DINO_1deg_outputs')                               # the tree it ran in while /scratch2 was down
 CAMPAIGN = 'kappa_v_ensemble_gmFwd'
 ANALYSIS = OUTPUTS / 'analysis' / CAMPAIGN
 CACHE = ANALYSIS / 'cache'

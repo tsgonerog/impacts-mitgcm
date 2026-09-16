@@ -111,7 +111,7 @@
  &PARM05
  bathyFile='dino_bathy.bin',
  zonalWindFile='dino_utau.bin',
- EmPmRFile='/scratch/tshahriar/DINO_1deg_outputs/analysis/kappa_v_ensemble_gmFwd/perturbed_forcing/empmr_p.bin',
+ EmPmRFile='/scratch2/tshahriar/DINO_1deg_outputs/analysis/kappa_v_ensemble_gmFwd/perturbed_forcing/empmr_p.bin',
  thetaClimFile='dino_T_star.bin',
  saltClimFile='dino_S_star.bin',
  surfQswFile='dino_q_solar.bin',

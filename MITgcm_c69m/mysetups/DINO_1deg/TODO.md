@@ -10,13 +10,17 @@
   time when `/scratch2` is readable. The fix is to link nothing for `nIter0 = 0`,
   as `link_pickup` does for the adjoints; a change to the submit definition, for
   the user to approve.
-- [ ] **Merge the `/scratch` tree into `/scratch2` when it is readable again**
-  (2026-09-15). The κ_v campaign ran in `/scratch/tshahriar/DINO_1deg_outputs/`
-  (its `README.md` lists the tree): `runs/forward/spinup_170yr_viscRef_ReMax2/`,
-  `runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/` and
-  `analysis/kappa_v_ensemble_gmFwd/`. Move them into the main tree, relink the
-  pickup links (absolute paths), and compare 31365's year-170 and 31366's year-180
-  pickups with 31203's (`forward_state.py legs` does it).
+- [x] ~~**Merge the `/scratch` tree into `/scratch2`**~~ (done 2026-09-15, when `/scratch2`
+  came back): the κ_v campaign's runs and products are in the main tree under
+  `runs/forward/spinup_170yr_viscRef_ReMax2/`, `runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/`
+  and `analysis/kappa_v_ensemble_gmFwd/`, the pickup links repointed and nothing left on
+  `/scratch`. Both pickup comparisons the entry asked for now pass byte for byte:
+  31365's year-170 pickup and the REF leg 31366's year-180 pickup are bit for bit
+  31203's own (`forward_state.py legs`, `stats/restart_check.json`). The other
+  question the entry carried is answered: 31203 did overwrite 30983's
+  year-170 pickup on 2026-09-11 06:17, writing its own year-170 state through the staged
+  symlink (the file is byte-identical to 31365's year-170 pickup, which is how it was
+  identified; a note sits in 30983's run directory and in the repository `CLAUDE.md`).
 - [ ] **Find why the adjoint's surface-flux gradients fail their finite-difference
   checks** (2026-09-15). From the reference leg 31366's year 180, uniform perturbations
   of every forcing record (`input_tap/variants/fd_checks/`, 31384–31391) give adjoint

@@ -13,7 +13,7 @@
 # spin-up's year-180 state. Writes analysis/kappa_v_ensemble_gmFwd/job_map.tsv. watch_campaign.sh cancels the FD
 # sweeps once they print their cost.
 set -euo pipefail
-export SCRATCH_ROOT=/scratch/$USER
+export SCRATCH_ROOT=${SCRATCH_ROOT:-/scratch2/$USER}   # /scratch/$USER while /scratch2 was down, 2026-09-12 to 2026-09-15
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SETUP="$(cd "$HERE/../../../../MITgcm_c69m/mysetups/DINO_1deg" && pwd)"
 O=$SCRATCH_ROOT/DINO_1deg_outputs

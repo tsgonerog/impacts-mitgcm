@@ -39,8 +39,9 @@ CONSISTENCY = [
     ('Adjoint executable', 'build_tapAdj_ckpAll, compiled once (2026-09-12, commit 290da58) and used by all eight adjoints and the '
      'sixteen finite-difference sweeps: one checksum in every run directory. The only source change between its build and the runs '
      'is a two-line comment in code_tap/gad_implicit_r.F.'),
-    ('Reproduction of the production spin-up', "The monthly cost proxy of the reference adjoint's forward sweep at year 185 equals "
-     "that of 31203 at the same month to ten digits (0.3470448519)."),
+    ('Reproduction of the production spin-up', "Byte-identical states: the new spin-up's year-170 pickup and the reference leg's "
+     "year-180 pickup are bit for bit the production spin-up 31203's own (checked 2026-09-15, when /scratch2 returned), and the "
+     "reference adjoint's forward sweep reproduces 31203's year-185 cost proxy to ten digits."),
     ('Adjoint-mode switches', 'Every adjoint staged data.autodiff with useGMRediInAdMode=.FALSE. and '
      'useApproxAdvectionInAdMode=.TRUE.; the submit body checked both before each run.'),
     ('Controls', 'Eight declared (Theta, Salt, κ_v in 3-D; Qnet, E−P−R, Qsw and both surface stresses in 2-D), '
@@ -50,13 +51,13 @@ CONSISTENCY = [
 ]
 
 PROVENANCE = """
-<p>Model output: <code>/scratch/tshahriar/DINO_1deg_outputs/runs/forward/kappa_v_ensemble_gmFwd/</code> (spin-up and legs)
+<p>Model output: <code>/scratch2/tshahriar/DINO_1deg_outputs/runs/forward/</code> (<code>spinup_170yr_viscRef_ReMax2/</code> and <code>kappa_v_ensemble_gmFwd/</code>)
 and <code>runs/adjoint/kappa_v_ensemble_gmFwd/</code> (adjoints and finite-difference sweeps).
 Products, figures and animations: <code>analysis/kappa_v_ensemble_gmFwd/</code>, with the job map in
 <code>job_map.tsv</code>. Analysis code: <code>analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/</code> in
 impacts-mitgcm (<code>campaign.py</code>, <code>forward_state.py</code>, <code>adjoint_products.py</code>,
 <code>make_figures.py</code>, <code>build_page.py</code>). Earlier campaigns are compared through the numbers in <code>previous_campaigns_reference.json</code>, copied from
-the tables on <code>/scratch2</code> before it failed.</p>
+the tables on <code>/scratch2</code> before it failed. The campaign ran on <code>/scratch</code> while <code>/scratch2</code> was down and was moved back into the main tree on 2026-09-15.</p>
 """
 
 INCIDENTS = """

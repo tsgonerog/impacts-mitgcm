@@ -6,7 +6,7 @@ analysis of both for the neural-network surrogate (does κ_v have to be a surrog
 control gradients can be trusted as targets). Scripts, no notebook; products, figures and animations
 go to scratch `analysis/kappa_v_ensemble_gmFwd/`.
 
-**Status (2026-09-15): finished.** Every run completed and was filed (`job_map.tsv` on `/scratch`), and `run_analysis.sh` (job 31413) produced the products, figures and animations. The page is published at
+**Status (2026-09-15): finished.** Every run completed and was filed, and `run_analysis.sh` (job 31413) produced the products, figures and animations. The runs and their products were moved back to `/scratch2` on 2026-09-15, where `job_map.tsv` is. The page is published at
 https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuild it with `python3 build_page.py` and republish `page/`.
 
 ## Scripts, in the order they are used

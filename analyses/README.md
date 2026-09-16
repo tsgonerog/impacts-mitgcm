@@ -79,19 +79,14 @@ job produced it:
 └── executables/
 ```
 
-**A second DINO tree on `/scratch`, since 2026-09-13.** `/scratch2` failed on 2026-09-12 at 18:45, so the
-κ_v campaign of `adjoint/kappa_v_ensemble_gmFwd/` ran with `SCRATCH_ROOT=/scratch/<user>`, in a tree of the
-same shape:
-
-```
-/scratch/<user>/DINO_1deg_outputs/
-├── runs/forward/spinup_170yr_viscRef_ReMax2/   the spin-up 31329 and the rerun of its last 61 days, 31365
-├── runs/forward/kappa_v_ensemble_gmFwd/        the eight 10-yr legs (31366–31373)
-├── runs/adjoint/kappa_v_ensemble_gmFwd/        the eight 5-yr adjoints (31374–31381), the FD sweeps (31382–31398)
-└── analysis/kappa_v_ensemble_gmFwd/            products, figures, animations, perturbed pickups and forcing, job_map.tsv
-```
-
-It is to be merged into the `/scratch2` tree once that filesystem is readable again.
+**The κ_v campaign ran on `/scratch` and was moved back on 2026-09-15.** `/scratch2` failed on 2026-09-12 at
+18:45, so the campaign of `adjoint/kappa_v_ensemble_gmFwd/` ran with `SCRATCH_ROOT=/scratch/<user>`. When
+`/scratch2` returned on 2026-09-15 its runs and products were moved into the main tree, as
+`runs/forward/spinup_170yr_viscRef_ReMax2/` (the spin-up 31329 and the rerun of its last 61 days, 31365),
+`runs/forward/kappa_v_ensemble_gmFwd/` (the eight 10-year legs), `runs/adjoint/kappa_v_ensemble_gmFwd/`
+(the eight 5-year adjoints and the finite-difference sweeps) and `analysis/kappa_v_ensemble_gmFwd/`; the
+products of the cancelled first submission are beside the last as `..._cancelled_20260912/`. Nothing of
+this campaign is left on `/scratch`.
 
 **The rules that make this scale.**
 

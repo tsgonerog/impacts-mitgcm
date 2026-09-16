@@ -94,7 +94,7 @@ def legs():
     pd.concat(frames + [sp]).to_csv(c.CACHE / 'leg_series.csv', index=False)
     np.savez_compressed(c.CACHE / 'leg_final_profiles.npz', **prof)
     # The rerun of the spin-up's last 61 days against the spin-up itself (every file both wrote, and the %MON blocks),
-    # and, once /scratch2 is readable, the new spin-up's year-170 and the REF leg's year-180 pickups against 31203's.
+    # and the new spin-up's year-170 and the REF leg's year-180 pickups against the production spin-up 31203's.
     res = {}
     end = c.run_dir(c.SPINUP_END_JOB) if c.SPINUP_END_JOB else None
     if end is not None:
@@ -103,7 +103,8 @@ def legs():
         same = [n for n in both if filecmp.cmp(end / n, spin / n, shallow=False)]
         res['spinup_end_rerun_vs_spinup'] = dict(files_compared=both, identical=len(same), different=len(both) - len(same))
     ref = c.run_dir(c.LEG_JOB['REF'])
-    old = c.EARLIER_OUTPUTS / 'runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203'
+    rel = 'runs/forward/spinup_200yr_viscRef_ReMax2/DINO_1deg_frd_200yr_from_rest_viscRef_ReMax2_run31203'
+    old = next((r / rel for r in (c.OUTPUTS, c.EARLIER_OUTPUTS) if (r / rel).is_dir()), c.OUTPUTS / rel)
     yr170 = (end or spin) / ('pickup.%010d.data' % c.LEG_NITER0)
     try:
         res['spinup_year170_vs_31203'] = bool(filecmp.cmp(yr170, old / ('pickup.%010d.data' % c.LEG_NITER0), shallow=False))
