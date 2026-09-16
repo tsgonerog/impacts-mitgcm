@@ -38,6 +38,16 @@ analyses/**/*.jpg
 analyses/**/*.gif
 analyses/**/*.html
 
+# ...except a page that is SOURCE, not output. explorer_template.html is the page half of
+# build_explorer.py (the depth-level explorer of the adjoint dumps); its `/*MANIFEST*/null` is
+# replaced at build time and the built copy, which is output, keeps matching *.html above.
+!analyses/**/explorer_template.html
+
+# The BUILT explorer: index.html with the manifest inlined, and 32 MB of quantised ADJ*
+# payloads. It belongs on scratch (analysis/<campaign>/explorer/); this copy exists only so
+# that the page can be published from inside a working directory.
+analyses/**/explorer/
+
 # Editor autosave / scratch copies (.~poster.ipynb was a corrupt 162 MB one)
 analyses/**/.~*
 analyses/**/*-checkpoint.ipynb

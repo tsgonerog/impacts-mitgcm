@@ -10,6 +10,38 @@
   time when `/scratch2` is readable. The fix is to link nothing for `nIter0 = 0`,
   as `link_pickup` does for the adjoints; a change to the submit definition, for
   the user to approve.
+- [x] ~~**How much of the overturning's variability the 30.5-day averaging hides**~~
+  (done 2026-09-16, run 31434). Every forward run writes `dynDiag` as a 30.5-day time
+  average, so every AMOC series this project has drawn is a series of monthly means, and
+  the advisor deck's claim that successive months differ by 0.003 Sv at 26 N could have
+  been the diagnostic rather than the ocean. `input/variants/variability_check/` runs one
+  year from 31203's year-190 pickup with `VVEL` written three ways at once — 30.5-day
+  means, daily means, 6-hourly snapshots — and **the averaging hides nothing**: the
+  monthly means see 97–100 % of the standard deviation the 6-hourly snapshots see, at all
+  five latitudes tested (26 N: 0.0062 against 0.0064 Sv), and the 6-hourly spectrum has
+  essentially no variance at periods below a month. 9 min 37 s, 2.6 GB, no pickup written
+  (`pChkptFreq=0.`, so it cannot write through the staged pickup symlink — the first entry
+  above).
+  **Why, and what it costs us:** `input_binaries/dino_utau.bin` holds 365 daily records
+  that are all identical, so the wind stress has no seasonal cycle; only `dino_T_star.bin`
+  (±3 K) and `dino_q_solar.bin` vary through the year. The Ekman variability that dominates
+  the observed and ECCO AMOC at sub-annual periods is therefore absent by construction, as
+  are eddies at 1°, leaving a buoyancy-driven seasonal cycle of 0.008–0.099 Sv peak to
+  peak. **This configuration cannot be asked about overturning variability, only about its
+  sensitivity** — worth stating before anyone reads a variability result off it. If
+  variability ever becomes the question, that wind file is where to start.
+- [x] ~~**A film of every `ADJ*` dump, and the depth level a film shows**~~ (done
+  2026-09-16). `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/make_films.py` films all
+  twelve dumps of the reference adjoint and `ADJtheta`/`ADJdiffkr` for all eight κ_v
+  members (30 films, PDF for the deck and GIF for the page), and the two levels a
+  three-dimensional film shows are now chosen by the cost's geometry instead of by hand:
+  the level of largest time-mean RMS inside the upper 982 m the cost integrates, and the
+  largest below it (`ADJtheta` 915 m and 1844 m, where 300 m carried 3.5 times less).
+  `build_explorer.py` puts all 36 levels of every field, and all eight members, on one
+  page. Whether a dump decays or accumulates is measured from its own RMS-against-lead
+  curve rather than assumed; `ADJtauy` and `ADJqsw` turn out to be neither, which is
+  consistent with their being the gradients the finite-difference check rejects hardest.
+
 - [x] ~~**Merge the `/scratch` tree into `/scratch2`**~~ (done 2026-09-15, when `/scratch2`
   came back): the κ_v campaign's runs and products are in the main tree under
   `runs/forward/spinup_170yr_viscRef_ReMax2/`, `runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/`

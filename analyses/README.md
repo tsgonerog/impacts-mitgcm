@@ -257,6 +257,23 @@ and the published page, and the page's numbers are read from the stats files.
 Its `README.md` has the scripts and the job chain; the runs and outputs are on
 `/scratch` (see "Scratch layout").
 
+Two scripts were added on 2026-09-16, when the advisor deck was revised.
+`make_films.py` films **every** `ADJ*` dump of the reference adjoint and of all
+eight members — 30 films, each as a multi-page PDF for the beamer deck and as a
+GIF — and states the rule that picks the two depth levels a three-dimensional
+film shows: the level of largest time-mean RMS inside the upper 982 m the cost
+integrates, and the largest below it. `build_explorer.py` with
+`explorer_template.html` builds the interactive explorer of all 36 levels, which
+is the only `*.html` under `analyses/` that is source rather than output and so
+has its own `!` line in `.gitignore`. The campaign `README.md` has the depth rule,
+the measured decay-or-accumulate table for all twelve dumps, and the commands.
+
+The sampling question the deck raised — whether the steadiness of the current
+setup is the ocean or the 30.5-day `dynDiag` averaging — is answered by run
+31434 and recorded in
+`MITgcm_c69m/mysetups/DINO_1deg/input/variants/variability_check/README.md`,
+with the figure produced by the deck's own figure script.
+
 ### Where the outputs go
 
 **No figures or animations live in this repository.** Every notebook writes its

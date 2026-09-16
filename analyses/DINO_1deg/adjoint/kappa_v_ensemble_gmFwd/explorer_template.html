@@ -1,0 +1,586 @@
+<title>DINO Sensitivity Explorer</title>
+<!--
+  The page half of build_explorer.py. `/*MANIFEST*/null` below is replaced at build time by the
+  manifest: the grid, the colour table, and for every (dataset, variable) the payload file name and
+  its per-(frame, level) scales. The payloads are greyscale PNGs used as data containers, tiled time
+  down and level across; the page decodes each one once and colours a single 51x198 tile whenever a
+  slider moves. 255 means land, 127 means zero, and a pixel's value is (q - 127)/127 * scale.
+
+  It needs to be served over http: a browser taints a canvas drawn from a file:// image and then
+  refuses to read the pixels back. explorer/serve.sh starts a server for the local copy.
+-->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:#fcfcfb; --panel:#f5f3ed; --sunk:#eceade;
+    --ink:#15140f; --ink2:#52514e; --muted:#8a877f;
+    --rule:#ddd9cf; --rule2:#c9c4b7;
+    --land:#d9d8d2; --accent:#2a6fbf; --accent2:#c25428; --good:#15825c;
+    --shadow:0 1px 2px rgba(20,18,10,.06);
+    --sans:"IBM Plex Sans", ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#131416; --panel:#1b1d21; --sunk:#23252b;
+      --ink:#eceae4; --ink2:#a8a59d; --muted:#85837c;
+      --rule:#2c2e33; --rule2:#3c3f46;
+      --land:#454850; --accent:#7bb0f0; --accent2:#e8875a; --good:#4cc79a;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#131416; --panel:#1b1d21; --sunk:#23252b;
+    --ink:#eceae4; --ink2:#a8a59d; --muted:#85837c;
+    --rule:#2c2e33; --rule2:#3c3f46;
+    --land:#454850; --accent:#7bb0f0; --accent2:#e8875a; --good:#4cc79a;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+
+  body { background:var(--ground); color:var(--ink); font-family:var(--sans);
+         font-size:14px; line-height:1.5; margin:0; }
+  .wrap { max-width:1360px; margin:0 auto; padding-inline:18px; padding-block:26px 44px; }
+  h1 { font-size:clamp(1.35rem,3.2vw,1.9rem); font-weight:600; letter-spacing:-.018em;
+       margin:.1em 0 .25em; text-wrap:balance; }
+  .eyebrow { font-family:var(--mono); font-size:.69rem; letter-spacing:.13em; text-transform:uppercase;
+             color:var(--muted); }
+  .lede { color:var(--ink2); max-width:66ch; margin:.3em 0 0; }
+  .lede code, code { font-family:var(--mono); font-size:.88em; background:var(--sunk);
+                     padding:.08em .32em; border-radius:3px; }
+  a { color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+
+  /* ---- control rail ---- */
+  .rail { display:flex; flex-wrap:wrap; gap:14px 22px; align-items:flex-end;
+          margin:22px 0 0; padding:14px 16px; background:var(--panel);
+          border:1px solid var(--rule); border-radius:8px; }
+  .field { display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .field > span { font-family:var(--mono); font-size:.68rem; letter-spacing:.1em;
+                  text-transform:uppercase; color:var(--muted); }
+  select, button { font-family:var(--sans); font-size:.9rem; color:var(--ink);
+                   background:var(--ground); border:1px solid var(--rule2); border-radius:5px;
+                   padding:6px 9px; }
+  select { max-width:min(62vw,340px); }
+  button { cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button:focus-visible, select:focus-visible, input:focus-visible {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  .seg { display:inline-flex; border:1px solid var(--rule2); border-radius:5px; overflow:hidden; }
+  .seg button { border:0; border-radius:0; background:var(--ground); padding:6px 12px; }
+  .seg button + button { border-left:1px solid var(--rule2); }
+  .seg button[aria-pressed="true"] { background:var(--accent); color:#fff; }
+
+  /* ---- stage: the depth axis, then the maps ---- */
+  .stage { display:flex; gap:18px; align-items:stretch; margin-top:20px; }
+  .depth { flex:0 0 116px; display:flex; flex-direction:column; }
+  .depth .cap { font-family:var(--mono); font-size:.68rem; letter-spacing:.1em;
+                text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .depthbody { position:relative; flex:1 1 auto; min-height:340px;
+               border-left:1px solid var(--rule2); }
+  .costband { position:absolute; left:0; right:0; background:var(--accent); opacity:.12;
+              border-bottom:1px dashed var(--rule2); }
+  .dtick { position:absolute; left:0; font-family:var(--mono); font-size:.66rem; color:var(--muted);
+           transform:translateY(-50%); padding-left:7px; white-space:nowrap; }
+  .dtick::before { content:""; position:absolute; left:0; top:50%; width:5px;
+                   border-top:1px solid var(--rule2); }
+  .dtick.film { color:var(--accent2); font-weight:500; }
+  .dtick.film::before { border-color:var(--accent2); width:9px; }
+  .dhandle { position:absolute; left:-1px; right:-6px; height:0;
+             border-top:2px solid var(--accent); }
+  .dslider { position:absolute; left:-14px; top:0; height:100%; width:26px; }
+  .dslider input { -webkit-appearance:slider-vertical; appearance:slider-vertical;
+                   writing-mode:vertical-lr; direction:rtl; width:26px; height:100%; margin:0; }
+  .dread { font-family:var(--mono); font-size:.95rem; margin-top:10px; color:var(--ink); }
+  .dread small { display:block; font-size:.72rem; color:var(--muted); font-family:var(--sans); }
+  .dstep { display:flex; align-items:center; gap:5px; margin-top:6px; }
+  .dstep button { padding:2px 9px; font-size:.95rem; line-height:1.2; }
+
+  .maps { flex:1 1 auto; min-width:0; }
+  .grid1 { display:block; }
+  .gridN { display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:10px; }
+  .cell { background:var(--panel); border:1px solid var(--rule); border-radius:6px; padding:8px;
+          box-shadow:var(--shadow); }
+  .cell h3 { margin:0 0 6px; font-size:.78rem; font-weight:500; color:var(--ink2);
+             font-family:var(--mono); letter-spacing:.02em; }
+  .cell canvas { display:block; width:100%; height:auto; image-rendering:pixelated;
+                 background:var(--land); border-radius:3px; }
+  .cell.wide { display:flex; gap:14px; align-items:flex-start; }
+  .cell.wide .canvwrap { flex:0 0 min(46%,340px); }
+  .cell.wide .side { flex:1 1 auto; min-width:0; font-size:.86rem; color:var(--ink2); }
+  .cell.wide .side dl { display:grid; grid-template-columns:auto 1fr; gap:3px 12px; margin:0 0 12px; }
+  .cell.wide .side dt { font-family:var(--mono); font-size:.72rem; color:var(--muted);
+                        text-transform:uppercase; letter-spacing:.07em; align-self:center; }
+  .cell.wide .side dd { margin:0; font-family:var(--mono); font-size:.88rem; color:var(--ink); }
+
+  /* ---- time + colourbar ---- */
+  .timebar { display:flex; gap:14px; align-items:center; margin-top:18px; padding:12px 16px;
+             background:var(--panel); border:1px solid var(--rule); border-radius:8px; }
+  .timebar input[type=range] { flex:1 1 auto; min-width:0; accent-color:var(--accent); }
+  .lead { font-family:var(--mono); font-size:.95rem; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .lead small { color:var(--muted); font-family:var(--sans); }
+  .cbar { margin-top:16px; }
+  .cbar canvas { display:block; width:100%; height:14px; border-radius:3px; border:1px solid var(--rule2); }
+  .cbar .ticks { display:flex; justify-content:space-between; font-family:var(--mono);
+                 font-size:.74rem; color:var(--ink2); margin-top:4px; font-variant-numeric:tabular-nums; }
+  .note { color:var(--ink2); font-size:.86rem; margin-top:14px; max-width:78ch; }
+  .warn { color:var(--accent2); }
+  footer { margin-top:34px; padding-top:16px; border-top:1px solid var(--rule); color:var(--muted);
+           font-size:.82rem; }
+  footer dl { display:grid; grid-template-columns:auto 1fr; gap:3px 14px; margin:8px 0 0; }
+  footer dt { font-family:var(--mono); font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; }
+  footer dd { margin:0; }
+  .hint { font-family:var(--mono); font-size:.72rem; color:var(--muted); }
+
+  @media (max-width:760px) {
+    .stage { flex-direction:column; }
+    .depth { flex:0 0 auto; }
+    .depthbody { min-height:0; height:auto; border-left:0; }
+    .depthbody .dtick, .depthbody .costband, .depthbody .dhandle { display:none; }
+    .dslider { position:static; left:auto; width:100%; height:auto; }
+    .dslider input { -webkit-appearance:auto; appearance:auto; writing-mode:horizontal-tb;
+                     width:100%; height:auto; direction:ltr; }
+    .cell.wide { flex-direction:column; }
+    .cell.wide .canvwrap { flex:0 0 auto; width:min(100%,320px); }
+  }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">MITgcm checkpoint69m &middot; Tapenade adjoint &middot; DINO 51&times;198&times;36</div>
+    <h1>Where the overturning&rsquo;s sensitivity lives, level by level</h1>
+    <p class="lede">Every <code>ADJ*</code> dump of the five-year adjoint, at all 36 depth levels and
+      every 60 days of lead time. The cost <em>J</em> is the northward transport across
+      <span id="latsec">26&deg;N</span> in the upper 982&nbsp;m, averaged over the last 30 days of the
+      window; red at a point means <em>raise the field there and J goes up</em>. The film on the
+      slides has to pick two levels &mdash; this picks any of them.</p>
+  </header>
+
+  <div class="rail">
+    <div class="field">
+      <span>Dataset</span>
+      <div class="seg" id="dsseg"></div>
+    </div>
+    <div class="field">
+      <span>Sensitivity to</span>
+      <select id="varsel"></select>
+    </div>
+    <div class="field">
+      <span>Colour scale</span>
+      <select id="scalesel">
+        <option value="slice">this level, this frame</option>
+        <option value="frame">this frame, all levels</option>
+        <option value="var">whole variable</option>
+      </select>
+    </div>
+    <div class="field">
+      <span>&nbsp;</span>
+      <span class="hint" id="status">loading&hellip;</span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="depth">
+      <div class="cap">Depth</div>
+      <div class="depthbody" id="depthbody">
+        <div class="costband" id="costband"></div>
+        <div class="dhandle" id="dhandle"></div>
+        <div class="dslider"><input id="levsel" type="range" min="0" max="36" step="1" value="24"
+                                    aria-label="depth level"></div>
+      </div>
+      <div class="dread" id="levread">&mdash;</div>
+      <div class="dstep">
+        <button type="button" id="levup" aria-label="one level shallower">&minus;</button>
+        <button type="button" id="levdn" aria-label="one level deeper">+</button>
+        <span class="hint">&#8593;&#8595; keys</span>
+      </div>
+    </div>
+    <div class="maps" id="maps"></div>
+  </div>
+
+  <div class="timebar">
+    <button id="play" aria-label="play the film">&#9654;&nbsp; Play</button>
+    <input id="timesel" type="range" min="0" max="30" step="1" value="0" aria-label="lead time">
+    <span class="lead" id="leadread">&mdash;</span>
+  </div>
+
+  <div class="cbar">
+    <canvas id="cbarcv" width="512" height="14" aria-hidden="true"></canvas>
+    <div class="ticks"><span id="cb0">&mdash;</span><span id="cbm">0</span><span id="cb1">&mdash;</span></div>
+  </div>
+
+  <p class="note" id="note"></p>
+
+  <footer>
+    <strong>Provenance.</strong> The dumps are read straight from the run directories on cluster
+    scratch; nothing here is re-gridded or interpolated, only quantised to 8&nbsp;bits per cell about
+    each slice&rsquo;s own 99.8th percentile.
+    <dl>
+      <dt>Built</dt><dd id="fbuilt">&mdash;</dd>
+      <dt>Runs</dt><dd id="fruns">&mdash;</dd>
+      <dt>Code</dt><dd><code>impacts-mitgcm/analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/build_explorer.py</code></dd>
+      <dt>Films</dt><dd><code>&lt;scratch&gt;/DINO_1deg_outputs/analysis/kappa_v_ensemble_gmFwd/animations/</code>
+        &mdash; one film per variable and per member, with <code>films_index.tsv</code> saying which levels each shows</dd>
+    </dl>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const M = /*MANIFEST*/null;
+  const G = M.grid, CMAP = M.cmap, NX = G.nx, NY = G.ny;
+  const LANDQ = 255, ZEROQ = 127;
+  const $ = (id) => document.getElementById(id);
+  const state = { ds: "reference", v: null, lev: 24, t: 0, scale: "slice", playing: false, timer: null };
+  const cache = new Map();          // file -> Promise<{w,h,buf}>
+  const cells = [];                 // the drawn panels
+
+  /* ---------- data ---------- */
+  function payload(file) {
+    if (cache.has(file)) return cache.get(file);
+    const p = new Promise((res, rej) => {
+      const im = new Image();
+      im.onload = () => {
+        const cv = document.createElement("canvas");
+        cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+        const cx = cv.getContext("2d", { willReadFrequently: true });
+        cx.drawImage(im, 0, 0);
+        let d;
+        try { d = cx.getImageData(0, 0, cv.width, cv.height).data; }
+        catch (e) {
+          rej(new Error("This page must be served over http, not opened as a file — "
+                        + "run explorer/serve.sh and open http://localhost:8765/"));
+          return;
+        }
+        const n = cv.width * cv.height, out = new Uint8Array(n);
+        for (let q = 0; q < n; q++) out[q] = d[q * 4];
+        res({ w: cv.width, h: cv.height, buf: out });
+      };
+      im.onerror = () => rej(new Error("could not load " + file));
+      im.src = file;
+    });
+    cache.set(file, p);
+    if (cache.size > 11) cache.delete(cache.keys().next().value);
+    return p;
+  }
+
+  const ds = () => M.datasets[state.ds];
+  const vinfo = () => ds().vars[state.v];
+
+  function scalesFor(run) {
+    const vi = vinfo();
+    return vi.files ? vi.scale[run] : vi.scale;
+  }
+  function filesFor() {
+    const vi = vinfo();
+    return vi.files ? ds().members.map((m) => [m.label, vi.files[m.run], m.run])
+                    : [[null, vi.file, null]];
+  }
+  function vmaxFor(run) {
+    const sc = scalesFor(run), t = state.t, k = Math.min(state.lev, vinfo().nlev - 1);
+    if (state.scale === "slice") return sc[t][k] || 1;
+    if (state.scale === "frame") return Math.max.apply(null, sc[t]) || 1;
+    let m = 0;
+    for (const row of sc) for (const v of row) if (v > m) m = v;
+    return m || 1;
+  }
+  function vmaxShown() {                       // one number for the colourbar
+    let m = 0;
+    for (const [, , run] of filesFor()) m = Math.max(m, vmaxFor(run));
+    return m;
+  }
+
+  /* ---------- drawing ---------- */
+  const OFF = document.createElement("canvas");
+  OFF.width = NX; OFF.height = NY;
+  const OCTX = OFF.getContext("2d");
+
+  function paint(cv, pl, k, vmax) {
+    const ctx = cv.getContext("2d");
+    const off = OFF, octx = OCTX;
+    const id = octx.createImageData(NX, NY);
+    const W = pl.w, base = state.t * NY, kx = k * NX;
+    const slice = scalesFor(cv.dataset.run || null)[state.t][k] || 0;
+    const gain = vmax > 0 ? slice / (127 * vmax) : 0;      // q -> u in one multiply
+    const landRGB = getComputedStyle(document.body).getPropertyValue("--land").trim();
+    const lm = /^#([0-9a-f]{6})$/i.exec(landRGB);
+    const lr = lm ? parseInt(lm[1].slice(0, 2), 16) : 217,
+          lg = lm ? parseInt(lm[1].slice(2, 4), 16) : 216,
+          lb = lm ? parseInt(lm[1].slice(4, 6), 16) : 210;
+    for (let j = 0; j < NY; j++) {
+      const row = (base + j) * W;
+      const o0 = (NY - 1 - j) * NX * 4;            // row 0 of the payload is the southernmost
+      for (let i = 0; i < NX; i++) {
+        const q = pl.buf[row + kx + i];
+        const o = o0 + i * 4;
+        if (q === LANDQ) { id.data[o] = lr; id.data[o + 1] = lg; id.data[o + 2] = lb; }
+        else {
+          let u = (q - ZEROQ) * gain;
+          u = u < -1 ? -1 : u > 1 ? 1 : u;
+          const c = CMAP[Math.round(((u + 1) / 2) * 255)];
+          id.data[o] = c[0]; id.data[o + 1] = c[1]; id.data[o + 2] = c[2];
+        }
+        id.data[o + 3] = 255;
+      }
+    }
+    octx.putImageData(id, 0, 0);
+    // the cost section, drawn on the tile itself so it scales with it
+    octx.fillStyle = "rgba(20,18,10,.75)";
+    octx.fillRect(0, NY - 1 - G.jsec, NX, 1);
+    cv.width = NX * 4; cv.height = NY * 4;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, cv.width, cv.height);
+  }
+
+  function colourbar() {
+    const cv = $("cbarcv"), ctx = cv.getContext("2d");
+    const id = ctx.createImageData(cv.width, 1);
+    for (let x = 0; x < cv.width; x++) {
+      const c = CMAP[Math.round((x / (cv.width - 1)) * 255)];
+      id.data[x * 4] = c[0]; id.data[x * 4 + 1] = c[1]; id.data[x * 4 + 2] = c[2];
+      id.data[x * 4 + 3] = 255;
+    }
+    const off = document.createElement("canvas");
+    off.width = cv.width; off.height = 1;
+    off.getContext("2d").putImageData(id, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(off, 0, 0, cv.width, cv.height);
+    const vi = vinfo();
+    const vm = vmaxShown(), u = unitsAt(Math.min(state.lev, vi.nlev - 1));
+    $("cb0").textContent = "−" + fmt(vm) + "  " + u;
+    $("cb1").textContent = "+" + fmt(vm) + "  " + u;
+  }
+  const fmt = (v) => (v === 0 ? "0" : v.toExponential(2));
+
+  /* ---------- layout ---------- */
+  function buildCells() {
+    const host = $("maps");
+    host.textContent = "";
+    cells.length = 0;
+    const list = filesFor();
+    host.className = "maps " + (list.length > 1 ? "gridN" : "grid1");
+    for (const [label, file, run] of list) {
+      const cell = document.createElement("div");
+      cell.className = "cell" + (list.length === 1 ? " wide" : "");
+      if (label) {
+        const h = document.createElement("h3");
+        h.textContent = label;
+        cell.appendChild(h);
+      }
+      const wrap = document.createElement("div");
+      wrap.className = "canvwrap";
+      const cv = document.createElement("canvas");
+      cv.width = NX * 4; cv.height = NY * 4;
+      if (run) cv.dataset.run = run;
+      cv.setAttribute("role", "img");
+      wrap.appendChild(cv);
+      cell.appendChild(wrap);
+      if (list.length === 1) {
+        const side = document.createElement("div");
+        side.className = "side";
+        side.innerHTML = '<dl>'
+          + '<dt>Field</dt><dd id="s-field">&mdash;</dd>'
+          + '<dt>Behaviour</dt><dd id="s-kind">&mdash;</dd>'
+          + '<dt>Level</dt><dd id="s-lev">&mdash;</dd>'
+          + '<dt>Lead</dt><dd id="s-lead">&mdash;</dd>'
+          + '<dt>Slice max</dt><dd id="s-max">&mdash;</dd>'
+          + '<dt>Under cursor</dt><dd id="s-cur">move over the map</dd>'
+          + '</dl>'
+          + '<p style="margin:0">Longitude runs 50.5&deg;W to 0.5&deg;W, latitude 70&deg;S to 69&deg;N; '
+          + 'the dark line is the cost section. Grey is land or below the sea floor.</p>';
+        cell.appendChild(side);
+        cv.addEventListener("mousemove", onHover);
+        cv.addEventListener("mouseleave", () => { const e = $("s-cur"); if (e) e.textContent = "move over the map"; });
+      }
+      host.appendChild(cell);
+      cells.push({ cv: cv, file: file, run: run });
+    }
+  }
+
+  function onHover(ev) {
+    const cv = ev.currentTarget, r = cv.getBoundingClientRect();
+    const i = Math.min(NX - 1, Math.max(0, Math.floor(((ev.clientX - r.left) / r.width) * NX)));
+    const jj = Math.min(NY - 1, Math.max(0, Math.floor(((ev.clientY - r.top) / r.height) * NY)));
+    const j = NY - 1 - jj;
+    const c = cells[0];
+    const pl = cache.get(c.file);
+    if (!pl) return;
+    pl.then((p) => {
+      const k = Math.min(state.lev, vinfo().nlev - 1);
+      const q = p.buf[(state.t * NY + j) * p.w + k * NX + i];
+      const el = $("s-cur");
+      if (!el) return;
+      if (q === LANDQ) { el.textContent = "land / below the floor"; return; }
+      const val = ((q - ZEROQ) / 127) * (scalesFor(c.run)[state.t][k] || 0);
+      el.textContent = fmt(val) + "   at " + G.lon[i].toFixed(1) + "°, "
+                     + G.lat[j].toFixed(1) + "°";
+    });
+  }
+
+  /* ---------- depth axis ---------- */
+  function buildDepthAxis() {
+    const vi = vinfo(), body = $("depthbody");
+    const three = vi.three, nlev = vi.nlev;
+    $("levsel").max = String(nlev - 1);
+    $("levsel").disabled = !three;
+    body.querySelectorAll(".dtick").forEach((e) => e.remove());
+    const zmax = G.depth[G.depth.length - 1];
+    const pos = (k) => (k >= G.depth.length ? 100 : (G.depth[k] / zmax) * 100);
+    const band = $("costband");
+    band.hidden = !three;
+    if (three) {
+      band.style.top = "0%";
+      band.style.height = pos(G.kcost - 1).toFixed(2) + "%";
+    }
+    if (!three) return;
+    const filmset = new Set(vi.film_levels || []);
+    const want = [0, 5, 10, 15, 20, 25, 30, 35].concat(vi.film_levels || []);
+    const seen = new Set();
+    for (const k of want) {
+      if (k >= G.depth.length || seen.has(k)) continue;
+      seen.add(k);
+      const el = document.createElement("div");
+      el.className = "dtick" + (filmset.has(k) ? " film" : "");
+      el.style.top = pos(k).toFixed(2) + "%";
+      el.textContent = Math.round(G.depth[k]) + " m" + (filmset.has(k) ? "  ← film" : "");
+      body.appendChild(el);
+    }
+  }
+  function moveHandle() {
+    const vi = vinfo();
+    const zmax = G.depth[G.depth.length - 1];
+    const k = Math.min(state.lev, vi.nlev - 1);
+    const frac = !vi.three ? 0 : (k >= G.depth.length ? 100 : (G.depth[k] / zmax) * 100);
+    $("dhandle").style.top = frac.toFixed(2) + "%";
+    $("dhandle").hidden = !vi.three;
+  }
+
+  /* ---------- readouts ---------- */
+  function unitsAt(k) {                        // the column sum has integrated over dz
+    const vi = vinfo();
+    return vi.three && k === vi.nlev - 1 ? vi.units + " m" : vi.units;
+  }
+
+  function readouts() {
+    const vi = vinfo(), k = Math.min(state.lev, vi.nlev - 1);
+    const lead = ds().leads[state.t];
+    $("levread").innerHTML = vi.levels[k] + "<small>" + (vi.three ? "level " + (k + 1) + " of " + vi.nlev : "surface field") + "</small>";
+    $("leadread").innerHTML = "lead " + lead.toFixed(2) + " yr <small>&middot; " + Math.round(lead * 366) + " d before the end of the window</small>";
+    const f = $("s-field"); if (f) f.textContent = vi.label;
+    const kk = $("s-kind"); if (kk) kk.textContent = vi.kind;
+    const lv = $("s-lev"); if (lv) lv.textContent = vi.levels[k];
+    const ld = $("s-lead"); if (ld) ld.textContent = lead.toFixed(2) + " yr";
+    const mx = $("s-max");
+    if (mx) mx.textContent = fmt(scalesFor(cells[0] ? cells[0].run : null)[state.t][k]) + " " + unitsAt(k);
+    const scaleWord = { slice: "this level and frame only", frame: "this frame, every level",
+                        var: "the whole variable, every level and frame" }[state.scale];
+    $("note").innerHTML = "Colours span &plusmn;" + fmt(vmaxShown()) + " " + unitsAt(k)
+      + ", the 99.8th percentile of |field| over " + scaleWord
+      + ". The two levels marked <span style='color:var(--accent2)'>&larr; film</span> are the ones the "
+      + "slide deck&rsquo;s film shows: the level of largest time-mean RMS inside the 982 m the cost "
+      + "integrates, and the largest below it.";
+  }
+
+  /* ---------- render ---------- */
+  let token = 0;
+  function render() {
+    const mine = ++token;
+    const vi = vinfo();
+    if (state.lev > vi.nlev - 1) state.lev = vi.nlev - 1;
+    $("levsel").value = String(state.lev);
+    $("timesel").max = String(ds().leads.length - 1);
+    if (state.t > ds().leads.length - 1) state.t = ds().leads.length - 1;
+    $("timesel").value = String(state.t);
+    moveHandle();
+    $("status").textContent = "loading…";
+    Promise.all(cells.map((c) => payload(c.file))).then((pls) => {
+      if (mine !== token) return;
+      const k = Math.min(state.lev, vi.nlev - 1);
+      // "this level, this frame" scales every panel to itself, which is what you want to compare
+      // patterns; the other two modes share one scale across the panels, so amplitudes compare too.
+      const shared = state.scale === "slice" ? null : vmaxShown();
+      cells.forEach((c, n) => {
+        paint(c.cv, pls[n], k, shared === null ? vmaxFor(c.run) : shared);
+        c.cv.setAttribute("aria-label", vi.label + " sensitivity, " + vi.levels[k]
+                          + ", lead " + ds().leads[state.t].toFixed(2) + " yr"
+                          + (c.run ? ", member " + c.run : ""));
+      });
+      colourbar();
+      readouts();
+      $("status").textContent = cells.length + (cells.length > 1 ? " panels" : " panel") + " · ready";
+    }).catch((err) => {
+      if (mine !== token) return;
+      $("status").innerHTML = "<span class='warn'>" + err.message + "</span>";
+      $("note").innerHTML = "<span class='warn'>" + err.message + "</span>";
+    });
+  }
+
+  /* ---------- controls ---------- */
+  function fillVars() {
+    const sel = $("varsel");
+    sel.textContent = "";
+    for (const v of Object.keys(ds().vars)) {
+      const o = document.createElement("option");
+      o.value = v;
+      o.textContent = ds().vars[v].label + "  (" + v + ")";
+      sel.appendChild(o);
+    }
+    if (!ds().vars[state.v]) state.v = Object.keys(ds().vars)[0];
+    sel.value = state.v;
+  }
+  function switchDataset(key) {
+    state.ds = key;
+    state.t = 0;
+    fillVars();
+    buildCells();
+    buildDepthAxis();
+    for (const b of $("dsseg").children) b.setAttribute("aria-pressed", String(b.dataset.ds === key));
+    $("fruns").textContent = ds().label + " — " + ds().note;
+    render();
+  }
+  function play(on) {
+    state.playing = on;
+    $("play").innerHTML = on ? "&#10073;&#10073;&nbsp; Pause" : "&#9654;&nbsp; Play";
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    if (on) state.timer = setInterval(() => {
+      state.t = (state.t + 1) % ds().leads.length;
+      render();
+    }, 320);
+  }
+
+  for (const key of Object.keys(M.datasets)) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.ds = key;
+    b.textContent = key === "reference" ? "Reference adjoint" : "κᵥ ensemble";
+    b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => switchDataset(key));
+    $("dsseg").appendChild(b);
+  }
+  $("varsel").addEventListener("change", (e) => {
+    state.v = e.target.value; buildCells(); buildDepthAxis(); render();
+  });
+  $("scalesel").addEventListener("change", (e) => { state.scale = e.target.value; render(); });
+  $("levsel").addEventListener("input", (e) => { state.lev = +e.target.value; render(); });
+  $("timesel").addEventListener("input", (e) => { state.t = +e.target.value; play(false); render(); });
+  $("play").addEventListener("click", () => play(!state.playing));
+  $("levup").addEventListener("click", () => { state.lev = Math.max(0, state.lev - 1); render(); });
+  $("levdn").addEventListener("click", () => {
+    state.lev = Math.min(vinfo().nlev - 1, state.lev + 1); render();
+  });
+  document.addEventListener("keydown", (e) => {
+    const vi = vinfo(), nt = ds().leads.length;
+    if (e.key === "ArrowUp") { state.lev = Math.max(0, state.lev - 1); render(); }
+    else if (e.key === "ArrowDown") { state.lev = Math.min(vi.nlev - 1, state.lev + 1); render(); }
+    else if (e.key === "ArrowLeft") { state.t = (state.t + nt - 1) % nt; play(false); render(); }
+    else if (e.key === "ArrowRight") { state.t = (state.t + 1) % nt; play(false); render(); }
+    else return;
+    e.preventDefault();
+  });
+
+  $("fbuilt").textContent = M.built + "  ·  campaign " + M.campaign;
+  $("latsec").innerHTML = Math.abs(G.lat_sec).toFixed(0) + "&deg;" + (G.lat_sec >= 0 ? "N" : "S");
+  switchDataset("reference");
+})();
+</script>
