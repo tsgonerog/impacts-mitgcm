@@ -70,6 +70,23 @@
   year-170 pickup on 2026-09-11 06:17, writing its own year-170 state through the staged
   symlink (the file is byte-identical to 31365's year-170 pickup, which is how it was
   identified; a note sits in 30983's run directory and in the repository `CLAUDE.md`).
+- [ ] **Update the `nn_surrogate` master and results brief with the rerun results** (added
+  2026-09-16). Both still describe the 2026-08 ensemble (adjoints 30995/31003–31009, rerun
+  seam-clean as 31039–31046, all deleted): the master's Part I results,
+  `directions/nn_surrogate/master_plan/sections/11_part1_results.tex`, has four of seven member
+  adjoints blowing up in its member table, and the brief `briefs/kappa_ensemble_results/` builds
+  Finding 3 and its figure on that. The rerun under the settled setup (legs 31366–31373,
+  adjoints 31374–31381, finite-difference sweeps 31382–31398, all in the notes repository's
+  `references/dino_sensitivity_vs_mixing/` deck and the campaign's `stats/`) changes it: all
+  eight adjoints bounded, amplitude falling smoothly with κ_v (1.19 to 0.57 times the
+  reference); dJ/dκ_v +21 % against finite differences, the same with a GM-free adjoint of a
+  GM-free model, so from the reverse-sweep advection scheme rather than GM; the surface
+  heat-flux, meridional-stress and freshwater gradients failing their checks; pattern
+  correlations and the target structure (dJ/dκ_v rebuilt from the adjoint temperature and
+  salinity at 0.986). The master first, then the brief — derivation runs one way, and
+  `briefs/README.md` says which brief sections follow Part I §Results — then the `nn_surrogate`
+  row of the notes `README.md`, which now only says both predate the rerun. Push both to
+  Overleaf (`nn_surrogate - direction`) afterwards.
 - [ ] **Find why the adjoint's surface-flux gradients fail their finite-difference
   checks** (2026-09-15). From the reference leg 31366's year 180, uniform perturbations
   of every forcing record (`input_tap/variants/fd_checks/`, 31384–31391) give adjoint
