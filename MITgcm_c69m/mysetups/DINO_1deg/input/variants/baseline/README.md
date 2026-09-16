@@ -5,7 +5,7 @@
 (`test_cases="${IMPACTS_TEST_CASE-}"`; the run is named from the namelist,
 `from_rest_viscRef_ReMax2_adv30`). That configuration is the outcome of the
 stability study (`../stability_study/`, the setup README's "Why the reference
-viscosity is unstable", `TODO.md`): DINO's reference viscosity files on both D
+viscosity is unstable", `TODO.md` at commit `a2ecf69`): DINO's reference viscosity files on both D
 and Z, the grid-Reynolds floor `viscAhReMax=2.` (DINO's own Re_Δ = 2 criterion
 applied with the local speed, so the field is DINO's wherever |u| < 0.27 m/s
 and raised only in the jets), and the unlimited DST3 tracer advection, scheme

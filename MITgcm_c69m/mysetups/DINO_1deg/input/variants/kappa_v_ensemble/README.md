@@ -42,7 +42,7 @@ tree. The 2026-08 members' files, `data_M1`–`data_M7`, were removed the same
 day (history at the end of this README). The ensemble is to be rerun from
 scratch under the cleaned setup from the eight files that remain; the rerun
 first recreates the adjoint variants as `M<k>_ReMax2_gmFwd`, with GM/Redi in
-the forward sweep (DINO `TODO.md`).
+the forward sweep (DINO `TODO.md` at commit `a2ecf69`).
 
 Vertical-mixing perturbation ensemble, Part I of the neural-network surrogate
 proposal: **do the adjoint sensitivity patterns depend on the model's vertical

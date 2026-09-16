@@ -80,7 +80,7 @@ the Tapenade hooks work"* explains the mechanism). The rename to the upstream
 names (2026-09-02) reproduced run 31033 bit for bit (run 31076, same 5-day
 configuration: `fc`, all 32 `adxx_*`, all 61 `ADJ*` dumps and the 390-line
 `%MON` stream); the move to the shared directory (2026-09-07) is validated
-against 31076 the same way (the DINO `TODO.md` entry of that date has the
+against 31076 the same way (the entry of that date in the DINO `TODO.md` at commit `a2ecf69` has the
 run). After `make`, the shared build body asserts, over the `HOOK_CHECKS`
 list in `scripts/setup_params.sh`, that each generated `_B` call carries the
 argument count the hand-written routine declares (a scalar field hook 7, a

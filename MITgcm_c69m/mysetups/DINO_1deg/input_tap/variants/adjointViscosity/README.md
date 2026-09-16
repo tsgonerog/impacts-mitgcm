@@ -71,5 +71,5 @@ at the equator) and `outAddiffKhT/S` were `0` against a forward `500` (no
 lateral tracer diffusion in the replays). Every boosted run from 31025 to
 31138 ran that way; `fc` and the `%MON` stream were unaffected, because they
 come from the forward sweep. The values are now `0.` and `5.E2`; run 31141
-against 31138 (30 d from rest, same executable, `TODO.md`) records the
+against 31138 (30 d from rest, same executable, `TODO.md` at commit `a2ecf69`) records the
 difference.

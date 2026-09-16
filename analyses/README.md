@@ -386,7 +386,7 @@ output tree's `logs/deleted_run_records/`, and the ensembles' tables are in its
 | `03_adjoint/02_`, `03_`, `04_` — three 5-yr adjoints | 24493, 28461, 28453 | `adjoint/sensitivity_5yr_from180yrPk_visc2x.ipynb` (itself retired 2026-09-12, below) |
 | `SOMA_1deg/01_`, `02_`, `03_` | `v4soma_*`, `v4StP_srl_*`, `pd_v4StP_srl_*` | `SOMA_1deg/adjoint_sensitivity_control_set.ipynb` |
 | (2026-09-12) `DINO_1deg/adjoint/kappa_v_ensemble/` — seven notebooks, `ensemble_common.py`, `build_cache.py`, `build_jproxy.py` | 31039–31046, 30996–31002, 31022, 28486 | `CLAUDE.md`, "Verifying correctness", item 4; the DINO setup `README.md`; the `kappa_ensemble_results` brief in the project notes (`directions/nn_surrogate/`) |
-| (2026-09-12) `DINO_1deg/adjoint/kappa_v_ensemble_ReMax2_approxAdv/` — `ensemble_adjoints`, `forward_legs`, `production_adjoint_stability_and_pathways` | 31205–31220, 31231, 31232 | the DINO setup `README.md` and `TODO.md` |
+| (2026-09-12) `DINO_1deg/adjoint/kappa_v_ensemble_ReMax2_approxAdv/` — `ensemble_adjoints`, `forward_legs`, `production_adjoint_stability_and_pathways` | 31205–31220, 31231, 31232 | the DINO setup `README.md` and its `TODO.md` at commit `a2ecf69` |
 | (2026-09-12) `DINO_1deg/adjoint/scidac_poster_aug2026/` — `adj_field_animations`, `poster_panel_frames` | 28486 | the poster itself; no document in this repository |
 | (2026-09-12) `DINO_1deg/adjoint/sensitivity_5yr_from180yrPk_visc2x.ipynb` | 28486 | `CLAUDE.md`, "Verifying correctness", items 3 and 4 (the committed grdchk point, 30995 ≡ 28486) |
 | (2026-09-12) `DINO_1deg/adjoint/sensitivity_180d_vs_5yr_from180yrPk_visc2x.ipynb` | 31028, 31039 | no other document; its executed outputs are the record |

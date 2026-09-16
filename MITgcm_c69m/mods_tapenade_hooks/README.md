@@ -274,7 +274,7 @@ runs the `--check` form.
   (218 files, `fc`, 441 `%MON` lines); DINO adjoint-viscosity build, 30 d
   from rest, 31109 against 31090 (210 fields, `fc`, 441 `%MON`; the mode
   switches engage under the boost as before); SOMA 5 d, 31110 against 31076
-  (186 fields, `fc`, 390 `%MON`). Details in `mysetups/DINO_1deg/TODO.md`,
+  (186 fields, `fc`, 390 `%MON`). Details in `mysetups/DINO_1deg/TODO.md` at commit `a2ecf69`,
   entry of 2026-09-07.
 - **The checked-in directory on a stock experiment** (2026-09-07):
   `tutorial_tracer_adjsens` through `genmake_local` pointing here: same

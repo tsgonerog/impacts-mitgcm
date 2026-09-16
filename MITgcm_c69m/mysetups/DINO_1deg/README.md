@@ -264,7 +264,10 @@ checkpoint-everything build is `build_tapAdj_ckpAll.sh` /
 see every checkpoint (a profile of the tuned build would only show the
 residual), it is the fallback if a configuration change invalidates the list,
 and it is the timing baseline. Whether the default returns to the
-`_nocheckpoint` pair is an open decision (`TODO.md`). The list is a profile of **one** configuration
+`_nocheckpoint` pair is an open decision (its record is in `TODO.md` at commit
+`a2ecf69`: this setup kept its to-do list in that file until 2026-09-16, when
+the list moved out of the repository and the file was removed; read it with
+`git show a2ecf69:MITgcm_c69m/mysetups/DINO_1deg/TODO.md`). The list is a profile of **one** configuration
 (since 2026-09-12 the live namelists — GM/Redi in the forward sweep, the
 approximate-advection switch, explicit vertical advection — with 27 ranks and
 this package set); the build's `_FWD` check catches a name that vanished, not a
@@ -446,7 +449,8 @@ were `0` (forward: `500`), so every boosted run up to 31138 replayed the
 forward with an extra `1.8E-2·L²/(4Δt)` of viscosity and no lateral tracer
 diffusion. Fixed in `data.autodiff_adjointViscosity` (whose boost lines are
 `data.autodiff_additions` since 2026-09-12); run 31141 against 31138
-(30 d from rest, same executable) measures what that changed — see `TODO.md`.
+(30 d from rest, same executable) measures what that changed — see `TODO.md`
+at `a2ecf69`.
 Vertical diffusivity cannot be boosted through any `inAd*` scalar: under
 `ALLOW_3D_DIFFKR` the run-time diffusivity is the 3-D `diffKr` array
 (`model/src/calc_3d_diffusivity.F`), which a boost would have to scale
@@ -580,7 +584,7 @@ DINO (Kamm et al. 2025, GMD 18, 8091, and its `EXPREF/namelist_cfg`) sets at
 1°: Laplacian viscosity `nn_ahm_ijk_t = 20` with `rn_Uv = 0.27` m/s, i.e.
 A_h = ½·U_v·Δx; background vertical viscosity `rn_avm0 = 1.2e-4` and
 diffusivity `rn_avt0 = 1.2e-5`; convective mixing `rn_evd = 100`. How this
-port carries each (reviewed 2026-09-09; the runs are in `TODO.md`):
+port carries each (reviewed 2026-09-09; the runs are in `TODO.md` at `a2ecf69`):
 
 | DINO | Here | Why |
 | --- | --- | --- |
@@ -789,7 +793,7 @@ reference leg 31205 (10 yr from the year-170 pickup — 31164 ran with the
 implicit form, so it is no longer the reference state) with the production
 adjoint 31206 chained on it, the chained adjoint 31204 on the spin-up
 (cancelled on 2026-09-11, when GM/Redi in the adjoint's forward sweep was
-adopted; its replacement is on the `TODO.md`), and
+adopted; its replacement ran on 2026-09-15 as 31374, `TODO.md` at `a2ecf69`), and
 the kappa ensemble 31207–31220; the runs made with the implicit form that
 morning (31180–31196) were cancelled and deleted. The spin-up completed on
 2026-09-11 (200 yr in 31 h 39 min, no incident; filed under
@@ -801,12 +805,12 @@ cell half of the 2× run's (the Reynolds floor acts in the equatorial band, the
 only place the two differ), its tracers inside the forcing range with none of
 the 2× run's monthly salinity spikes above 37.0. The ensemble's year-180 state
 (the reference leg 31205) is 0.40 K rms from the spin-up's own year 180 and
-keeps the 2× state's thick tropical thermocline; the DINO `TODO.md` entry has
-the numbers. The legs and adjoints 31205–31220 were deleted on 2026-09-12, to
+keeps the 2× state's thick tropical thermocline; the entry in `TODO.md` at
+`a2ecf69` has the numbers. The legs and adjoints 31205–31220 were deleted on 2026-09-12, to
 be rerun under the cleaned setup (provenance in `logs/deleted_run_records/` of
 the scratch output tree); the production adjoint from the spin-up's own year
 180 is still to run, and what the thicker thermocline does to the pathways
-waits for it and the rerun (DINO `TODO.md`).
+waits for it and the rerun (`TODO.md` at `a2ecf69`).
 
 Nothing else in `PARM05` can move to a parameter. Bathymetry, wind, restoring
 targets and shortwave are analytic functions in DINO (paper, Sects. 2–3), but
@@ -939,12 +943,13 @@ stock `adjoint_tap` options throughout):
 upstream names and widened the upstream hooks' argument lists under
 `#ifdef ALLOW_TAPENADE`, as ten shadow files in this `code_tap/` (seven in
 SOMA's), validated bitwise against the earlier layout at 30 days, 5 days
-(SOMA) and 5 years (31077 vs 31055; see `TODO.md`). That layout could not go
+(SOMA) and 5 years (31077 vs 31055; see `TODO.md` at `a2ecf69`). That layout could not go
 upstream: with one 25-argument adjoint it matched only configurations in
 which all eleven fields are active. The per-field design was developed in
 the in-tree study of 2026-09-05 (next paragraph) and moved into the shared
 directory on 2026-09-07; the last shadow-file state is the `main` commit
-before that change, and the validation runs of the move are in `TODO.md`.
+before that change, and the validation runs of the move are in `TODO.md` at
+`a2ecf69`.
 
 **The same mechanism from inside the tree.** To find out whether the
 mechanism can become an upstream change, it was integrated into a git copy of
@@ -1000,7 +1005,7 @@ its copy. `variants/adjointViscosity/` is a
 further `-mods` directory that `build_tapAdj_adjVisc.sh` lists ahead of
 `code_tap/`; its README explains. The 2026-09-02 relocation reproduces the
 previous layout's runs bit for bit (31069 vs 31054 for the default build,
-31070 vs 31025 for the boost; see `TODO.md`).
+31070 vs 31025 for the boost; see `TODO.md` at `a2ecf69`).
 
 | File | Purpose |
 | --- | --- |

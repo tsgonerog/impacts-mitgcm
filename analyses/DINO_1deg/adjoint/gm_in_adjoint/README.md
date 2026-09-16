@@ -9,8 +9,8 @@ variants first needs that forward leg again,
 pickup). The namelists are the variants
 `input_tap/variants/stability_study/*_ReMax2_gmFwd`, `*_ReMax2_gmOn`,
 `REF*_ReMax2_gmFwd` and `thetaPatchFD_gmFwd`; that directory's `README.md` has
-the row for each run and the table of results, and the setup's `TODO.md` the
-open decision. The variants of the GM-free finite-difference sweeps,
+the row for each run and the table of results, and the setup's `TODO.md` (at commit `a2ecf69`) the
+decision. The variants of the GM-free finite-difference sweeps,
 `stability_study/thetaPatchFD_gmOff` and `kappa_v_ensemble/REFp10_ReMax2`,
 `REFm10_ReMax2`, were removed on 2026-09-12, because they stage today's
 GM-on `data.pkg`; their runs 31247–31252, 31231 and 31232 were deleted later
@@ -54,4 +54,4 @@ GM model its dJ/dκ_v is 22 % too large, where production's is 65 %; its
 temperature gradients are no better (tropics +4 % against +5 %, upper Southern
 Ocean +45 % against +42 %, deep North Atlantic −21 % against −9 %), and still
 follow the GM-free model's own differences. GM in both sweeps blows up.
-Adopted for production on 2026-09-11 (the setup's `TODO.md`).
+Adopted for production on 2026-09-11 (the setup's `TODO.md` at commit `a2ecf69`).
