@@ -983,3 +983,52 @@
   and the adjoint side, each new run carrying its `comparison_vs_*.txt`; the
   build logs, the comparison logs and the one-off validation driver are in
   `DINO_1deg_outputs/logs/` and `SOMA_1deg_outputs/logs/`.
+
+- [x] ~~**Re-sync `mods_tapenade_hooks/` from the upstream branch and
+  validate the default build**~~ (added and **done 2026-09-15**). The
+  proposal was ported onto MITgcm master on 2026-09-14 (branch
+  `tapenade-hooks` of `~/MITgcm_tapenade_hooks_upstream/MITgcm`, three
+  commits on `d861cd501`; report and pull-request procedure in the project
+  notes under `references/tapenade_hooks/`) and validated there against a
+  pristine clone. Two decisions were carried back into the shared directory:
+  the `C$AD NOCHECKPOINT` directive before the wrapper call is gone (a build
+  of `global_oce_latlon` with and without it, and a reduced model, push each
+  hook field once per step either way; the wrapper is now a checkpoint like
+  any call and Tapenade generates `DUMMY_IN_STEPPING_TAP_B` instead of the
+  `_FWD`/`_BWD` pair), and the freshwater-flux dump keeps the TAF file name
+  `ADJempr.` (`ADJempmr.` until now; `campaign.py`, `adjoint_products.py`
+  and `compare_gm_adjoints.py` read either spelling). The design comments
+  now state the Tapenade rule as measured (a hook's derivative call is
+  generated only when one of its inputs is active, and a dead argument's
+  derivative may be dropped; a common-block field does not lose its slot).
+  `check_against_tree.sh` passes with the patches regenerated; the study
+  tree `~/MITgcm_c69m_tapenade_hooks/MITgcm` got the same change as commit
+  `6bacdf7f1`, and `build_tapAdj_hooksInTree.sh` now asserts the `_B` form.
+  Validation: `build_tapAdj_ckpAll` rebuilt (every build-body check passed);
+  run 31415 (5 d, live namelist, pickup from the REF_ReMax2 leg 31366, on
+  `/scratch` while `/scratch2` was down) against 31414 from the previous
+  build: `EQUIVALENT`, all 60 sensitivity fields, `fc`
+  (`5.80622166457875E-02`) and 186 `%MON` lines bit-identical, the renamed
+  dump byte-identical to its predecessor. Both run directories were lost
+  when the output tree was moved back to `/scratch2` later that night (only
+  their SLURM logs under `logs/` remain), so the check was repeated on
+  `/scratch2` with the default pickup (31203): the re-synced `ckpAll` build
+  against a 5-d run of the previous `nocheckpoint` executable (which
+  reproduces the `ckpAll` adjoint bitwise under the live switches): 31424
+  against 31423, `EQUIVALENT`, all 60 sensitivity fields, `fc`
+  (`5.80622166457875E-02`) and 186 `%MON` lines bit-identical, the dump now
+  written as `ADJempr.`; and then every other adjoint build, each run once
+  from its previous executable, rebuilt from the re-synced directory, run
+  again and compared, all `EQUIVALENT` (every sensitivity field, `fc` and
+  the `%MON` stream bit-identical): DINO `nocheckpoint` 31425 against 31423
+  (60 fields), DINO `adjVisc` 31427 against 31426 (60 fields), SOMA 31429
+  against 31428 (5 d, 176 fields, `fc` `-9.21812947379697E-03`, 390 `%MON`
+  lines), the gyre 31431 against 31430 (180 d, 3 244 fields). `profile` and
+  `hooksInTree` were rebuilt only, every build-body check passing. Driver
+  and logs: `/scratch/tshahriar/tapenade_hooks_upstream/logs/revalidate/`
+  (`revalidate.log` has one line per verdict, `<name>_compare.log` and
+  `<name>_build.log` the detail). The nine new runs sit unfiled under
+  `runs/adjoint/` of their setup's output tree on `/scratch2`, each new run
+  carrying its `comparison_vs_*.txt`, and belong under
+  `toolchain_validation/` (DINO 31423–31427, SOMA 31428/31429, gyre
+  31430/31431).
