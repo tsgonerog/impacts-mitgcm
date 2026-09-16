@@ -9,6 +9,15 @@ import campaign as c
 import page_setup_text as st
 
 
+# The interactive depth-level explorer (build_explorer.py beside this script), published 2026-09-16. Opened in a
+# new tab: this page is shown in a sandboxed frame, and a link that navigates the frame itself may be blocked.
+EXPLORER_URL = 'https://claude.ai/artifact/M14dASutpLo9EohDruuwwL'
+
+
+def explorer_link(text):
+    return '<a href="%s" target="_blank" rel="noopener">%s</a>' % (EXPLORER_URL, text)
+
+
 def _read(name, kind='csv'):
     for root in (c.STATS, c.CACHE):
         p = root / name
@@ -100,7 +109,9 @@ def body(h):
                '5-year adjoint sensitivities look like under the current configuration, whether those gradients agree with '
                'finite differences, and what that implies for the inputs and targets of a neural-network surrogate.</p>'
                '<p class="meta"><span>adjoint window: model years 180–185</span><span>J: 26.05° N transport index, upper 982 m, final 30 d</span>'
-               '<span>κ<sub>v</sub> ∈ {0.25 … 32} × 1.2×10⁻⁵ m² s⁻¹</span></p>')
+               '<span>κ<sub>v</sub> ∈ {0.25 … 32} × 1.2×10⁻⁵ m² s⁻¹</span></p>'
+               '<p class="explore">%s — every ADJ* field of the reference adjoint at all 36 depth levels, and ADJtheta and '
+               'ADJdiffkr for all eight members, through the five-year lead.</p>' % explorer_link('Open the sensitivity explorer'))
     tiles = [stat('Reference cost J', fmt(fcref, 4), 'σ of the monthly index %s' % fmt(sigma, 2) if sigma else ''),
              stat('dJ/dκ<sub>v</sub>, adjoint', fmt(Gref, 3) + ' <span class="mono" style="font-size:13px">per m² s⁻¹</span>',
                   'against finite differences: %s' % pct(kap_err) if kap_err is not None else ''),
@@ -152,6 +163,8 @@ def body(h):
     out.append(fig('ref_ADJtheta_lead', '<b>ADJtheta at 300 m and 1500 m through the 5-year lead</b>, in the order the adjoint computes '
                    'it (lead increasing), every 20 days. Each map is scaled by its own 99th percentile; the inset gives the amplitude.',
                    gif=True))
+    out.append('<p>A figure has to choose depths. The %s has the rest: all twelve ADJ* dumps of this adjoint, any of the 36 levels '
+               'or the column sum, every 60 days of lead, with a choice of colour scaling.</p>' % explorer_link('sensitivity explorer'))
     out.append('</section>')
 
     # ---------------------------------------------------------------- gradient checks
@@ -197,6 +210,8 @@ def body(h):
     out.append(fig('member_adxx_maps', '<b>∂J/∂κ<sub>v</sub> and ∂J/∂Q<sub>net</sub> for five κ values</b>, on the reference\'s colour scale.'))
     out.append(fig('members_ADJdiffkr_lead', '<b>Column-summed ADJdiffkr of all eight runs through the lead</b>, every 30 days, each '
                    'panel on its own scale.', gif=True))
+    out.append('<p>The %s shows ADJtheta and ADJdiffkr of all eight runs side by side at any depth and lead, on one shared colour '
+               'scale when the amplitudes are to be compared.</p>' % explorer_link('sensitivity explorer\'s ensemble view'))
     out.append('</section>')
 
     # ---------------------------------------------------------------- the target

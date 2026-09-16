@@ -106,6 +106,9 @@ h1 {
   max-width: 22ch;
 }
 .lede { font-size: 18px; line-height: 1.55; color: var(--ink-2); max-width: 68ch; margin: 0 0 24px; }
+.explore { font-size: 15px; line-height: 1.5; color: var(--ink-2); max-width: 76ch; margin: -8px 0 24px;
+  padding: 10px 14px; background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; }
+.explore a { font-weight: 600; }
 .meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font: 400 13px/1.5 var(--mono); color: var(--muted); margin: 0 0 24px; }
 
 .figures-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0 32px; }

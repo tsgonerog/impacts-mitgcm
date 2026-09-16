@@ -56,7 +56,10 @@ and <code>runs/adjoint/kappa_v_ensemble_gmFwd/</code> (adjoints and finite-diffe
 Products, figures and animations: <code>analysis/kappa_v_ensemble_gmFwd/</code>, with the job map in
 <code>job_map.tsv</code>. Analysis code: <code>analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/</code> in
 impacts-mitgcm (<code>campaign.py</code>, <code>forward_state.py</code>, <code>adjoint_products.py</code>,
-<code>make_figures.py</code>, <code>build_page.py</code>). Earlier campaigns are compared through the numbers in <code>previous_campaigns_reference.json</code>, copied from
+<code>make_figures.py</code>, <code>build_page.py</code>; since 2026-09-16 also <code>make_films.py</code>, a film of every
+ADJ* dump, and <code>build_explorer.py</code>, the
+<a href="https://claude.ai/artifact/M14dASutpLo9EohDruuwwL" target="_blank" rel="noopener">sensitivity explorer</a>, whose
+local copy is <code>analysis/kappa_v_ensemble_gmFwd/explorer/</code>). Earlier campaigns are compared through the numbers in <code>previous_campaigns_reference.json</code>, copied from
 the tables on <code>/scratch2</code> before it failed. The campaign ran on <code>/scratch</code> while <code>/scratch2</code> was down and was moved back into the main tree on 2026-09-15.</p>
 """
 
