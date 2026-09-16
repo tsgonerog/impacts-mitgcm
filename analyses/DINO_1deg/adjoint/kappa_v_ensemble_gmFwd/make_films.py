@@ -78,6 +78,10 @@ INFO = {
 FILM_STRIDE = {'ADJtheta': 6, 'ADJdiffkr': 6, 'ADJqnet': 6}
 DEFAULT_STRIDE = 12
 MEMBER_VARS = ['ADJtheta', 'ADJdiffkr']       # the two the ensemble's results rest on
+# The reference films the deck embeds (--deck copies only these). All twelve until 2026-09-16; the
+# other eight (empmr, qsw, etan, uvel, vvel, wvel, taux, tauy) carry no result the deck rests on and
+# stay in animations/ and in the explorer. The two eight-member films are always copied.
+DECK_FILMS = {'film_theta', 'film_salt', 'film_diffkr', 'film_qnet'}
 KCOST = c.KMAX                                # 25: the cost integrates the upper 25 levels (982 m)
 
 PROFILES = c.CACHE / 'level_rms_profiles.npz'
@@ -243,7 +247,7 @@ def reference(stride=None, deck=None, only=None, **_):
     g = c.grid()
     job = c.ADJ_JOB['REF']
     d = c.run_dir(job)
-    deck_films = {'film_%s' % v.replace('ADJ', '') for v in INFO}     # the deck embeds all twelve
+    deck_films = DECK_FILMS
     rows = []
     for var in (only or list(INFO)):
         what, units = INFO[var]
@@ -285,7 +289,7 @@ def reference(stride=None, deck=None, only=None, **_):
         rows.append('\t'.join(['film_%s' % stem, str(job), var,
                                '%s (%s; peak at lead %.2f yr, rms 5 yr / rms 0 = %.3g)' % (what, kind, peak, ratio),
                                ' + '.join('%d m' % round(-g['RC'][k]) for k in ks) or 'surface',
-                               str(len(its)), str(5 * st), '%.2f-%.2f' % (0.0, float(c.lead_years(its[-1]))),
+                               str(len(its)), str(5 * st), '%.2f-%.2f' % (float(c.lead_years(its[0])), float(c.lead_years(its[-1]))),
                                'fixed, 99.5th pct = %.3e' % vmax, units.replace('$', '')]))
     _index(rows)
 
@@ -333,7 +337,7 @@ def members(stride=None, deck=None, **_):
         stem = 'members_' + var.replace('ADJ', '')
         rows.append('\t'.join(['film_%s' % stem, '31374-31381', var, what + ', all eight members',
                                'column sum', str(len(its)), str(5 * st),
-                               '%.2f-%.2f' % (0.0, float(c.lead_years(its[-1]))),
+                               '%.2f-%.2f' % (float(c.lead_years(its[0])), float(c.lead_years(its[-1]))),
                                'fixed, 99.5th pct = %.3e' % vmax, units.replace('$', '') + ' m']))
 
         # and one film per member, at the two levels of the rule -- the full collection, not embedded
@@ -368,7 +372,7 @@ def members(stride=None, deck=None, **_):
                                    '%s, member %s (%gx reference)' % (what, r, c.FACTOR[r]),
                                    '%d m + %d m' % (round(-g['RC'][ki]), round(-g['RC'][kb])),
                                    str(len(its)), str(5 * st),
-                                   '%.2f-%.2f' % (0.0, float(c.lead_years(its[-1]))),
+                                   '%.2f-%.2f' % (float(c.lead_years(its[0])), float(c.lead_years(its[-1]))),
                                    'fixed, 99.5th pct = %.3e' % vm, units.replace('$', '')]))
     _index(rows)
 

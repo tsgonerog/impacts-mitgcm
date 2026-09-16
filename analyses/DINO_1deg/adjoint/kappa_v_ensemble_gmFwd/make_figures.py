@@ -248,6 +248,51 @@ def ref_ADJtheta_depth_lead():
 
 
 @figure
+def ref_ADJtheta_depth_lead_wide():
+    """The same nine maps in one row, grouped by lead, for a 16:9 slide (2026-09-16): the 3x3 figure above is
+    portrait and filled a third of the slide's width. One colour scale per map (its own 99th percentile, printed
+    under it), so a single colourbar runs from -1 to +1 of that amplitude."""
+    z = fields('REF')
+    g = c.grid()
+    depths = [100, 500, 1500]
+    leads = [(30.0 / 366, '30 days before the end'), (1.0, '1 year before'), (5.0, '5 years before')]
+    m = c.mask('ADJtheta')
+    fig = plt.figure(figsize=(12.4, 4.3))
+    gs = fig.add_gridspec(1, 12, width_ratios=[1, 1, 1, 0.22, 1, 1, 1, 0.22, 1, 1, 1, 0.12], wspace=0.08)
+    col = 0
+    for n, (L, lab) in enumerate(leads):
+        axs = []
+        for i, dpt in enumerate(depths):
+            k = klev(dpt)
+            ax = fig.add_subplot(gs[col])
+            col += 1
+            f = np.where(m[k], z['ADJtheta_L%.3f' % L][k], np.nan)
+            vm = c.robust_sym(f)
+            pm = ax.pcolormesh(g['XC'], g['YC'], np.ma.masked_invalid(f) / vm, cmap=c.diverging_cmap(), vmin=-1,
+                               vmax=1, shading='auto', rasterized=True)
+            section_line(ax)
+            ax.set_title('%d m' % round(-g['RC'][k]), fontsize=9)
+            ax.text(0.5, -0.035, '±%.1e' % vm, transform=ax.transAxes, ha='center', va='top', fontsize=7.5,
+                    color=c.INK2)
+            ax.set_xticks([-40, -20, 0])
+            ax.tick_params(labelsize=7, labelbottom=False)
+            ax.set_yticks([-60, -30, 0, 30, 60])
+            if n or i:
+                ax.tick_params(labelleft=False)
+            ax.grid(False)
+            axs.append(ax)
+        col += 1
+        bb0, bb1 = axs[0].get_position(), axs[-1].get_position()
+        fig.text((bb0.x0 + bb1.x1) / 2, bb0.y1 + 0.085, lab, ha='center', va='bottom', fontsize=10.5, color=c.INK,
+                 weight='bold')
+    cax = fig.add_subplot(gs[-1])
+    cb = fig.colorbar(pm, cax=cax, ticks=[-1, 0, 1])
+    cb.set_label('dJ/dθ as a fraction of the amplitude under each map (dJ/K)', fontsize=8)
+    cb.ax.tick_params(labelsize=7.5)
+    save(fig, 'ref_ADJtheta_depth_lead_wide')
+
+
+@figure
 def ref_ADJtheta_zonal_section():
     z = fields('REF')
     g = c.grid()
