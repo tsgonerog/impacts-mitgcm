@@ -4,7 +4,8 @@
     python adjoint_waves.py slices    # ADJtheta at 915 m, every dump of all eight adjoints -> cache/adjtheta_915m_<run>.npy
     python adjoint_waves.py measure   # arrival leads along the boundaries, crossing speeds, mode speeds
                                       #   -> stats/adjoint_waves.json
-    python adjoint_waves.py plot      # figures/adjoint_waves.png
+    python adjoint_waves.py plot      # figures/adjoint_waves.png: the waveguide south of the section unrolled, the whole
+                                      #   western wall, and the Hovmollers at 25 N and 25 S
 
 WHY THIS EXISTS. The slide deck describes the films in terms of adjoint Kelvin and adjoint Rossby waves. This
 script measures, from the dumps themselves, which way the sensitivity travels and how fast, so that the
@@ -125,7 +126,8 @@ def arrivals(A, lead):
         'east_wall': {'%d' % L: first(E[:, pick(L)]) for L in (26, 20, 15, 10, 5, 0)},
         'equator': {'%.1f' % lon[i]: first(Q[:, i]) for i in range(1, 50, 6)},
         'west_wall_north': {'%d' % L: first(W[:, pick(L)]) for L in (26, 30, 35, 40, 45, 50)},
-        'west_wall_south': {'%d' % L: first(W[:, pick(L)]) for L in (10, 0, -10, -20, -30)},
+        # south of the section: the two branches that open at the equator corner (both since 2026-10-09)
+        'west_wall_south': {'%d' % L: first(W[:, pick(L)]) for L in (20, 15, 10, 5, 0, -5, -10, -20, -30)},
     }
 
 
@@ -207,11 +209,14 @@ def plot():
     dist = np.concatenate([d_e, d_q, d_w])
     guide = np.concatenate([seg_e, seg_q, seg_w], axis=1)
 
-    jn = list(range(int(np.abs(lat - 26.5).argmin()), int(np.abs(lat - 60).argmin()) + 1))
-    north = np.abs(A[:nt][:, jn, WEST_WALL]).max(axis=2)
+    # the whole western wall, 40 S to 60 N, in one panel (the panel showed 26 N to 60 N until 2026-10-09): the
+    # branch the section feeds directly, north of 26 N, and the two branches that open at the equator corner
+    # and run poleward in both hemispheres -- the fork the unrolled route of the first panel cannot show
+    jn = list(range(int(np.abs(lat + 40).argmin()), int(np.abs(lat - 60).argmin()) + 1))
+    wall = np.abs(A[:nt][:, jn, WEST_WALL]).max(axis=2)
 
-    fig = plt.figure(figsize=(12.6, 3.9))
-    gs = fig.add_gridspec(1, 6, width_ratios=[2.3, 1.0, 0.07, 0.62, 1.35, 1.35], wspace=0.10)
+    fig = plt.figure(figsize=(13.4, 3.9))
+    gs = fig.add_gridspec(1, 6, width_ratios=[2.3, 1.55, 0.07, 0.62, 1.35, 1.35], wspace=0.10)
     lv = dict(vmin=-3, vmax=0, cmap='magma_r', shading='auto', rasterized=True)
 
     ax = fig.add_subplot(gs[0])
@@ -234,9 +239,15 @@ def plot():
     ax.grid(False)
 
     ax = fig.add_subplot(gs[1], sharey=fig.axes[0])
-    ax.pcolormesh(lat[jn], lead[:nt], np.log10(north / amax + 1e-12), **lv)
+    ax.pcolormesh(lat[jn], lead[:nt], np.log10(wall / amax + 1e-12), **lv)
+    for v in (0.0, float(lat[int(np.abs(lat - 26.5).argmin())])):
+        ax.axvline(v, color='w', lw=1.0)
+    top = ax.secondary_xaxis('top')
+    top.set_xticks([-20, 13, 43])
+    top.set_xticklabels(['corner,\nsouth', 'corner,\nnorth', 'section,\nnorth'], fontsize=7.5)
+    top.tick_params(length=0)
     ax.set_xlabel('latitude [°N]')
-    ax.set_title('... and north of it', fontsize=9.5, pad=24)
+    ax.set_title('... and the whole western wall', fontsize=9.5, pad=24)
     ax.tick_params(labelleft=False)
     ax.grid(False)
     cax = fig.add_subplot(gs[2])

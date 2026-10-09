@@ -84,6 +84,12 @@ checks that reading against the dumps (915 m, run 31374 unless stated; `stats/ad
   wall in 30 days, the western end of the equator by day 65, and 45° N up the *western* wall by day 40
   — the reverse of forward Kelvin waves, which keep the coast on their right in the northern
   hemisphere. The front follows the first-mode speed of the leg's own stratification, c₁ = 1.95 m/s.
+  At the western end of the equator the signal forks and runs poleward along the western wall in
+  *both* hemispheres (5° N by day 70 and 15° N by day 90; 10° S by day 80 and 20° S by day 95), at
+  1–3 % of the level maximum, because the forward equatorial Kelvin wave is fed by coastal waves from
+  both hemispheres. The figure's second panel is the whole western wall, 40° S to 60° N, so the two
+  branches from the corner and the separate, stronger branch the section feeds directly (26° N
+  northward, from lead 5 d) sit in one Hovmöller; until 2026-10-09 it showed 26° N to 60° N only.
 - **adjoint Rossby waves.** Crests leave the western wall and move *east*; at 25° N and 25° S they run
   parallel to the long Rossby speed βc₁²/f², 2.7–2.8 cm/s. The zonal-mean flow at 915 m is a few mm/s,
   so this is propagation, not advection. The simple long-wave speed does not follow the crests at every
