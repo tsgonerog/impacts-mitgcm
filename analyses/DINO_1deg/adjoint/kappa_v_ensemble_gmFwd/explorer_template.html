@@ -9,6 +9,13 @@
   It needs to be served over http: a browser taints a canvas drawn from a file:// image and then
   refuses to read the pixels back. explorer/serve.sh starts a server for the local copy.
 
+  Colour scales (2026-10-13). The default, "as in the deck's films", is ONE scale for every frame and, in the
+  ensemble view, every member: at the level(s) the deck's film shows it is that film's own scale
+  (manifest deck_film.scale, read from films_index.tsv), elsewhere the 99.5th percentile over all frames (and
+  members) at the current level (manifest lscale). The ensemble view opens on the column sum, which is what
+  the eight-member film shows. The three other modes stretch each panel to its own frame and level, or to
+  the frame or the whole variable; the column sum is never pooled with the levels, its units differ.
+
   The map (2026-09-16) is longitude-latitude by default: each grid row is drawn as tall as the latitude it
   spans, from the exact cell edges in manifest.grid.lat_edges. DINO's cells are square in metres, so
   drawing every cell the same size -- the "Grid cells" toggle -- is a Mercator map, about three times too
@@ -165,9 +172,10 @@
     <h1>Where the overturning&rsquo;s sensitivity lives, level by level</h1>
     <p class="lede">Every <code>ADJ*</code> dump of the five-year adjoint, at all 36 depth levels and
       every 60 days of lead time. The cost <em>J</em> is the northward transport across
-      <span id="latsec">26&deg;N</span> in the upper 982&nbsp;m, averaged over the last 30 days of the
-      window; red at a point means <em>raise the field there and J goes up</em>. The film on the
-      slides has to pick two levels &mdash; this picks any of them. Time runs backwards, as the adjoint
+      <span id="latsec">43&deg;N</span> in the upper <span id="costdepth">848</span>&nbsp;m, averaged over the last 30 days of the
+      window; red at a point means <em>raise the field there and J goes up</em>. The films on the
+      slides have to pick a level &mdash; this picks any of them, and opens on what the slides show, with the
+      slides&rsquo; own colour scale. Time runs backwards, as the adjoint
       computes it: the first frame is the end of the window, and Play walks back to five years of lead.</p>
   </header>
 
@@ -183,9 +191,10 @@
     <div class="field">
       <span>Colour scale</span>
       <select id="scalesel">
-        <option value="slice">this level, this frame</option>
+        <option value="film">as in the deck&rsquo;s films: one scale, all frames (and members)</option>
+        <option value="slice">this panel: this level, this frame</option>
         <option value="frame">this frame, all levels</option>
-        <option value="var">whole variable</option>
+        <option value="var">whole variable, all frames and levels</option>
       </select>
     </div>
     <div class="field">
@@ -236,7 +245,9 @@
   <footer>
     <strong>Provenance.</strong> The dumps are read straight from the run directories on cluster
     scratch; nothing here is re-gridded or interpolated, only quantised to 8&nbsp;bits per cell about
-    each slice&rsquo;s own 99.8th percentile.
+    each slice&rsquo;s own 99.8th percentile (a pixel is decoded with its own slice&rsquo;s scale, then coloured
+    against whichever scale is selected, so under a shared scale the 0.2&nbsp;% of cells above a slice&rsquo;s
+    percentile saturate there rather than at their value).
     <dl>
       <dt>Built</dt><dd id="fbuilt">&mdash;</dd>
       <dt>Runs</dt><dd id="fruns">&mdash;</dd>
@@ -256,7 +267,7 @@
   const $ = (id) => document.getElementById(id);
   let savedProj = null;
   try { savedProj = window.localStorage.getItem("dinoExplorer.proj"); } catch (e) { savedProj = null; }
-  const state = { ds: "reference", v: null, lev: 24, t: 0, scale: "slice", playing: false, timer: null,
+  const state = { ds: "reference", v: null, lev: 24, t: 0, scale: "film", playing: false, timer: null,
                   proj: savedProj === "grid" ? "grid" : "lonlat" };
 
   /* ---------- the map: longitude-latitude, or one square per model cell ---------- */
@@ -338,12 +349,33 @@
     return vi.files ? ds().members.map((m) => [m.label, vi.files[m.run], m.run])
                     : [[null, vi.file, null]];
   }
+  // tiles 0..nz-1 of a three-dimensional variable are its levels and tile nz the column sum, whose units differ
+  // (integrated over dz), so a scale over "all levels" never pools the two: the column sum is scaled by itself.
+  const nzOf = (vi) => (vi.three ? vi.nlev - 1 : 1);
+  const isSumLevel = (vi, k) => vi.three && k === vi.nlev - 1;
+  function atDeckFilm(vi, k) {                 // is this level one the deck's film of this variable shows?
+    const df = vi.deck_film;
+    if (!df || !(df.scale > 0)) return false;
+    return (df.sum && isSumLevel(vi, k)) || (!df.sum && df.levels.indexOf(k) >= 0);
+  }
   function vmaxFor(run) {
-    const sc = scalesFor(run), t = state.t, k = Math.min(state.lev, vinfo().nlev - 1);
+    const vi = vinfo(), sc = scalesFor(run), t = state.t, k = Math.min(state.lev, vi.nlev - 1);
+    const nz = nzOf(vi), sum = isSumLevel(vi, k);
+    if (state.scale === "film") {              // one scale for every frame (and member): the film's where it has one
+      if (atDeckFilm(vi, k)) return vi.deck_film.scale;
+      return (vi.lscale && vi.lscale[k]) || 1;
+    }
     if (state.scale === "slice") return sc[t][k] || 1;
-    if (state.scale === "frame") return Math.max.apply(null, sc[t]) || 1;
     let m = 0;
-    for (const row of sc) for (const v of row) if (v > m) m = v;
+    if (state.scale === "frame") {
+      if (sum) return sc[t][k] || 1;
+      for (let kk = 0; kk < nz; kk++) if (sc[t][kk] > m) m = sc[t][kk];
+      return m || 1;
+    }
+    for (const row of sc) {
+      if (sum) { if (row[k] > m) m = row[k]; }
+      else for (let kk = 0; kk < nz; kk++) if (row[kk] > m) m = row[kk];
+    }
     return m || 1;
   }
   function vmaxShown() {                       // one number for the colourbar
@@ -575,14 +607,28 @@
     const ld = $("s-lead"); if (ld) ld.textContent = lead.toFixed(2) + " yr";
     const mx = $("s-max");
     if (mx) mx.textContent = fmt(scalesFor(cells[0] ? cells[0].run : null)[state.t][k]) + " " + unitsAt(k);
-    const scaleWord = { slice: "this level and frame only", frame: "this frame, every level",
-                        var: "the whole variable, every level and frame" }[state.scale];
-    $("note").innerHTML = "Colours span &plusmn;" + fmt(vmaxShown()) + " " + unitsAt(k)
-      + ", the 99.8th percentile of |field| over " + scaleWord
-      + ". The two levels marked <span style='color:var(--accent2)'>&larr; film</span> are the ones the "
-      + "slide deck&rsquo;s film shows: the level of largest time-mean RMS inside the 982 m the cost "
-      + "integrates, and the largest below it."
-      + (cells.length > 1 ? " Gridlines mark every 30&deg; of latitude." : "");
+    const ens = cells.length > 1, df = vi.deck_film;
+    let how;
+    if (state.scale === "film") {
+      how = atDeckFilm(vi, k)
+        ? "the colour scale of the deck&rsquo;s film of this field itself (<code>" + df.stem + "</code>: its 99.5th "
+          + "percentile over every frame" + (ens ? " and every member" : " and both of its levels") + ")"
+        : "the 99.5th percentile of |field| over every frame" + (ens ? " and every member" : "")
+          + " at this level &mdash; the deck film&rsquo;s convention, which " + (ens ? "shows the column sum" : "shows " + df.levels.map((q) => vi.levels[q]).join(" and ")) + " with its own scale";
+    } else {
+      how = "the 99.8th percentile of |field| over " + { slice: "this level and frame only, panel by panel",
+        frame: "this frame, every level", var: "the whole variable, every level and frame" }[state.scale];
+    }
+    $("note").innerHTML = "Colours span &plusmn;" + fmt(vmaxShown()) + " " + unitsAt(k) + ": " + how + "."
+      + (ens ? " The deck&rsquo;s eight-member film (slide 25) is the column sum &mdash; the last position of the "
+               + "depth slider &mdash; on one scale for all eight, every " + df.stride_days + " days, which is what "
+               + "this view opens on; the two levels marked <span style='color:var(--accent2)'>&larr; film</span> "
+               + "are the ones the per-member films on scratch show."
+             : " The two levels marked <span style='color:var(--accent2)'>&larr; film</span> are the ones the "
+               + "slide deck&rsquo;s film shows: the level of largest time-mean RMS inside the " + Math.round(G.cost_depth_m || 0)
+               + " m the cost integrates, and the largest below it; the film has a frame every " + df.stride_days
+               + " days, this page every other one.")
+      + (ens ? " Gridlines mark every 30&deg; of latitude." : "");
   }
 
   /* ---------- render ---------- */
@@ -636,6 +682,11 @@
     state.ds = key;
     state.t = 0;
     fillVars();
+    // open on what the deck's film of this dataset shows: the column sum for the eight-member films, the
+    // film's upper level for the reference films
+    const vi0 = vinfo();
+    state.lev = key === "ensemble" ? vi0.nlev - 1
+              : (vi0.film_levels && vi0.film_levels.length ? vi0.film_levels[0] : Math.min(state.lev, vi0.nlev - 1));
     buildCells();
     buildDepthAxis();
     for (const b of $("dsseg").children) b.setAttribute("aria-pressed", String(b.dataset.ds === key));
@@ -696,6 +747,7 @@
 
   $("fbuilt").textContent = M.built + "  ·  campaign " + M.campaign;
   $("latsec").innerHTML = Math.abs(G.lat_sec).toFixed(0) + "&deg;" + (G.lat_sec >= 0 ? "N" : "S");
+  if (G.cost_depth_m) $("costdepth").textContent = String(Math.round(G.cost_depth_m));
   switchDataset("reference");
 })();
 </script>

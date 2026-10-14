@@ -40,6 +40,21 @@ sweep writes the largest N first. Frame 0 is therefore the end of the window (le
 back to lead 5 yr, as the deck's films do; until the fix of that day the frames ran the other way, forward
 in model time, against the films.
 
+WHAT THE DECK'S FILMS SHOW, AND HOW THE PAGE MATCHES THEM (2026-10-13). The deck's eight-member films
+(make_films.py members) show the COLUMN SUM of ADJtheta / ADJdiffkr with ONE colour scale for all eight members
+and all frames (the 99.5th percentile of |column sum| over all of them), every 60 days; the reference films show
+two levels with one scale over both levels and all frames. Until 2026-10-13 this page defaulted to the 915 m
+level, to a colour scale set by each panel's own frame and level (its 99.8th percentile), and to member frames
+every 120 days, so the ensemble view looked nothing like slide 25: a different quantity (one level, not the
+column sum), every member stretched to its own range (amplitude differences hidden, patterns exaggerated), and
+a different frame set. Now the manifest carries, per variable, `lscale` (one scale per level: the 99.5th
+percentile over all frames and, for the ensemble, all members) and `deck_film` (the scale and level(s) of the
+film the deck embeds, read from animations/films_index.tsv so that it is the film's own number), the page's
+default scale mode is "as in the deck's film", the ensemble opens on the column sum, and the member frames are
+the film's 60-day ones. The per-slice quantisation is unchanged: a pixel is decoded with its own slice scale
+and then coloured against the shared one, so the only residual difference from the film is that the 0.2 % of
+cells above a slice's 99.8th percentile saturate at that percentile rather than at their value.
+
 SERVING IT. Published as a claude.ai artifact the page just works. From a local copy it needs a
 server, because a browser taints a canvas drawn from a `file://` image and then refuses to read the
 pixels back; `explorer/serve.sh` starts one on port 8765.
@@ -96,6 +111,19 @@ def _edges(centre, corner):
     return e
 
 
+def film_scales():
+    """{film stem: colour scale} of the films make_films.py wrote (animations/films_index.tsv), so the page can
+    reproduce a film's scale exactly; empty if the films have not been made yet."""
+    p = f.INDEX
+    out = {}
+    if p.exists():
+        for line in p.read_text().splitlines()[1:]:
+            cols = line.split('\t')
+            if len(cols) > 8 and '=' in cols[8]:
+                out[cols[0]] = float(cols[8].split('=')[-1])
+    return out
+
+
 def grid_manifest():
     g = c.grid()
     return {'nx': int(g['XC'].shape[1]), 'ny': int(g['YC'].shape[0]),
@@ -105,6 +133,7 @@ def grid_manifest():
             'lat_edges': [round(float(v), 4) for v in _edges(g['YC'][:, 0], g['YG'][:, 0])],
             'depth': [round(float(-v), 1) for v in g['RC']],
             'jsec': int(c.JSEC), 'kcost': int(c.KMAX),
+            'cost_depth_m': round(float(-g['RF'][c.KMAX]), 1),      # the interface the cost integrates down to
             'lat_sec': round(float(g['YC'][c.JSEC, 0]), 2)}
 
 
@@ -126,17 +155,25 @@ def page_only(out=None):
     out = Path(out or (c.ANALYSIS / 'explorer'))
     man = json.loads((out / 'manifest.json').read_text())
     man['grid'] = grid_manifest()
+    fs = film_scales()
+    for dsn, dsv in man['datasets'].items():
+        for var, vi in dsv['vars'].items():
+            df = vi.get('deck_film')
+            if df and df.get('stem') in fs:
+                df['scale'] = fs[df['stem']]
     write_page(out, man)
     print('rewrote %s and manifest.json around %d existing payloads'
           % (out / 'index.html', len(list((out / 'data').glob('*.png')))))
 
 
 def _tiles(run_dir, var, its, three):
-    """(payload (nt*ny, nlev*nx) uint8, scale (nt, nlev) float32, level labels).
+    """(payload (nt*ny, nlev*nx) uint8, scale (nt, nlev) float32, level labels, |values| pooled per level).
 
     Level `nz` of a three-dimensional variable is the mass-weighted column sum, the quantity the
     still maps and the ensemble panel films show; it is carried as one more tile so the slider can
-    reach it without the page having to add 36 numbers itself.
+    reach it without the page having to add 36 numbers itself. The pooled |values| (one float32 array
+    per level over every frame's wet cells) are what the per-level scales are taken from, across
+    members for the ensemble.
     """
     g = c.grid()
     m = c.mask(var)
@@ -146,6 +183,7 @@ def _tiles(run_dir, var, its, three):
     wcol = m.any(axis=0) if three else m
     q = np.full((len(its) * ny, nlev * nx), LAND, np.uint8)
     sc = np.zeros((len(its), nlev), np.float32)
+    pooled = [[] for _ in range(nlev)]
     for n, it in enumerate(its):
         a = c.read_mds(c.dump_base(run_dir, var, it), np.float32).astype(np.float64)
         slices = ([(k, a[k], m[k]) for k in range(nz)] +
@@ -154,6 +192,7 @@ def _tiles(run_dir, var, its, three):
             if not w.any():
                 continue
             v = np.abs(fld[w])
+            pooled[k].append(v.astype(np.float32))
             s = float(np.percentile(v, 99.8)) or float(v.max())
             sc[n, k] = s
             tile = np.full((ny, nx), LAND, np.uint8)
@@ -162,10 +201,22 @@ def _tiles(run_dir, var, its, three):
             q[n * ny:(n + 1) * ny, k * nx:(k + 1) * nx] = tile
     labels = ([('%d m' % round(-g['RC'][k])) for k in range(nz)] + ['column sum']) if three \
         else ['surface']
-    return q, sc, labels
+    pooled = [np.concatenate(v) if v else np.zeros(0, np.float32) for v in pooled]
+    return q, sc, labels, pooled
 
 
-def build(out=None, stride=12, member_stride=24):
+def level_scales(pooled_lists):
+    """One scale per level, the film convention: the 99.5th percentile of |field| over every frame (and every
+    member when several pooled lists are given) at that level."""
+    nlev = len(pooled_lists[0])
+    out = []
+    for k in range(nlev):
+        v = np.concatenate([pl[k] for pl in pooled_lists])
+        out.append(float('%.4g' % (float(np.percentile(v, 99.5)) or (float(v.max()) if v.size else 0.0))) if v.size else 0.0)
+    return out
+
+
+def build(out=None, stride=12, member_stride=12):
     g = c.grid()
     out = Path(out or (c.ANALYSIS / 'explorer'))
     (out / 'data').mkdir(parents=True, exist_ok=True)
@@ -190,19 +241,27 @@ def build(out=None, stride=12, member_stride=24):
                    'reference leg; %d frames %d days apart' % (len(its), 5 * stride),
            'leads': [round(float(v), 3) for v in c.lead_years(its)],
            'panels': 'single', 'vars': {}}
+    fs = film_scales()
     for var in f.INFO:
         three = var in c.ADJ_3D
         what, _latex_units = f.INFO[var]
         kind, peak, ratio = f.kind_of(var)
-        q, sc, labels = _tiles(d, var, its, three)
+        q, sc, labels, pooled = _tiles(d, var, its, three)
         name = 'data/reference_%s.png' % var
         Image.fromarray(q, 'L').save(out / name, format='PNG', optimize=True)
         total += (out / name).stat().st_size
+        film_levels = [int(k) for k in f.levels_of(var)] if three else [0]
+        stem = 'film_' + var.replace('ADJ', '')
         ref['vars'][var] = {
             'label': what, 'units': UNITS_HTML[var],
             'file': name, 'nlev': len(labels), 'levels': labels,
             'scale': [[float('%.4g' % v) for v in row] for row in sc],
-            'kind': kind, 'film_levels': [int(k) for k in f.levels_of(var)] if three else [],
+            'lscale': level_scales([pooled]),
+            'kind': kind, 'film_levels': film_levels if three else [],
+            # the film the deck embeds (or the campaign's animations/ holds): its levels, its own colour scale
+            # (one number over both levels and every frame, from films_index.tsv), its frame spacing
+            'deck_film': {'levels': film_levels, 'sum': False, 'scale': fs.get(stem),
+                          'stride_days': 5 * f.FILM_STRIDE.get(var, f.DEFAULT_STRIDE), 'stem': stem},
             'three': bool(three),
         }
         print('  reference %-10s %s  %.2f MB' % (var, str(q.shape), (out / name).stat().st_size / 1e6), flush=True)
@@ -220,11 +279,17 @@ def build(out=None, stride=12, member_stride=24):
     for var in EXPLORER_VARS_MEMBER:
         what, _latex_units = f.INFO[var]
         kind, _p, _r = f.kind_of(var)
+        stem = 'film_members_' + var.replace('ADJ', '')
         entry = {'label': what, 'units': UNITS_HTML[var], 'files': {}, 'scale': {},
                  'kind': kind, 'three': True,
-                 'film_levels': [int(k) for k in f.levels_of(var)]}
+                 'film_levels': [int(k) for k in f.levels_of(var)],       # the per-member films' two levels
+                 # the eight-member film of the deck: the column sum, one scale for all members and frames
+                 'deck_film': {'levels': [], 'sum': True, 'scale': fs.get(stem),
+                               'stride_days': 5 * member_stride, 'stem': stem}}
+        pooled_all = []
         for r in c.RUN_ORDER:
-            q, sc, labels = _tiles(c.run_dir(c.ADJ_JOB[r]), var, mits, True)
+            q, sc, labels, pooled = _tiles(c.run_dir(c.ADJ_JOB[r]), var, mits, True)
+            pooled_all.append(pooled)
             name = 'data/%s_%s.png' % (r, var)
             Image.fromarray(q, 'L').save(out / name, format='PNG', optimize=True)
             total += (out / name).stat().st_size
@@ -232,6 +297,9 @@ def build(out=None, stride=12, member_stride=24):
             entry['scale'][r] = [[float('%.4g' % v) for v in row] for row in sc]
             entry['nlev'], entry['levels'] = len(labels), labels
             print('  member %-4s %-10s %.2f MB' % (r, var, (out / name).stat().st_size / 1e6), flush=True)
+        entry['lscale'] = level_scales(pooled_all)        # over all eight members and every frame, per level
+        if entry['deck_film']['scale'] is None:            # no film index yet: the same convention, computed here
+            entry['deck_film']['scale'] = entry['lscale'][-1]
         ens['vars'][var] = entry
     man['datasets']['ensemble'] = ens
 
@@ -245,7 +313,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=None)
     ap.add_argument('--stride', type=int, default=12, help='dumps between frames, reference (5 d each)')
-    ap.add_argument('--member-stride', type=int, default=24, help='dumps between frames, members')
+    ap.add_argument('--member-stride', type=int, default=12, help='dumps between frames, members (12 = the 60-day frames of the deck film; 24 until 2026-10-13)')
     ap.add_argument('--page-only', action='store_true', help='re-render the page around existing payloads')
     a = ap.parse_args()
     c.setup_style()

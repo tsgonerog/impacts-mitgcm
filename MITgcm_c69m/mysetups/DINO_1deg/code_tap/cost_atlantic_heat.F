@@ -39,20 +39,30 @@ C     ========= Local variables =========================
       parameter( petawatt = 1. _d +15 )
 
 C     adjust the following line of code to define the zonal section
-C     where you are interested to calculated AMOC transport || use  the
-C     following notebook in sverdrup to find jsec for desired latitude (say for 26
-C     degrees north)
-C     /home/tshahriar/Proj_ImPACTS/impacts-mitgcm/analyses/DINO_1deg/grid_and_cost_sections.ipynb
-      parameter( isecbeg = 1, isecend = 51, jsec = 127 )
+C     where you are interested to calculated AMOC transport.
+C     jsec is the (1-based) grid row whose SOUTHERN face carries the vVel
+C     the section integrates; analyses/DINO_1deg/grid_and_cost_sections.ipynb
+C     maps a latitude to a row.
+C     jsec = 148 since 2026-10-13: the row of the overturning maximum of
+C     the 200-year spin-up 31203 (row centre 43.2 N, face 42.8 N; psi peaks
+C     there, 7.37 Sv at the 848 m interface, in every decade of the
+C     spin-up), found by analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/
+C     overturning_maximum.py. Until then jsec = 127 (26.05 N), the section
+C     of every adjoint run up to job 31434; a run's build_info.txt records
+C     its section (cost_section_jsec=).
+      parameter( isecbeg = 1, isecend = 51, jsec = 148 )
 C     the following line defines a meridional section, but I am not using
 C     it in the soma-adjoint setup. To confirm, search for
 C     jsecbeg/jsecend in the compiled version of this file (.f file) in the build
 C     directory: there should be only two instances of them
       parameter( jsecbeg = 1, jsecend = 62, isec = 30 )
 #ifdef ALLOW_COST_ATLANTIC_HEAT_DOMASS
-C     integrate only the upper 25 vertical levels (upper ~982 m; see
-C     "delR" parameter in input_tap/data)
-      parameter ( kmaxdepth = 25 )
+C     integrate only the upper 24 vertical levels (upper 848 m; see "delR"
+C     in input_tap/data): the interface at which psi peaks on row jsec, so
+C     the cost is the overturning maximum itself (since 2026-10-13; the
+C     upper 25 levels, 982 m, until then, when the section was at 26 N and
+C     psi was still rising at the cut)
+      parameter ( kmaxdepth = 24 )
 #else
       parameter ( kmaxdepth = 14 )
 #endif

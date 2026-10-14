@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Adjoint Kelvin and Rossby waves in the campaign's temperature sensitivity (2026-09-16).
 
-    python adjoint_waves.py slices    # ADJtheta at 915 m, every dump of all eight adjoints -> cache/adjtheta_915m_<run>.npy
+    python adjoint_waves.py slices    # ADJtheta at the film's upper level, every dump of all eight adjoints -> cache/adjtheta_<depth>m_<run>.npy
     python adjoint_waves.py measure   # arrival leads along the boundaries, crossing speeds, mode speeds
                                       #   -> stats/adjoint_waves.json
     python adjoint_waves.py plot      # figures/adjoint_waves.png: the waveguide south of the section unrolled, the whole
@@ -17,11 +17,15 @@ grows. Forward coastal Kelvin waves keep the coast on their right in the norther
 western boundary, east along the equator, poleward along an eastern boundary) and on their left in the southern;
 forward long Rossby waves carry information westward. Adjoint Kelvin waves therefore run north along the western
 wall, south along the eastern wall, west along the equator and poleward along the western wall of both
-hemispheres, and adjoint Rossby waves run east. Physically: the transport at 26 N is set by the density on the
-two walls there, the eastern wall is fed by Kelvin waves from the equator, the equator by the western wall, and
-the western wall by Rossby waves arriving from the interior -- so its sensitivity lies upstream along that chain.
+hemispheres, and adjoint Rossby waves run east. Physically: the transport across the cost section is set by the
+density on the two walls there, the eastern wall is fed by Kelvin waves from the equator, the equator by the western
+wall, and the western wall by Rossby waves arriving from the interior -- so its sensitivity lies upstream along that
+chain. The section's latitude comes from campaign.sec_lat() (26 N for the September campaign, 43 N since the
+2026-10-13 rerun), and every route and label below is built from it.
 
-WHAT IS MEASURED, at 915 m (the level of the deck's temperature film), for all eight adjoints:
+WHAT IS MEASURED, at the upper level of the deck's temperature film (make_films.levels_of: the level of largest
+time-mean RMS inside the depth range the cost integrates -- 915 m for the 26 N cost, 791 m for the 43 N one), for
+all eight adjoints:
 
 * arrival leads along the waveguide -- the first lead at which |dJ/dtheta| exceeds ARRIVAL_FRAC of its largest
   value anywhere on the level -- on the eastern wall, the equator and the western wall;
@@ -40,7 +44,9 @@ import numpy as np
 
 import campaign as c
 
-K915 = 24                      # 0-based level index of 915 m
+import make_films as _f
+K915 = _f.levels_of('ADJtheta')[0]      # the film's upper level (0-based); 24 = 915 m at 26 N, 23 = 791 m at 43 N
+LEVEL_M = int(round(-c.grid()['RC'][K915]))
 ARRIVAL_FRAC = 0.01
 OMEGA, A_EARTH = 7.292e-5, 6.371e6
 ROSSBY_LATS = [35, 30, 25, 20, -20, -25, -30, -35]
@@ -48,7 +54,7 @@ EAST_WALL, WEST_WALL = slice(47, 50), slice(1, 4)     # the three wet columns ne
 
 
 def slice_path(run):
-    return c.CACHE / ('adjtheta_915m_%s.npy' % run)
+    return c.CACHE / ('adjtheta_%dm_%s.npy' % (LEVEL_M, run))
 
 
 def slices():
@@ -122,12 +128,15 @@ def arrivals(A, lead):
     jeq = [int(np.abs(lat - v).argmin()) for v in (-2, 2)]
     Q = np.abs(A[:, jeq[0]:jeq[1] + 1, :]).max(axis=1)
     pick = lambda L: int(np.abs(lat - L).argmin())
+    sec = round(c.sec_lat())                       # the section's row centre, 26 or 43
+    south = [L for L in (40, 35, 30, 26, 20, 15, 10, 5, 0) if L < sec]
+    north = [L for L in (30, 35, 40, 45, 50, 55, 60) if L > sec]
     return {
-        'east_wall': {'%d' % L: first(E[:, pick(L)]) for L in (26, 20, 15, 10, 5, 0)},
+        'east_wall': {'%d' % L: first(E[:, pick(L)]) for L in [sec] + south},
         'equator': {'%.1f' % lon[i]: first(Q[:, i]) for i in range(1, 50, 6)},
-        'west_wall_north': {'%d' % L: first(W[:, pick(L)]) for L in (26, 30, 35, 40, 45, 50)},
+        'west_wall_north': {'%d' % L: first(W[:, pick(L)]) for L in [sec] + north},
         # south of the section: the two branches that open at the equator corner (both since 2026-10-09)
-        'west_wall_south': {'%d' % L: first(W[:, pick(L)]) for L in (20, 15, 10, 5, 0, -5, -10, -20, -30)},
+        'west_wall_south': {'%d' % L: first(W[:, pick(L)]) for L in south + [-5, -10, -20, -30]},
     }
 
 
@@ -154,10 +163,10 @@ def crossing_speed(A, lead, lat0):
 
 def measure():
     lead = leads_days()
-    out = {'level_m': 915, 'arrival_frac_of_level_max': ARRIVAL_FRAC,
-           'note': 'arrival: first lead (d) at which |ADJtheta| at 915 m exceeds the fraction of its largest value on '
-                   'the level; crossing: lag of best correlation between 40.5 W and 20.5 W; c1: first baroclinic '
-                   'gravity-wave speed of the leg\'s final-year stratification; rossby_theory: beta c1^2/f^2',
+    out = {'level_m': LEVEL_M, 'arrival_frac_of_level_max': ARRIVAL_FRAC,
+           'note': ('arrival: first lead (d) at which |ADJtheta| at %d m exceeds the fraction of its largest value on '
+                    'the level; crossing: lag of best correlation between 40.5 W and 20.5 W; c1: first baroclinic '
+                    'gravity-wave speed of the leg\'s final-year stratification; rossby_theory: beta c1^2/f^2') % LEVEL_M,
            'runs': {}}
     for run in c.RUN_ORDER:
         A = np.load(slice_path(run))
@@ -194,9 +203,10 @@ def plot():
     amax = np.nanmax(np.abs(A))
     nt = int(np.searchsorted(lead, 150.0)) + 1
 
-    # the waveguide south of the section, unrolled: eastern wall 26 N -> equator, equator east -> west,
+    # the waveguide south of the section, unrolled: eastern wall section -> equator, equator east -> west,
     # western wall equator -> 40 S; distance in 1000 km
-    je = [j for j in range(int(np.abs(lat - 26.5).argmin()), int(np.abs(lat).argmin()) - 1, -1)]
+    sec = c.sec_lat()
+    je = [j for j in range(c.JSEC, int(np.abs(lat).argmin()) - 1, -1)]
     jeq = [int(np.abs(lat - v).argmin()) for v in (-2, 2)]
     jw = [j for j in range(int(np.abs(lat).argmin()), int(np.abs(lat + 40).argmin()) - 1, -1)]
     dy = g['DYG'][:, 25]
@@ -225,7 +235,7 @@ def plot():
         ax.axvline(b, color='w', lw=1.0)
     top = ax.secondary_xaxis('top')
     top.set_xticks([d_e[-1] / 2, (d_e[-1] + d_q[-1]) / 2, (d_q[-1] + d_w[-1]) / 2])
-    top.set_xticklabels(['eastern wall\n26°N to equator', 'equator\n0° to 50°W',
+    top.set_xticklabels(['eastern wall\n%d°N to equator' % round(sec), 'equator\n0° to 50°W',
                          'western wall\nequator to 40°S'], fontsize=7.5)
     top.tick_params(length=0)
     c1 = column_speeds('REF', 0.5)[0]
@@ -233,17 +243,17 @@ def plot():
     ax.plot([0, dist[-1]], [t0, t0 + dist[-1] * 1e6 / c1 / 86400.0], color='#2a78d6', lw=1.3, ls='--')
     ax.text(dist[-1] * 0.45, 12, 'dashes: first-mode speed\nc$_1$ = %.1f m/s, from the\nleg\'s own stratification' % c1,
             color='#2a78d6', fontsize=8, ha='left', va='bottom')
-    ax.set_xlabel('distance from 26°N along the path [1000 km]')
+    ax.set_xlabel('distance from %d°N along the path [1000 km]' % round(sec))
     ax.set_ylabel('lead [days]')
     ax.set_title('adjoint Kelvin waves, south of the section', fontsize=9.5, pad=24)
     ax.grid(False)
 
     ax = fig.add_subplot(gs[1], sharey=fig.axes[0])
     ax.pcolormesh(lat[jn], lead[:nt], np.log10(wall / amax + 1e-12), **lv)
-    for v in (0.0, float(lat[int(np.abs(lat - 26.5).argmin())])):
+    for v in (0.0, float(lat[c.JSEC])):
         ax.axvline(v, color='w', lw=1.0)
     top = ax.secondary_xaxis('top')
-    top.set_xticks([-20, 13, 43])
+    top.set_xticks([-20, 0.5 * sec, 0.5 * (sec + 60)])
     top.set_xticklabels(['corner,\nsouth', 'corner,\nnorth', 'section,\nnorth'], fontsize=7.5)
     top.tick_params(length=0)
     ax.set_xlabel('latitude [°N]')

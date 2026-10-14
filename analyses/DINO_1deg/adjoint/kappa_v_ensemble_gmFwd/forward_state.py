@@ -9,7 +9,8 @@ the restart check.
 
 Indices per monthly (30.5-d mean) dynDiag record: jproxy, the compiled cost formula applied to VVEL
 (campaign.jproxy; fc itself averages the final 30 d of an adjoint window); the overturning maximum
-above 1000 m at 26 N and 41 N; the volume-mean temperature and salinity.
+above 1000 m at 26 N and 43 N (campaign.AMOC_INDEX_LATS; the cost section is one of them); the volume-mean
+temperature and salinity. jproxy uses the current campaign's section (campaign.JSEC, KMAX).
 """
 import json
 import sys
@@ -32,7 +33,7 @@ def indices(base):
     sa = c.read_record(base, 'SALT')
     it = int(re.search(r'\.(\d{10})$', str(base)).group(1))
     return dict(iter=it, year=it / c.STEPS_PER_YEAR, jproxy=c.jproxy(v, g),
-                amoc26=c.amoc_index(v, 26.0, g), amoc41=c.amoc_index(v, 41.0, g),
+                **{k: c.amoc_index(v, L, g) for k, L in c.AMOC_INDEX_LATS.items()},
                 Tmean=float((th * g['vol']).sum() / g['vol'].sum()),
                 Smean=float((sa * g['vol']).sum() / g['vol'].sum()))
 
@@ -57,7 +58,7 @@ def spinup():
     w = df[df.year > 100].copy()
     t = w.year.values
     out = {}
-    for k in ('jproxy', 'amoc26'):
+    for k in ('jproxy',) + tuple(c.AMOC_INDEX_LATS):
         x = w[k].values
         x_d = x - np.polyval(np.polyfit(t, x, 1), t)
         ann = pd.Series(x_d).groupby(np.arange(len(x_d)) // 12).mean().values

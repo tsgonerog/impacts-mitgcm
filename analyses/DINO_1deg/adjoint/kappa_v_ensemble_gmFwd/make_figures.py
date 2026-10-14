@@ -5,7 +5,7 @@ adjoint_products.py, into analysis/<campaign>/figures/ and animations/.
     python make_figures.py [--dev] all | <name> [<name> ...]
 
 Conventions: signed sensitivities on a diverging map (cmocean balance, symmetric robust limits),
-land grey, the 26 N cost section drawn in ink; ADJ* dumps are shown in the order the adjoint
+land grey, the cost section (campaign.SEC_NAME) drawn in ink; ADJ* dumps are shown in the order the adjoint
 computes them, lead increasing. Colours for series follow the categorical slots of campaign.SERIES.
 """
 import argparse
@@ -100,11 +100,11 @@ def adxx(run):
 def leg_indices_vs_kappa():
     df = pd.read_csv(c.CACHE / 'leg_series.csv')
     last = df[(df.run != 'spinup') & (df.iter > c.NITER0 - c.STEPS_PER_YEAR)]
-    m = last.groupby('run')[['jproxy', 'amoc26', 'Tmean']].mean().reindex(c.RUN_ORDER)
+    m = last.groupby('run')[['jproxy', c.SEC_AMOC, 'Tmean']].mean().reindex(c.RUN_ORDER)
     x = [c.FACTOR[r] for r in c.RUN_ORDER]
     fig, axs = plt.subplots(1, 3, figsize=(10.5, 3.1))
-    for ax, k, lab in zip(axs, ['jproxy', 'amoc26', 'Tmean'],
-                          ['cost proxy J at 26 N (last year of the leg)', 'overturning max above 1000 m at 26 N [Sv]',
+    for ax, k, lab in zip(axs, ['jproxy', c.SEC_AMOC, 'Tmean'],
+                          ['cost proxy J at %s (last year of the leg)' % c.SEC_NAME, 'overturning max above 1000 m at %s [Sv]' % c.SEC_NAME,
                            'volume-mean temperature [°C]']):
         ax.plot(x, m[k], '-o', color=c.SERIES[0], ms=5, mec=c.SURFACE, mew=1.5)
         ax.plot([1.0], [m.loc['REF', k]], 'o', color=c.INK, ms=6, mec=c.SURFACE, mew=1.5)
@@ -121,7 +121,7 @@ def leg_indices_vs_kappa():
 def leg_timeseries():
     df = pd.read_csv(c.CACHE / 'leg_series.csv')
     fig, axs = plt.subplots(1, 2, figsize=(10.5, 3.2), sharex=True)
-    for ax, k, lab in zip(axs, ['jproxy', 'amoc26'], ['cost proxy J (30.5-d means)', 'overturning at 26 N [Sv]']):
+    for ax, k, lab in zip(axs, ['jproxy', c.SEC_AMOC], ['cost proxy J (30.5-d means)', 'overturning at %s [Sv]' % c.SEC_NAME]):
         for r in c.MEMBERS:
             s = df[df.run == r]
             ax.plot(s.year, s[k], color=c.AXIS_C, lw=0.9)
@@ -226,7 +226,7 @@ def ref_adxx_maps():
         f = np.where(m.any(axis=0), np.where(m, a, 0).sum(axis=0), np.nan) if a.ndim == 3 else np.where(m, a, np.nan)
         map_panel(ax, f, t, units=u)
     axs[0].set_ylabel('latitude [°]')
-    fig.suptitle('Control gradients of J over the 5-yr window, reference adjoint (the 26 N cost section in black)', fontsize=10.5, y=0.99)
+    fig.suptitle('Control gradients of J over the 5-yr window, reference adjoint (the %s cost section in black)' % c.SEC_NAME, fontsize=10.5, y=0.99)
     save(fig, 'ref_adxx_maps')
 
 
@@ -314,6 +314,9 @@ def ref_ADJtheta_zonal_section():
 
 @figure
 def ref_vs_previous():
+    if c.PREV_GMFWD_5YR_JOB is None:
+        print('ref_vs_previous: no earlier adjoint of this cost section; skipped')
+        return
     mm = pd.read_csv(c.CACHE / 'member_metrics.csv')
     p = mm[mm.run == 'prev31237']
     fig, axs = plt.subplots(1, 2, figsize=(10.5, 3.2), sharex=True)
@@ -331,27 +334,55 @@ def ref_vs_previous():
 
 
 # ------------------------------------------------------------------ finite differences
+def parent_stats(name):
+    """A stats file of the campaign this one reuses the legs of (None when there is none): the 43 N rerun
+    compares itself with the 26 N campaign of September, the September campaign with the 2026-09-11 test."""
+    par = c.COST_SECTION[c.CAMPAIGN]['legs_from']
+    p = c.OUTPUTS / 'analysis' / par / 'stats' / name if par else None
+    return pd.read_csv(p) if p and p.exists() else None
+
+
 @figure
 def fd_checks():
     df = pd.read_csv(c.STATS / 'fd_checks.csv')
-    prev = {  # 2026-09-11 GM test (fd_summary.md): adjoint 31237 against finite differences of the GM model
-        'kappa': -2.4511e3 / -2.0012e3, 'deepN': -4.4259e-3 / -5.5797e-3, 'midTrop': 5.0309e-3 / 4.8365e-3, 'soUpper': 3.7552e-3 / 2.5825e-3}
-    names = ['kappa_v ±10 %', 'Theta, 40–50 N below 1500 m', 'Theta, 0–10 N 500–1500 m', 'Theta, 40–60 S 0–500 m']
-    keys = ['kappa', 'deepN', 'midTrop', 'soUpper']
-    new = (df.adjoint / df.fd_central).values[:len(names)]
-    y = np.arange(len(names))[::-1]
-    fig, ax = plt.subplots(figsize=(7.5, 2.9))
+    sigma = json.loads((c.STATS / 'noise_floor.json').read_text())['jproxy']['std_monthly']
+    # the kappa_v check and the Theta boxes, in the order of the file; a check without signal (below) is drawn
+    # hollow with its sigma counts instead of a ratio
+    rows = df[~df.test.str.contains('everywhere')].reset_index(drop=True)
+    names = [t.replace('Theta +%g K, ' % a, 'Theta, ') if t.startswith('Theta') else t
+             for t, a in zip(rows.test, [float(t.split('+')[1].split(' ')[0]) if t.startswith('Theta') else 0 for t in rows.test])]
+    ratio = (rows.adjoint / rows.fd_central).values
+    # a check has signal when its central difference clears the noise floor and its two one-sided differences agree
+    # (one_sided_spread < 1: |fd_plus - fd_minus| below |fd_central|); deepN at 43 N fails both, fv and qnet the second
+    signal = ((np.abs(rows.fd_central) >= sigma) & (rows.one_sided_spread < 1.0)).values
+    par = parent_stats('fd_checks.csv')
+    if par is not None:        # the same checks of the parent campaign (26 N section, 2026-09): its own adjoint/FD, by test name
+        pr = par.set_index('test')
+        prev = [float(pr.adjoint[t] / pr.fd_central[t]) if t in pr.index else np.nan for t in rows.test]
+        prev_label = '2026-09 campaign, the 26 N section: adjoint 31374 vs FD, same legs'
+    else:
+        prev_map = {  # 2026-09-11 GM test (fd_summary.md): adjoint 31237 against finite differences of the GM model
+            'kappa': -2.4511e3 / -2.0012e3, '40-50 N': -4.4259e-3 / -5.5797e-3, '0-10 N': 5.0309e-3 / 4.8365e-3, '40-60 S': 3.7552e-3 / 2.5825e-3}
+        prev = [next((v for k, v in prev_map.items() if k in t), np.nan) for t in rows.test]
+        prev_label = '2026-09-11: adjoint 31237 vs FD, from 31205'
+    y = np.arange(len(rows))[::-1]
+    fig, ax = plt.subplots(figsize=(7.5, 0.55 * len(rows) + 0.8))
     ax.axvline(1.0, color=c.AXIS_C, lw=1)
-    ax.plot([prev[k] for k in keys], y, 'o', color=c.SERIES[1], ms=7, mec=c.SURFACE, mew=1.5,
-            label='2026-09-11: adjoint 31237 vs FD, from 31205')
-    ax.plot(new[:len(names)], y[:len(new)], 'o', color=c.SERIES[0], ms=8, mec=c.SURFACE, mew=1.5,
-            label='this campaign: reference adjoint vs FD, from the reference leg 31366')
-    for yy, v in zip(y, new):
-        ax.annotate('%+.0f %%' % (100 * (v - 1)), (v, yy), xytext=(0, 7), textcoords='offset points', ha='center', fontsize=8, color=c.INK2)
+    ax.plot(prev, y, 'o', color=c.SERIES[1], ms=7, mec=c.SURFACE, mew=1.5, label=prev_label)
+    ax.plot(np.where(signal, ratio, np.nan), y, 'o', color=c.SERIES[0], ms=8, mec=c.SURFACE, mew=1.5,
+            label='this campaign (%s section): reference adjoint vs FD, from the reference leg %d' % (c.SEC_NAME, c.LEG_JOB['REF']))
+    ax.plot(np.where(signal, np.nan, 1.0), y, 'o', color=c.SURFACE, ms=8, mec=c.SERIES[0], mew=1.5,
+            label='no signal: the measured response is at the noise floor, or its two one-sided differences disagree')
+    for yy, v, ok, fdc, adj in zip(y, ratio, signal, rows.fd_central, rows.adjoint):
+        if ok:
+            ax.annotate('%+.0f %%' % (100 * (v - 1)), (v, yy), xytext=(0, 7), textcoords='offset points', ha='center', fontsize=8, color=c.INK2)
+        else:
+            ax.annotate('FD %.1f σ, adjoint %.1f σ' % (fdc / sigma, adj / sigma), (1.0, yy), xytext=(0, 7),
+                        textcoords='offset points', ha='center', fontsize=8, color=c.INK2)
     ax.set_yticks(y)
-    ax.set_yticklabels(names)
+    ax.set_yticklabels(names, fontsize=8.5)
     ax.set_xlabel('adjoint prediction / central finite difference')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.28), ncol=1)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.22 - 0.4 / len(rows)), ncol=1, fontsize=8)
     save(fig, 'fd_checks')
 
 
@@ -384,19 +415,40 @@ def fc_vs_kappa():
     sig = nf['jproxy']['std_monthly']
     fig, ax = plt.subplots(figsize=(7.5, 3.8))
     ref = float(fg[fg.run == 'REF'].fc.iloc[0])
-    series = [('this campaign (GM/Redi in the forward sweep, legs from the new spin-up)', fg.factor, fg.fc, c.SERIES[0]),
-              ('2026-09-10 (GM-free adjoint, legs from 30983)', old['gmFree_ReMax2_2026_09_10']['factor'], old['gmFree_ReMax2_2026_09_10']['fc'], c.SERIES[1]),
-              ('2026-08 (2x viscosity, GM-free adjoint)', old['visc2x_2026_08']['factor'], old['visc2x_2026_08']['fc'], c.SERIES[2])]
-    for lab, x, yv, col in series:
-        o = np.argsort(x)
-        ax.plot(np.array(x)[o], np.array(yv)[o], '-o', color=col, ms=5, mec=c.SURFACE, mew=1.5, label=lab)
+    par = parent_stats('fc_gradient.csv')
+    earlier = [('2026-09-10 (GM-free adjoint, legs from 30983)', old['gmFree_ReMax2_2026_09_10']['factor'], old['gmFree_ReMax2_2026_09_10']['fc'], c.SERIES[1]),
+               ('2026-08 (2x viscosity, GM-free adjoint)', old['visc2x_2026_08']['factor'], old['visc2x_2026_08']['fc'], c.SERIES[2])]
+    if par is None:
+        series = [('this campaign (GM/Redi in the forward sweep, legs from the new spin-up)', fg.factor, fg.fc, c.SERIES[0])] + earlier
+        for lab, x, yv, col in series:
+            o = np.argsort(x)
+            ax.plot(np.array(x)[o], np.array(yv)[o], '-o', color=col, ms=5, mec=c.SURFACE, mew=1.5, label=lab)
+        ax.set_ylabel('J (fc) over the 5-yr window')
+        ax.legend(loc='upper center', fontsize=8)
+    else:
+        # this campaign measures another section than every earlier one, so the earlier curves go on a second
+        # axis: their shape against kappa_v is what is compared, not their level
+        o = np.argsort(fg.factor.values)
+        ax.plot(fg.factor.values[o], fg.fc.values[o], '-o', color=c.SERIES[0], ms=6, mec=c.SURFACE, mew=1.5,
+                label='this campaign: the %s section (left axis)' % c.SEC_NAME)
+        ax.set_ylabel('J at %s (fc) over the 5-yr window' % c.SEC_NAME, color=c.SERIES[0])
+        ax2 = ax.twinx()
+        ax2.grid(False)
+        ax2.spines['right'].set_visible(True)
+        for lab, x, yv, col in [('2026-09 campaign: the 26 N section, same legs', par.factor, par.fc, c.SERIES[1])] + \
+                               [(e[0] + ', 26 N', e[1], e[2], e[3]) for e in earlier]:
+            oo = np.argsort(np.array(x))
+            ax2.plot(np.array(x)[oo], np.array(yv)[oo], '--o', color=col, ms=4, mec=c.SURFACE, mew=1.2, lw=1.1,
+                     alpha=0.85, label=lab + ' (right axis)')
+        ax2.set_ylabel('J at 26 N, the earlier campaigns', color=c.SERIES[1])
+        h1, l1 = ax.get_legend_handles_labels()
+        h2, l2 = ax2.get_legend_handles_labels()
+        ax.legend(h1 + h2, l1 + l2, loc='upper center', fontsize=7.5)
     ax.set_xscale('log', base=2)
     xs = sorted(c.FACTOR.values())
     ax.set_xticks(xs)
     ax.set_xticklabels(['%g' % v for v in xs])
     ax.set_xlabel('κ_v / 1.2e-5')
-    ax.set_ylabel('J (fc) over the 5-yr window')
-    ax.legend(loc='upper center', fontsize=8)
     save(fig, 'fc_vs_kappa')
 
 

@@ -44,7 +44,19 @@ finish: 31305–31312 were cancelled at start by a watcher error and deleted, 31
 started from the production spin-up 31203, died when `/scratch2` failed on 2026-09-12 (their
 directories were deleted on 2026-09-16, having written no cost), and
 31346–31362 were cancelled with their chain when the spin-up 31329 could not write its final
-pickup. Do not put the
+pickup. **Rerun on 2026-10-13 for the 43 N cost section** (campaign `kappa_v_ensemble_gmFwd_sec43N`,
+`submit_campaign.sh` reuse mode): 31561 and 31562 (κ_v), 31563–31570 (forcing, `+` then `−` for `fu`,
+`fv`, `qnet`, `empmr`) and 31571–31576 (Theta boxes, `+` then `−` for deepN, midTrop, soUpper), from the
+same reference leg, the same perturbed pickups and the same forcing files as in September, so the two
+campaigns' checks differ only in the cost they measure. One check lost its signal at 43 N: the deep
+box (40–50° N below 1500 m) now sits right under the section and moves J by 4e-5, the noise floor
+(σ of the monthly cost 8.5e-4 there), as the 43 N adjoint also predicts; a fourth box, 45–60° N below
+1500 m (`deepNN` in `campaign.THETA_BOXES`, ±0.016 K, pickups under
+`analysis/kappa_v_ensemble_gmFwd_sec43N/perturbed_pickups/`), was run on 2026-10-14 as 31577/31578.
+Results at 43 N (adjoint against the central difference): κ_v +12 %, the tropical box +5 %, the
+Southern Ocean box +34 %, the deep box north of the section +48 %, the zonal stress −29 %; the net
+heat flux and meridional stress have no finite-difference signal and the freshwater flux is over by
+13×, as in September. Do not put the
 words the model prints before the cost value into a namelist comment: the model echoes
 every namelist into `STDOUT.0000`, and a script that searches for that line matches the
 comment.

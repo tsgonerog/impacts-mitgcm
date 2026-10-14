@@ -14,8 +14,20 @@ analysis/kappa_v_ensemble_gmFwd/ under OUTPUTS), submitted by submit_campaign.sh
 * finite-difference forward sweeps from the REF leg's year 180 (input_tap/variants/fd_checks/): κ_v ±10 %,
   Theta ±δ in three boxes of the pickup, and uniform perturbations of fu, fv, Qnet and E−P−R.
 
-Job IDs come from job_map.tsv. The cost J (code_tap/cost_atlantic_heat.F) is the section transport index
-at 26 N over the upper 25 levels, averaged over the final 30 d of the window and normalised per MPI tile.
+Job IDs come from job_map.tsv. The cost J (code_tap/cost_atlantic_heat.F) is the section transport index across
+one grid row over the upper kmaxdepth levels, averaged over the final 30 d of the window and normalised per MPI tile.
+
+TWO CAMPAIGNS SHARE THIS SUITE (since 2026-10-13), selected by the CAMPAIGN_NAME environment variable:
+
+* `kappa_v_ensemble_gmFwd` (2026-09-13): the cost section at jsec = 127 (row centre 26.05 N), upper 25 levels (982 m);
+  runs 31366-31398, analysed 2026-09-15.
+* `kappa_v_ensemble_gmFwd_sec43N` (2026-10-13, the default): the same legs 31366-31373, the same perturbed pickups and
+  forcing files, and the adjoints and finite-difference sweeps rerun with the cost section moved to the overturning
+  maximum, jsec = 148 (row centre 43.21 N, southern face 42.84 N), upper 24 levels (848 m) -- see
+  overturning_maximum.py. Its job_map.tsv copies the leg rows of the first campaign, so LEG_JOB resolves to the same
+  run directories (filed under runs/forward/kappa_v_ensemble_gmFwd/).
+
+COST_SECTION below holds what differs; JSEC, KMAX, SEC_LAT and SEC_AMOC are the current campaign's.
 """
 from __future__ import annotations
 
@@ -28,13 +40,27 @@ import numpy as np
 
 OUTPUTS = Path(os.environ.get('CAMPAIGN_OUTPUTS', '/scratch2/tshahriar/DINO_1deg_outputs'))  # the campaign's runs, moved back 2026-09-15
 EARLIER_OUTPUTS = Path('/scratch/tshahriar/DINO_1deg_outputs')                               # the tree it ran in while /scratch2 was down
-CAMPAIGN = 'kappa_v_ensemble_gmFwd'
+# Which campaign this suite reads: CAMPAIGN_NAME in the environment, the 43 N rerun by default (see the module docstring).
+COST_SECTION = {
+    'kappa_v_ensemble_gmFwd': dict(jsec=126, kmax=25, sec_name='26 N', sec_amoc='amoc26', since='2026-09-13',
+                                   prev_5yr_job=31237, legs_from=None),
+    'kappa_v_ensemble_gmFwd_sec43N': dict(jsec=147, kmax=24, sec_name='43 N', sec_amoc='amoc43', since='2026-10-13',
+                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd'),
+}
+CAMPAIGN = os.environ.get('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
+if CAMPAIGN not in COST_SECTION:
+    raise SystemExit('CAMPAIGN_NAME=%s is not one of %s' % (CAMPAIGN, sorted(COST_SECTION)))
+_CS = COST_SECTION[CAMPAIGN]
 ANALYSIS = OUTPUTS / 'analysis' / CAMPAIGN
 CACHE = ANALYSIS / 'cache'
 STATS = ANALYSIS / 'stats'
 FIGS = ANALYSIS / 'figures'
 ANIMS = ANALYSIS / 'animations'
-PICKUPS = ANALYSIS / 'perturbed_pickups'
+# The perturbed pickups and forcing files of the finite-difference sweeps belong to the state they perturb (the
+# reference leg's year 180), not to a cost section, so a campaign that reuses another's legs reuses those too.
+SHARED_INPUTS = OUTPUTS / 'analysis' / (_CS['legs_from'] or CAMPAIGN)
+PICKUPS = SHARED_INPUTS / 'perturbed_pickups'
+PERTURBED_FORCING = SHARED_INPUTS / 'perturbed_forcing'
 PREVIOUS = Path(__file__).resolve().parent / 'previous_campaigns_reference.json'   # numbers of the earlier campaigns
 
 # ---------------------------------------------------------------- runs
@@ -42,11 +68,16 @@ KAPPA0 = 1.2e-5
 FACTOR = dict(M1=0.25, M2=0.5, REF=1.0, M3=2.0, M4=4.0, M5=8.0, M6=16.0, M7=32.0)
 RUN_ORDER = ['M1', 'M2', 'REF', 'M3', 'M4', 'M5', 'M6', 'M7']
 MEMBERS = [r for r in RUN_ORDER if r != 'REF']
-PREV_GMFWD_5YR_JOB = 31237  # 2026-09-11: the same adjoint from the deleted REF_ReMax2 leg 31205's year 180 (on /scratch2)
+PREV_GMFWD_5YR_JOB = _CS['prev_5yr_job']  # 26 N campaign: 31237, the 2026-09-11 adjoint of the same cost from the deleted leg 31205's
+                                          # year 180; None for the 43 N campaign, whose cost no earlier adjoint measured
 THETA_BOXES = {   # (k0, k1, j0, j1, i0, i1), 0-based end-exclusive, as in perturb_pickup.py
     'deepN': dict(box=(28, 36, 143, 157, 0, 51), amp=0.016, what='40-50 N, below 1500 m'),
     'midTrop': dict(box=(20, 28, 99, 110, 0, 51), amp=0.035, what='0-10 N, 500-1500 m'),
     'soUpper': dict(box=(0, 20, 24, 56, 0, 51), amp=0.5, what='40-60 S, 0-500 m'),
+    # 2026-10-14, for the 43 N cost: the deepN box sits right under the new section and moves J by only 4e-5 (the noise
+    # floor; the 43 N adjoint predicts +1.2e-4), so a deep box NORTH of the section, where the 43 N adjoint predicts
+    # +5.1e-3 for the same amplitude, was added and run as one more pair of sweeps (jobs in job_map.tsv, deepNN_p/m).
+    'deepNN': dict(box=(28, 36, 150, 175, 0, 51), amp=0.016, what='45-60 N, below 1500 m'),
 }
 FORCING_TESTS = {   # control: (adxx file, amplitude, unit, what) -- files in analysis/<campaign>/perturbed_forcing/
     'fu': ('adxx_fu', 0.005, 'N/m2', 'zonal surface stress'),
@@ -56,9 +87,9 @@ FORCING_TESTS = {   # control: (adxx file, amplitude, unit, what) -- files in an
 }
 
 
-def _job_map():
+def _job_map(campaign=None):
     """Rows of analysis/<campaign>/job_map.tsv written by submit_campaign.sh: (job, role, tag)."""
-    p = OUTPUTS / 'analysis' / CAMPAIGN / 'job_map.tsv'
+    p = OUTPUTS / 'analysis' / (campaign or CAMPAIGN) / 'job_map.tsv'
     rows = []
     if p.exists():
         for line in p.read_text().splitlines()[1:]:
@@ -69,6 +100,10 @@ def _job_map():
 
 
 _MAP = _job_map()
+# A campaign that reuses another's legs (legs_from) reads them from that campaign's job map until its own map
+# exists -- submit_campaign.sh copies the leg rows into the new map, so afterwards both agree.
+if _CS['legs_from'] and not any(role == 'forward leg' for _, role, _ in _MAP):
+    _MAP += [(j, role, tag) for j, role, tag in _job_map(_CS['legs_from']) if role.startswith(('spin-up', 'forward leg'))]
 # The campaign was submitted with its own 170-year spin-up, 31329, whose last 61 days were rerun as 31365
 # (job_map.tsv keeps both rows as the record of what ran). Every output file of the two was byte-identical
 # to the production spin-up 31203's first 170 years, so they were deleted on 2026-09-16, 31365's year-170
@@ -76,7 +111,7 @@ _MAP = _job_map()
 # to year 200, so anything that means "the spin-up up to the legs' start" must stop at LEG_NITER0 itself.
 SPINUP_JOB = 31203
 SPINUP_END_JOB = None     # was 31365, the rerun last 61 days; deleted with 31329
-LEG_JOB = {tag.split('/')[-1].replace('_ReMax2', ''): j for j, role, tag in _MAP if role == 'forward leg'}
+LEG_JOB = {tag.split('/')[-1].replace('_ReMax2', ''): j for j, role, tag in _MAP if role.startswith('forward leg')}
 ADJ_JOB = {('REF' if role.startswith('reference') else tag.split('/')[-1].split('_')[0]): j
            for j, role, tag in _MAP if role.startswith(('reference adjoint', 'member adjoint'))}
 FD_JOB = {(role.split()[-1] if role.split()[-1] != 'sweep' else tag.split('/')[-1].split('_')[0]): j
@@ -231,9 +266,11 @@ DUMP_FILE_ALIASES = {'ADJempmr': ('ADJempmr', 'ADJempr')}
 
 def dump_base(d, var, it):
     """path stem <run dir>/<prefix>.<it> of a dump, whichever prefix the run wrote"""
+    # (not Path.with_suffix: on 'ADJempr.0003162240' it would replace the iteration, not append '.data', so the
+    # second spelling was never found -- the 2026-10-13 runs are the first here that write ADJempr.*)
     for prefix in DUMP_FILE_ALIASES.get(var, (var,)):
         base = Path(d) / ('%s.%010d' % (prefix, it))
-        if base.with_suffix('.data').exists():
+        if Path(str(base) + '.data').exists():
             return base
     return Path(d) / ('%s.%010d' % (var, it))
 
@@ -269,7 +306,18 @@ def pattern_corr(a, r, w=None):
 
 
 # ---------------------------------------------------------------- cost proxy at the section
-JSEC, KMAX, SNX, NTILE = 126, 25, 17, 3
+# JSEC is the 0-based row whose SOUTHERN face the compiled cost integrates VVEL across (Fortran jsec = JSEC + 1); KMAX the
+# number of levels from the surface (Fortran kmaxdepth). 126 / 25 for the 26 N campaign, 147 / 24 for the 43 N rerun.
+JSEC, KMAX, SNX, NTILE = _CS['jsec'], _CS['kmax'], 17, 3
+SEC_NAME = _CS['sec_name']                   # how the section is named in titles: '26 N' / '43 N' (the row centre, rounded)
+SEC_AMOC = _CS['sec_amoc']                   # the forward_state.py column holding the overturning maximum at the section's row
+AMOC_INDEX_LATS = {'amoc26': 26.0, 'amoc43': 43.2}   # the overturning index columns forward_state.py writes (nearest row)
+
+
+def sec_lat():
+    """Latitude (deg N) of the section row's centre, from the grid."""
+    return float(grid()['lat'][JSEC])
+
 
 
 def jproxy(v, g=None):
@@ -299,6 +347,7 @@ def overturning(v, g=None):
 
 
 def amoc_index(v, lat0=26.0, g=None):
+    """max of psi above 1000 m at the row nearest lat0 (the deck's AMOC index; the row centre names the latitude)."""
     g = g or grid()
     psi = overturning(v, g)
     j = int(np.abs(g['lat'] - lat0).argmin())

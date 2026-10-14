@@ -1,5 +1,25 @@
 # `kappa_v_ensemble_gmFwd/` — the κ_v ensemble and the 5-year adjoint under the current configuration
 
+**Two campaigns, one suite (since 2026-10-13).** Every script here reads `CAMPAIGN_NAME` from the
+environment: `kappa_v_ensemble_gmFwd` is the September campaign described below, with the cost section
+at 26 N (`jsec=127`, upper 982 m); `kappa_v_ensemble_gmFwd_sec43N`, **the default**, is its rerun with
+the section moved to the overturning maximum — `jsec=148` (row centre 43.21 N), upper 848 m
+(`kmaxdepth=24`) — after the advisor pointed out on the deck's overturning slide that the cell is
+cored near 43 N, not 26 N. `overturning_maximum.py` makes and records that computation
+(`stats/overturning_maximum.json`: the same row and interface in every decade of the spin-up 31203,
+in the reference leg and in the 2026-09 adjoint's window). The rerun reuses the eight 10-year legs
+31366–31373, the perturbed pickups and the forcing files of the September campaign (they belong to
+the state, not to the section) and resubmits only the eight 5-year adjoints and the sixteen
+finite-difference sweeps: `submit_campaign.sh` in its reuse mode (`CAMPAIGN_LEGS_FROM`, the default),
+which copies the leg rows into the new `job_map.tsv` and refuses an executable whose `build_info.txt`
+does not carry the campaign's `cost_section_jsec`. Jobs of 2026-10-13: reference adjoint 31553, members
+M1–M7 31554–31560, κ_v ±10 % 31561/31562, forcing 31563–31570 (`fu`, `fv`, `qnet`, `empmr`; + then −),
+Theta boxes 31571–31576 (deepN, midTrop, soUpper; + then −); runs filed under
+`runs/adjoint/kappa_v_ensemble_gmFwd_sec43N/`, products under `analysis/kappa_v_ensemble_gmFwd_sec43N/`.
+`campaign.COST_SECTION` holds what differs between the two (`JSEC`, `KMAX`, the section's name, the
+overturning-index column, whether an earlier adjoint of the same cost exists), and the 26 N products
+stay readable with `CAMPAIGN_NAME=kappa_v_ensemble_gmFwd`.
+
 The vertical-diffusivity ensemble and the 5-year production adjoint rerun on 2026-09-13 with the setup
 the 2026-09-12 cleanup left on `main`, with finite-difference checks of the adjoint gradients, and the
 analysis of both for the neural-network surrogate (does κ_v have to be a surrogate input, and which
@@ -21,7 +41,8 @@ https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuil
 | `make_figures.py` | Figures (PNG) and two animations (GIF), each frame normalised to itself to show the pattern. `ref_ADJtheta_depth_lead_wide` (2026-09-16) draws the nine temperature-sensitivity maps of `ref_ADJtheta_depth_lead` in one row, grouped by lead, for the 16:9 deck |
 | `make_films.py` | **Films of every `ADJ*` dump** (2026-09-16), each written twice: a multi-page PDF, one page per frame, which the beamer deck plays with the `animate` package, and a GIF. `profiles` measures the per-level RMS of every 3-D dump and draws `figures/adj_level_choice.png`; `reference` films all twelve dumps of run 31374; `members` films `ADJtheta` and `ADJdiffkr` for all eight members plus the two eight-panel films. One fixed colour scale per film, so growth and decay are visible — the opposite convention from `make_figures.py`'s GIFs. `--deck <dir>` drops the deck's copies into the slide deck's `figures/` — the six in `DECK_FILMS` and the two eight-panel films (all twelve reference films until 2026-09-16). Writes `animations/films_index.tsv` |
 | `adjoint_waves.py` | **Adjoint Kelvin and Rossby waves** (2026-09-16), measured in `ADJtheta` at 915 m for all eight adjoints: `slices` caches the level at every dump (`cache/adjtheta_915m_<run>.npy`), `measure` writes arrival leads along the eastern wall, the equator and the western wall, the interior crossing speeds and, for comparison, the first-mode speed c₁ of each leg's stratification and the long Rossby speed βc₁²/f² (`stats/adjoint_waves.json`), `plot` draws `figures/adjoint_waves.png`. See below |
-| `build_explorer.py`, `explorer_template.html` | **The interactive depth-level explorer** (2026-09-16): one page with a variable selector, a depth slider over all 36 levels plus the column sum, a time slider that plays, and a choice of colour scaling, for the reference adjoint's twelve dumps and for `ADJtheta`/`ADJdiffkr` across all eight members. Build output in `explorer/` (ignored by git; the copy that matters is the one on scratch) |
+| `build_explorer.py`, `explorer_template.html` | **The interactive depth-level explorer** (2026-09-16): one page with a variable selector, a depth slider over all 36 levels plus the column sum, a time slider that plays, and a choice of colour scaling, for the reference adjoint's twelve dumps and for `ADJtheta`/`ADJdiffkr` across all eight members. Since 2026-10-13 it opens on what the deck's films show — the eight-member view on the column sum with the film's one scale for all members and frames, the reference view on the film's upper level with the film's scale — and the manifest carries, per variable, one scale per level (`lscale`, the film convention applied to any level) and the deck film's own scale (`deck_film`, read from `animations/films_index.tsv`, so build the films first). Build output in `explorer/` (ignored by git; the copy that matters is the one on scratch) |
+| `overturning_maximum.py` | **Where the cell peaks** (2026-10-13): the maximum of the depth-space overturning streamfunction north of 20 N and below 300 m, from the monthly `dynDiag` of the spin-up, the reference leg, the adjoint window and each member's last year; writes `stats/overturning_maximum.json`. The row and interface it reports are the cost section's `jsec` and `kmaxdepth` since that day |
 | `file_runs.py` | Files the run directories under `runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/` and relinks the member adjoints' pickups |
 | `build_page.py`, `page_style.css`, `page_text.py`, `page_setup_text.py` | Assemble the published page (build output in `page/`, ignored by git) |
 | `previous_campaigns_reference.json` | The earlier campaigns' numbers the comparisons use (the 2026-08 and 2026-09-10 ensembles, the 2026-09-11 GM test), copied from scratch before `/scratch2` failed |
@@ -112,8 +133,22 @@ DECK=~/Proj_ImPACTS/impacts-notes/references/dino_sensitivity_vs_mixing/slides/f
 $PY make_films.py profiles                       # -> cache/level_rms_profiles.npz + the level figure
 $PY make_films.py reference members --deck $DECK  # 30 films, ~35 min; the deck's six copies land in $DECK
 $PY adjoint_waves.py                             # slices (~3 min), measure, plot
-$PY build_explorer.py                            # -> analysis/<campaign>/explorer/ (32 MB)
+$PY build_explorer.py                            # -> analysis/<campaign>/explorer/ (50 MB; after make_films, which writes the film scales it reads)
 ```
+
+**Why the explorer and slide 25 used to disagree (fixed 2026-10-13).** The deck's eight-member films
+show the *column sum* of the sensitivity with *one* colour scale for all eight members and all frames
+(the 99.5th percentile of |column sum| over all of them), every 60 days. The explorer defaulted to the
+915 m level, to a scale set by each panel's own frame and level (its 99.8th percentile), and to member
+frames every 120 days, and its "whole variable" mode pooled the column-sum tile (units × m) with the
+levels. So the same member looked different in the two: a different quantity, every panel stretched to its
+own range (amplitude differences between members hidden, weak patterns exaggerated) and a different frame
+set. Now the default scale mode is "as in the deck's films", the ensemble view opens on the column sum,
+the member frames are the film's, and a shared scale never pools the column sum with the levels. What
+still differs: a pixel is quantised about its own slice's 99.8th percentile and only then coloured against
+the shared scale, so the 0.2 % of cells above that percentile saturate there rather than at their value; and
+the reference view shows every other frame of a 30-day film. `--page-only` refreshes the film scales from
+`films_index.tsv` without rebuilding the payloads.
 
 The map is drawn on longitude and latitude by default, each grid row as tall as the latitude it spans
 (1 wide by 2.74 tall); a **Grid cells** toggle draws every cell the same size instead, which on DINO's

@@ -164,8 +164,10 @@ notebooks that read them are gone.
 ## DINO_1deg
 
 `grid_and_cost_sections.ipynb` is the one other parts of the repo point at — it
-is how `isecbeg/isecend/jsec` in `code_tap/cost_atlantic_heat.F` were chosen,
-and both `README.md` and `CLAUDE.md` cite it by name. It reads grid only, from
+is how `isecbeg/isecend/jsec` in `code_tap/cost_atlantic_heat.F` were chosen
+until 2026-10-13 (since then `jsec` is the row of the overturning maximum, found
+by `adjoint/kappa_v_ensemble_gmFwd/overturning_maximum.py`; the notebook still
+maps a latitude to a row), and both `README.md` and `CLAUDE.md` cite it by name. It reads grid only, from
 the 5-day adjoint 31281 (from 31022 until that run was deleted on 2026-09-12).
 
 `stability_study_viscosity_restarts_from170yrPk.ipynb` (2026-09-09) is the
@@ -256,6 +258,12 @@ spin-up, with finite-difference checks of the adjoint gradients for κ_v, Theta 
 three boxes and four surface controls. `submit_campaign.sh` submits the chain,
 `run_analysis.sh` files the runs and produces the products, figures, animations
 and the published page, and the page's numbers are read from the stats files.
+**Since 2026-10-13 the same suite serves two campaigns**, selected by the
+`CAMPAIGN_NAME` environment variable: `kappa_v_ensemble_gmFwd`, the September
+campaign with the cost section at 26 N, and `kappa_v_ensemble_gmFwd_sec43N` (the
+default), the adjoints and finite-difference sweeps rerun on the same legs with
+the section moved to the overturning maximum at 43 N (`overturning_maximum.py`
+locates it; the setup README says what changed in `cost_atlantic_heat.F`).
 Its `README.md` has the scripts and the job chain; the runs and outputs are on
 `/scratch` (see "Scratch layout").
 

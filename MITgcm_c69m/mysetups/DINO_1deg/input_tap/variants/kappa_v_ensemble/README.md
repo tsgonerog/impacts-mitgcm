@@ -43,5 +43,13 @@ of 2026-09-12 from the production spin-up 31203 (legs 31289–31296, adjoints 31
 `/scratch2` failed (what was left of it was deleted on 2026-09-16), and the second (31330–31362) was cancelled when 31329 could not write its final
 pickup.
 
+**Rerun for the 43 N cost section on 2026-10-13** (`code_tap/cost_atlantic_heat.F` `jsec=148`,
+`kmaxdepth=24`; the setup README says why): the same legs, the same namelists here, and the adjoints
+resubmitted by `submit_campaign.sh` in its reuse mode as campaign `kappa_v_ensemble_gmFwd_sec43N` —
+reference 31553 (the live `input_tap/data` from the reference leg's year 180) and members
+31554–31560 (M1–M7), filed under `runs/adjoint/kappa_v_ensemble_gmFwd_sec43N/`. The 2026-09 adjoints
+(31374–31381) measured 26 N and stay filed under `runs/adjoint/kappa_v_ensemble_gmFwd/`; each run's
+`build_info.txt` says which section it carries (`cost_section_jsec=`).
+
 The earlier adjoint variants of this group (`M<k>` of 2026-08 and `M<k>_ReMax2` of
 2026-09-10, both GM-free) were removed on 2026-09-12; git history has them.

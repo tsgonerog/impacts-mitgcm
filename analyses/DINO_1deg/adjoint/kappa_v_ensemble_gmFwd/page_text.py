@@ -361,8 +361,8 @@ def forward_text(legs):
         return ''
     runs = list(c.RUN_ORDER)
     last = legs[(legs.run != 'spinup') & (legs.iter > c.NITER0 - c.STEPS_PER_YEAR)].groupby('run')[
-        ['jproxy', 'amoc26', 'Tmean']].mean().reindex(runs)
-    jmin, amin = last.jproxy.idxmin(), last.amoc26.idxmin()
+        ['jproxy', c.SEC_AMOC, 'Tmean']].mean().reindex(runs)
+    jmin, amin = last.jproxy.idxmin(), last[c.SEC_AMOC].idxmin()
     tmono = bool(np.all(np.diff(last.Tmean.values) > 0))
     drift, peaked = {}, {}
     for r in runs:
@@ -381,8 +381,8 @@ def forward_text(legs):
     txt = ('<p>Ten years at a different κ<sub>v</sub> change the state the adjoints start from, and not in one direction. Over the last '
            'year of the legs the cost proxy is %.3f at the reference, lowest at %gx (%.3f) and %.3f at 0.25x, and rises steeply above 8x '
            'to %.3f at 32x; the overturning maximum at 26° N has the same shape, from %.2f Sv at %gx to %.2f Sv at 32x.%s</p>' % (
-               last.jproxy['REF'], c.FACTOR[jmin], last.jproxy[jmin], last.jproxy['M1'], last.jproxy['M7'], last.amoc26[amin],
-               c.FACTOR[amin], last.amoc26['M7'],
+               last.jproxy['REF'], c.FACTOR[jmin], last.jproxy[jmin], last.jproxy['M1'], last.jproxy['M7'], last[c.SEC_AMOC][amin],
+               c.FACTOR[amin], last[c.SEC_AMOC]['M7'],
                ' J of both earlier ensembles had a minimum at 2x too, a local one in the 2026-08 ensemble, whose J rose from 0.25x to 1x.'
                if at2(old8) and at2(old9) else ''))
     txt += ('<p>The volume-mean temperature %s with κ<sub>v</sub>, from %.2f °C at 0.25x to %.2f °C at 32x. Stronger mixing carries heat '

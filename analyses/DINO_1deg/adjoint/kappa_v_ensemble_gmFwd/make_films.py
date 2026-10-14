@@ -12,8 +12,9 @@ the `animate` package, and a **GIF** for the web page and for anyone without a P
 animates. `animations/films_index.tsv` records, for every film, which levels it shows and why.
 
 WHICH DEPTH LEVELS A THREE-DIMENSIONAL FILM SHOWS, AND WHY
-The cost J is the northward transport across 26 N *in the upper 982 m* (the upper 25 of 36 levels;
-code_tap/cost_atlantic_heat.F's kmaxdepth = 25), so the water column has two distinct roles: inside
+The cost J is the northward transport across the cost section in the upper kmaxdepth levels (campaign.KMAX:
+25 levels, 982 m, for the 26 N cost; 24 levels, 848 m, for the 43 N cost since 2026-10-13;
+code_tap/cost_atlantic_heat.F), so the water column has two distinct roles: inside
 that range a perturbation changes the transport J measures directly, below it a perturbation can only
 change J by changing the circulation. A film therefore shows one level from each:
 
@@ -23,7 +24,7 @@ change J by changing the circulation. A film therefore shows one level from each
 Both are read off the profiles step's cache, per variable, so the choice is made by the data and not
 by hand, and both depths are printed on the panels and listed in films_index.tsv. It replaces the
 hand-picked 300 m / 1400 m pair of the first version of these films (2026-09-15), which came from no
-rule at all; for ADJtheta the rule gives 915 m and 1844 m, and 915 m carries 3.5 times the RMS that
+rule at all; for ADJtheta the rule gives 915 m and 1844 m for the 26 N cost (791 m and 1402 m for the 43 N cost), and 915 m carries 3.5 times the RMS that
 300 m does -- it is the level at the base of the layer the cost integrates, where a temperature
 anomaly sits on the shear that defines the cell. Every other level is in the explorer
 (build_explorer.py), which is what the deck links for anyone who wants a different one.
@@ -82,7 +83,7 @@ MEMBER_VARS = ['ADJtheta', 'ADJdiffkr']       # the two the ensemble's results r
 # other eight (empmr, qsw, etan, uvel, vvel, wvel, taux, tauy) carry no result the deck rests on and
 # stay in animations/ and in the explorer. The two eight-member films are always copied.
 DECK_FILMS = {'film_theta', 'film_salt', 'film_diffkr', 'film_qnet'}
-KCOST = c.KMAX                                # 25: the cost integrates the upper 25 levels (982 m)
+KCOST = c.KMAX                                # the levels the cost integrates: 25 (982 m) at 26 N, 24 (848 m) at 43 N
 
 PROFILES = c.CACHE / 'level_rms_profiles.npz'
 INDEX = c.ANIMS / 'films_index.tsv'
@@ -160,7 +161,7 @@ def _figure_level_choice():
         p = p / (p.max() or 1.0)
         ki, kb = levels_of(var)
         ax.plot(p, -rc, color=c.SERIES[0], lw=1.5)
-        ax.axhspan(0, 982, color=c.SERIES[0], alpha=0.07, lw=0)
+        ax.axhspan(0, -c.grid()['RF'][KCOST], color=c.SERIES[0], alpha=0.07, lw=0)   # the depth range the cost integrates
         for k, col in ((ki, c.SERIES[1]), (kb, c.SERIES[2])):
             ax.plot([p[k]], [-rc[k]], 'o', color=col, ms=5.5)
             ax.annotate('%d m' % round(-rc[k]), (p[k], -rc[k]), textcoords='offset points',
@@ -172,7 +173,7 @@ def _figure_level_choice():
     np.atleast_1d(axs)[0].set_ylim(4400, 0)
     np.atleast_1d(axs)[0].set_ylabel('depth [m]')
     fig.text(0.5, -0.02, 'time-mean horizontal RMS of the dump, normalised by its column maximum; '
-                         'the shaded band is the upper 982 m the cost integrates',
+                         'the shaded band is the upper %d m the cost integrates' % round(-c.grid()['RF'][KCOST]),
              ha='center', fontsize=8, color=c.INK2)
     fig.savefig(c.FIGS / 'adj_level_choice.png', bbox_inches='tight')
     plt.close(fig)

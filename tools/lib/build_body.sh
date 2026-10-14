@@ -319,6 +319,14 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
         echo "tap_extra=$(sed -n 's/^TAP_EXTRA *= *//p' Makefile)"
         echo "hooks_mods=${HOOKS_MODS:-none (the tree carries the hooks)}"
         echo "approx_advection_implicit_vertical=$APPROX_IMPLICIT_VERTICAL   # yes: gad_implicit_r.f carries the useApproxAdvectionInAdMode replacement"
+        # The cost section is compiled in (cost_atlantic_heat.F's parameter statements), so it is
+        # part of the build's identity and nothing in a namelist or run-directory name says which
+        # section a run measured: record it from the preprocessed source (since 2026-10-13, when
+        # DINO's moved from jsec=127 to the overturning maximum at jsec=148).
+        if [ -f cost_atlantic_heat.f ]; then
+            echo "cost_section_jsec=$(sed -n 's/.*parameter *( *isecbeg *= *[0-9]*, *isecend *= *[0-9]*, *jsec *= *\([0-9]*\) *).*/\1/p' cost_atlantic_heat.f | head -1)   # row whose southern face cost_atlantic_heat.f integrates VVEL across"
+            echo "cost_kmaxdepth=$(sed -n 's/.*parameter *( *kmaxdepth *= *\([0-9]*\) *).*/\1/p' cost_atlantic_heat.f | head -1)   # levels integrated, from the surface (the preprocessed file keeps only the compiled branch)"
+        fi
     fi
     if [ -n "${MITGCM_TREE:-}" ]; then
         echo "mitgcm_root=$MITGCM_ROOT"   # not the vendored tree: say which

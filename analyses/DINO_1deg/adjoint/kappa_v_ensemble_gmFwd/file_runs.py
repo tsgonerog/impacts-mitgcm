@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""File the campaign's run directories under runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/.
+"""File the campaign's run directories under runs/{forward,adjoint}/<campaign>/ (campaign.CAMPAIGN).
 
     python file_runs.py            # dry run: prints what would move
     python file_runs.py --apply
@@ -22,13 +22,15 @@ def main(apply):
     if busy:
         sys.exit('still queued or running: %s' % busy)
     moves = []
+    # Only an UNFILED run (directly under runs/forward or runs/adjoint) moves: the 43 N campaign shares the legs of the
+    # 26 N one, which stay filed under runs/forward/kappa_v_ensemble_gmFwd/ (since 2026-10-13).
     for j in c.LEG_JOB.values():
         d = c.run_dir(j)
-        if d and d.parent.name != c.CAMPAIGN:
+        if d and d.parent.name == 'forward':
             moves.append((d, c.OUTPUTS / 'runs' / 'forward' / c.CAMPAIGN / d.name))
     for j in list(c.ADJ_JOB.values()) + list(c.FD_JOB.values()):
         d = c.run_dir(j)
-        if d and d.parent.name != c.CAMPAIGN:
+        if d and d.parent.name == 'adjoint':
             moves.append((d, c.OUTPUTS / 'runs' / 'adjoint' / c.CAMPAIGN / d.name))
     for a, b in moves:
         print(('move ' if apply else 'would move ') + '%s -> %s' % (a, b.parent))

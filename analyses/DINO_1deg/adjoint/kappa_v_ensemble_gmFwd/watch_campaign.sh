@@ -2,8 +2,8 @@
 # Report state changes of the campaign's jobs (one line per change) and cancel each FD sweep once the model has
 # printed its cost. Reads the job list from job_map.tsv. A job counts as ended only when squeue itself answered
 # and no longer lists it, so a scheduler or filesystem hiccup is reported, not taken for an ending.
-O=${SCRATCH_ROOT:-/scratch/$USER}/DINO_1deg_outputs
-A=$O/analysis/kappa_v_ensemble_gmFwd
+O=${SCRATCH_ROOT:-/scratch2/$USER}/DINO_1deg_outputs
+A=$O/analysis/${CAMPAIGN_NAME:-kappa_v_ensemble_gmFwd_sec43N}   # the campaign whose job_map.tsv to watch
 RE='^\(PID\.TID [0-9]{4}\.[0-9]{4}\) +global fc = +-?[0-9]\.[0-9]+E[-+][0-9]+'
 mapfile -t ROWS < <(tail -n +2 "$A/job_map.tsv")
 declare -A ROLE last fdone

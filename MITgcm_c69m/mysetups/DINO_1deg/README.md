@@ -1113,10 +1113,30 @@ scheme and the forward model does not (`../SOMA_1deg/README.md`).
 ---
 
 The cost function is `code_tap/cost_atlantic_heat.F`, with its section indices
-compiled in as `parameter` statements (`isecbeg=1, isecend=51, jsec=127`,
-`kmaxdepth=25`). Moving the section means editing that file and rebuilding — it is
-not a namelist setting. Indices are located with
-`analyses/DINO_1deg/grid_and_cost_sections.ipynb`.
+compiled in as `parameter` statements (`isecbeg=1, isecend=51, jsec=148`,
+`kmaxdepth=24` since 2026-10-13; `jsec=127`, `kmaxdepth=25` until then). Moving
+the section means editing that file and rebuilding — it is not a namelist
+setting — and since 2026-10-13 every adjoint build records its section in
+`build_info.txt` (`cost_section_jsec=`, `cost_kmaxdepth=`, read off the
+preprocessed source), so a run directory says which section it measured.
+Indices are located with `analyses/DINO_1deg/grid_and_cost_sections.ipynb`.
+
+**The section is the overturning maximum since 2026-10-13.** `jsec` is the
+1-based row whose southern face the section integrates `vVel` across, named by
+the row's centre: `jsec=127` was the "26 N" section (centre 26.05 N, face
+25.6 N) of every adjoint run up to job 31434; `jsec=148` is the "43 N" section
+(centre 43.21 N, face 42.84 N), the row where the depth-space overturning
+streamfunction of the spin-up 31203 peaks — 7.37 Sv at the 848 m interface
+over years 190–200, and the same row and interface in every decade of the
+spin-up, in the reference leg 31366 and in the 2026-09 adjoint's window
+(`analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/overturning_maximum.py`,
+which searches the basin north of 20 N below 300 m so the tropical surface
+cells do not count). `kmaxdepth` followed, 25 → 24, so J is the maximum itself:
+at that row the transport above 982 m is 3.5 % less than above 848 m. The
+members' own maxima sit elsewhere (M4–M6 in the far north, M7 at 35 N); the
+section is the reference state's, fixed for the ensemble. The κ_v campaign was
+rerun for it as `kappa_v_ensemble_gmFwd_sec43N` (jobs 31553–31576, the 2026-09
+legs reused).
 
 Two verified subtleties of what `fc` actually measures (2026-08-30; full
 statement in the root `CLAUDE.md` and in
