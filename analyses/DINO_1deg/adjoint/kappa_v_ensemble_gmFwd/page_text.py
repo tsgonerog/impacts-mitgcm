@@ -8,6 +8,22 @@ import pandas as pd
 import campaign as c
 import page_setup_text as st
 
+IS43 = st.IS43          # the 43 N rerun: its comparisons are with the September campaign, read from that campaign's stats
+
+
+def _parent(name, kind='csv'):
+    """A stats file of the campaign whose legs this one reuses (the 26 N campaign for the 43 N rerun), or None."""
+    par = c.COST_SECTION[c.CAMPAIGN]['legs_from']
+    q = c.OUTPUTS / 'analysis' / par / 'stats' / name if par else None
+    if q is None or not q.exists():
+        return None
+    return json.loads(q.read_text()) if kind == 'json' else pd.read_csv(q)
+
+
+def _sec_meta():
+    g = c.grid()
+    return float(g['YC'][c.JSEC, 0]), float(-g['RF'][c.KMAX])
+
 
 # The interactive depth-level explorer (build_explorer.py beside this script), published 2026-09-16. Opened in a
 # new tab: this page is shown in a sandboxed frame, and a link that navigates the frame itself may be blocked.
@@ -103,14 +119,18 @@ def body(h):
                '<li><a href="#checks">Gradient checks</a></li><li><a href="#ensemble">Ensemble</a></li>'
                '<li><a href="#target">The target field</a></li><li><a href="#surrogate">For the surrogate</a></li>'
                '<li><a href="#provenance">Provenance</a></li></ol></nav><main>')
-    out.append('<header class="masthead"><p class="eyebrow">DINO_1deg · MITgcm checkpoint69m · Tapenade adjoint · runs 31329–31398</p>'
-               '<h1>DINO κ<sub>v</sub> Sensitivity Ensemble</h1>'
-               '<p class="lede">How the 26° N transport cost of the DINO basin responds to vertical diffusivity, what its '
+    lat_sec, dep_sec = _sec_meta()
+    out.append('<header class="masthead"><p class="eyebrow">DINO_1deg · MITgcm checkpoint69m · Tapenade adjoint · %s</p>'
+               '<h1>DINO κ<sub>v</sub> Sensitivity Ensemble%s</h1>'
+               '<p class="lede">How the %s transport cost of the DINO basin%s responds to vertical diffusivity, what its '
                '5-year adjoint sensitivities look like under the current configuration, whether those gradients agree with '
                'finite differences, and what that implies for the inputs and targets of a neural-network surrogate.</p>'
-               '<p class="meta"><span>adjoint window: model years 180–185</span><span>J: 26.05° N transport index, upper 982 m, final 30 d</span>'
-               '<span>κ<sub>v</sub> ∈ {0.25 … 32} × 1.2×10⁻⁵ m² s⁻¹</span></p>'
-               '<p class="explore">%s — every ADJ* field of the reference adjoint at all 36 depth levels, and ADJtheta and '
+               '<p class="meta"><span>adjoint window: model years 180–185</span><span>J: %.2f° N transport index, upper %.0f m, final 30 d</span>'
+               '<span>κ<sub>v</sub> ∈ {0.25 … 32} × 1.2×10⁻⁵ m² s⁻¹</span></p>' % (
+                   'legs 31366–31373 (Sep 2026), adjoints and sweeps 31553–31578 (13–14 Oct 2026)' if IS43 else 'runs 31329–31398',
+                   ' — the cost at the overturning maximum, 43° N' if IS43 else '',
+                   c.SEC_NAME.replace(' N', '° N'), ', the overturning maximum,' if IS43 else '', lat_sec, dep_sec))
+    out.append('<p class="explore">%s — every ADJ* field of the reference adjoint at all 36 depth levels, and ADJtheta and '
                'ADJdiffkr for all eight members, through the five-year lead.</p>' % explorer_link('Open the sensitivity explorer'))
     tiles = [stat('Reference cost J', fmt(fcref, 4), 'σ of the monthly index %s' % fmt(sigma, 2) if sigma else ''),
              stat('dJ/dκ<sub>v</sub>, adjoint', fmt(Gref, 3) + ' <span class="mono" style="font-size:13px">per m² s⁻¹</span>',
@@ -143,7 +163,7 @@ def body(h):
     out.append(forward_text(legs))
     out.append(fig('leg_indices_vs_kappa', '<b>The state at year 180 against κ<sub>v</sub>.</b> Means over the last year of each '
                    '10-year leg of the cost proxy (the cost formula applied to monthly-mean velocity), the overturning maximum '
-                   'above 1000 m at 26° N, and the volume-mean temperature.'))
+                   'above 1000 m at %s, and the volume-mean temperature.' % c.SEC_NAME.replace(' N', '° N')))
     out.append(fig('leg_timeseries', '<b>Adjustment over the ten years.</b> The spin-up\'s last 20 years (black) and the legs from '
                    'year 170; the weakest and strongest mixing are highlighted, the other members in grey.'))
     out.append(fig('leg_temperature_change', '<b>Where the temperature changes.</b> Horizontal-mean ΔT against depth for each member '
@@ -156,7 +176,7 @@ def body(h):
     out.append(fig('ref_rms_vs_lead', '<b>Amplitude against lead.</b> Wet-cell RMS of six sensitivity fields over the 5-year window '
                    '(volume- or area-weighted). A lead of 5 years is the start of the window.'))
     out.append(fig('ref_adxx_maps', '<b>The control gradients.</b> Accumulated over the window; the 3-D controls summed over the column. '
-                   'The black line is the 26° N cost section.', cls=''))
+                   'The black line is the %s cost section.' % c.SEC_NAME.replace(' N', '° N'), cls=''))
     out.append(fig('ref_ADJtheta_depth_lead', '<b>Temperature sensitivity by depth and lead.</b> ADJtheta at about 100, 500 and '
                    '1400 m, 30 days, 1 year and 5 years before the end of the window.', cls='narrow'))
     out.append(fig('ref_ADJtheta_zonal_section', '<b>The same in latitude and depth.</b> Zonal sums of ADJtheta.'))
@@ -180,8 +200,9 @@ def body(h):
                          num=('fd_central', 'fd_plus', 'fd_minus', 'adjoint', 'ratio'),
                          fmt=dict({k: (lambda x, r: fmt(x, 3)) for k in ('fd_central', 'adjoint', 'fd_plus', 'fd_minus')},
                                   ratio=lambda x, r: '%.3g' % x, verdict=lambda x, r: x)))
-    out.append(fig('fd_checks', '<b>Adjoint prediction over central finite difference</b> for κ<sub>v</sub> and the three temperature '
-                   'boxes, against the 2026-09-11 test of the same adjoint from a different state.', cls='narrow'))
+    out.append(fig('fd_checks', '<b>Adjoint prediction over central finite difference</b> for κ<sub>v</sub> and the temperature '
+                   'boxes, against %s.' % ('the 26° N cost of September from the same legs (hollow: a check without signal)' if IS43
+                                            else 'the 2026-09-11 test of the same adjoint from a different state'), cls='narrow'))
     out.append(fig('fd_forcing', '<b>The four surface controls.</b> ΔJ for a spatially uniform perturbation applied at every forcing '
                    'record: the central finite difference and the adjoint\'s prediction (symmetric log scale).', cls='narrow'))
     out.append('</section>')
@@ -199,8 +220,9 @@ def body(h):
                          fmt={'st': lambda x, r: x, 'fc': lambda x, r: fmt(x, 4), 'G_dJdkappa_uniform': lambda x, r: fmt(x, 3),
                               'corr_theta_1': lambda x, r: fmt(x, 2), 'corr_diffkr_5': lambda x, r: fmt(x, 2),
                               'factor': lambda x, r: '%g' % x}).replace('&lt;sub&gt;', '<sub>').replace('&lt;/sub&gt;', '</sub>'))
-    out.append(fig('fc_vs_kappa', '<b>J against κ<sub>v</sub> in three campaigns.</b> The internal variability of the monthly cost index '
-                   'in the spin-up, σ = %s, is smaller than the markers.' % fmt(sigma, 2), cls='narrow'))
+    out.append(fig('fc_vs_kappa', '<b>J against κ<sub>v</sub> in %s.</b> The internal variability of the monthly cost index '
+                   'in the spin-up, σ = %s, is smaller than the markers.' % ('four campaigns and two sections (the 26° N ones on the right axis)' if IS43
+                                                                             else 'three campaigns', fmt(sigma, 2)), cls='narrow'))
     out.append(fig('member_stability', '<b>Each member\'s adjoint amplitude against lead</b>, with the reference in grey.'))
     out.append(fig('member_pattern_corr', '<b>How far each member\'s sensitivity patterns stay like the reference\'s</b>, by lead and field.'))
     out.append(fig('kappa_gradient', '<b>dJ/dκ<sub>v</sub> across the ensemble</b>: each adjoint\'s own gradient, the secant of J between '
@@ -300,7 +322,17 @@ def findings(fg, fd, ms, dec, nf, tgt, prev, legs):
                    'is %.0f times the internal variability of the monthly cost (σ = %s).' % (
                        '%.3f' % f['M1'], '%.3f' % f[jmin], c.FACTOR[jmin], '%.3f' % f['M7'], fmt(dmin, 2), dmin / sig, fmt(sig, 2)))
     k = _fd_row(fd, 'kappa')
-    if k is not None:
+    pfd = _parent('fd_checks.csv')
+    if k is not None and IS43 and pfd is not None:
+        pk = pfd[pfd.test.str.startswith('kappa')].iloc[0]
+        g = prev['gmFree_ReMax2_2026_09_10']['fd']
+        out.append('<b>The adjoint κ<sub>v</sub> gradient %s finite differences, with a bias that the section only shifts.</b> At the '
+                   'reference it is %s against %s per m² s⁻¹ (%s); for the 26° N cost of September, from the same legs, it was %s, '
+                   'from the 2026-09-11 state +22 %%, and for the GM-free adjoint against the GM-free model on 2026-09-10 %s. The '
+                   'approximation all of these share is the unlimited advection scheme in the adjoint sweep, the likely source.' % (
+                       VERB[_verdict(k)], fmt(k.adjoint / (0.1 * c.KAPPA0), 4), fmt(k.fd_central / (0.1 * c.KAPPA0), 4), _ratio(k),
+                       _ratio(pk), pct(g['adjoint_G'] / g['fd_central'] - 1)))
+    elif k is not None:
         g = prev['gmFree_ReMax2_2026_09_10']['fd']
         out.append('<b>The adjoint κ<sub>v</sub> gradient %s finite differences, with a bias that depends neither on the state nor on '
                    'GM/Redi.</b> At the reference it is %s against %s per m² s⁻¹ (%s); from the 2026-09-11 state the same adjoint gave '
@@ -312,13 +344,16 @@ def findings(fg, fd, ms, dec, nf, tgt, prev, legs):
         v = [(r, _verdict(r)) for _, r in fd.iterrows()]
         names = lambda keep: list(dict.fromkeys(_name(r.test) for r, x in v if x in keep))
         ok, bad = names(('agrees', 'approximate')), [(r, x) for r, x in v if x == 'does not agree']
+        nosig = [r for r, x in v if x == 'finite difference at the noise level' and r.test.startswith('Theta')]
         worst = max(abs(r.adjoint_rel_err) for r, x in v if x in ('agrees', 'approximate'))
-        out.append('<b>The %s gradients are usable; the %s gradients are not.</b> Of the eight finite-difference checks, %s agrees within '
-                   '10 %% and %s more within %.0f %%; for %s the adjoint predicts %s the response the model produces.' % (
-                       _and(ok), _and([_name(r.test) for r, _ in bad]),
+        out.append('<b>The %s gradients are usable; the %s gradients are not.</b> Of the %s finite-difference checks, %s agrees within '
+                   '10 %% and %s more within %.0f %%%s; for %s the adjoint predicts %s the response the model produces.' % (
+                       _and(ok), _and(list(dict.fromkeys(_name(r.test) for r, _ in bad))),
+                       NUM[len(v)] if len(v) < len(NUM) else str(len(v)),
                        NUM[sum(x == 'agrees' for _, x in v)], NUM[sum(x == 'approximate' for _, x in v)], 100 * worst,
-                       _and([_name(r.test) for r, _ in bad]),
-                       _and(['%.0f' % (r.adjoint / r.fd_central) for r, _ in bad]) + ' times'))
+                       ('; the %s box has no signal (the model and the adjoint both give the noise floor)' % _and([r.test.split(', ', 1)[1] for r in nosig])) if nosig else '',
+                       _and(list(dict.fromkeys(_name(r.test) for r, _ in bad))),
+                       _and(['%.0f' % abs(r.adjoint / r.fd_central) for r, _ in bad]) + ' times'))
     if len(ms):
         nb = int((ms.status == 'bounded').sum())
         mono = bool(np.all(np.diff(ms.sort_values('factor').ratio5.values) < 0))
@@ -329,26 +364,32 @@ def findings(fg, fd, ms, dec, nf, tgt, prev, legs):
                        'falls steadily' if mono else 'changes', fmt(float(ms.set_index('run').ratio5['M1']), 3),
                        fmt(float(ms.set_index('run').ratio5['M7']), 2), NUM[sum(s == 'blown' for s in prev['visc2x_2026_08']['status'])]))
         m = ms.set_index('run')
+        best = m.corr_diffkr_5.idxmax()
         out.append('<b>The sensitivity patterns change with κ<sub>v</sub>, the κ<sub>v</sub> gradient most.</b> A year before the end of '
                    'the window the members\' ADJtheta correlates with the reference\'s at %s–%s; the five-year ∂J/∂κ<sub>v</sub> only at '
-                   '%s–%s, from %s at 2x down to %s at 32x.' % (
+                   '%s–%s, from %s at %gx down to %s at 32x.' % (
                        fmt(ms.corr_theta_1.min(), 2), fmt(ms.corr_theta_1.max(), 2), fmt(ms.corr_diffkr_5.min(), 2),
-                       fmt(ms.corr_diffkr_5.max(), 2), fmt(m.corr_diffkr_5['M3'], 2), fmt(m.corr_diffkr_5['M7'], 2)))
+                       fmt(ms.corr_diffkr_5.max(), 2), fmt(m.corr_diffkr_5[best], 2), c.FACTOR[best], fmt(m.corr_diffkr_5['M7'], 2)))
     if fg is not None:
         sec, gm, lo = _secants(fg)
         hi = lo >= 4
-        fac = np.maximum(sec[~hi] / gm[~hi], gm[~hi] / sec[~hi])
+        fac = np.maximum(np.abs(sec[~hi] / gm[~hi]), np.abs(gm[~hi] / sec[~hi]))
+        flip = [lo[i] for i in np.where(~hi)[0] if np.sign(sec[i]) != np.sign(gm[i])]
         out.append('<b>From 4x upwards J is close to linear in κ<sub>v</sub>, and the adjoint gradients describe it.</b> There the mean '
                    'of two neighbouring members\' adjoint gradients matches the secant of J between them to within %.0f %%; at and below '
-                   '2x the two differ by factors of %.1f to %.0f, because the secants carry the ten-year adjustment of the state.' % (
-                       100 * np.abs(gm[hi] / sec[hi] - 1).max(), fac.min(), fac.max()))
+                   '2x the two differ by factors of %.1f to %.0f%s, because the secants carry the ten-year adjustment of the state.' % (
+                       100 * np.abs(gm[hi] / sec[hi] - 1).max(), fac.min(), fac.max(),
+                       (' and have opposite signs between %s' % _and(['%gx and %gx' % (f, 2 * f) for f in flip])) if flip else ''))
     lp = tgt.get('local_predictors', {}) if tgt else {}
     ident = lp.get('adjoint identity (window-mean state)')
     if ident:
+        ptg = _parent('target_structure.json', 'json')
+        cmp_ = ('%s for the 26° N cost of September' % fmt(ptg['local_predictors']['adjoint identity (window-mean state)']['pattern_corr'], 3)) \
+            if IS43 and ptg else '%s in the 2026-09-11 adjoint from another state' % fmt(prev['structure_31237']['identity_pattern_corr'], 3)
         out.append('<b>∂J/∂κ<sub>v</sub> is the time integral of −∂<sub>z</sub>λ·∂<sub>z</sub>(T, S)</b>: the adjoint temperature and '
-                   'salinity fields acting on the stratification reproduce its pattern with correlation %s (%s in the 2026-09-11 adjoint '
-                   'from another state). The stratification alone ranks its magnitude only to %s.' % (
-                       fmt(ident['pattern_corr'], 3), fmt(prev['structure_31237']['identity_pattern_corr'], 3),
+                   'salinity fields acting on the stratification reproduce its pattern with correlation %s (%s). The stratification '
+                   'alone ranks its magnitude only to %s.' % (
+                       fmt(ident['pattern_corr'], 3), cmp_,
                        fmt(max(v.get('spearman_abs_within_levels', 0) for kk, v in lp.items() if not kk.startswith('adjoint')), 2)))
     out.append('<b>For the surrogate:</b> κ<sub>v</sub> and the initial temperature and salinity should be inputs. The surface-forcing '
                'controls should not: they do not vary across this ensemble, and of their gradients only the zonal-stress one is a usable '
@@ -380,8 +421,8 @@ def forward_text(legs):
     at2 = lambda o: o['fc'][o['factor'].index(2.0)] < min(o['fc'][o['factor'].index(1.0)], o['fc'][o['factor'].index(4.0)])
     txt = ('<p>Ten years at a different κ<sub>v</sub> change the state the adjoints start from, and not in one direction. Over the last '
            'year of the legs the cost proxy is %.3f at the reference, lowest at %gx (%.3f) and %.3f at 0.25x, and rises steeply above 8x '
-           'to %.3f at 32x; the overturning maximum at 26° N has the same shape, from %.2f Sv at %gx to %.2f Sv at 32x.%s</p>' % (
-               last.jproxy['REF'], c.FACTOR[jmin], last.jproxy[jmin], last.jproxy['M1'], last.jproxy['M7'], last[c.SEC_AMOC][amin],
+           'to %.3f at 32x; the overturning maximum at %s has the same shape, from %.2f Sv at %gx to %.2f Sv at 32x.%s</p>' % (
+               last.jproxy['REF'], c.FACTOR[jmin], last.jproxy[jmin], last.jproxy['M1'], last.jproxy['M7'], c.SEC_NAME.replace(' N', '° N'), last[c.SEC_AMOC][amin],
                c.FACTOR[amin], last[c.SEC_AMOC]['M7'],
                ' J of both earlier ensembles had a minimum at 2x too, a local one in the 2026-08 ensemble, whose J rose from 0.25x to 1x.'
                if at2(old8) and at2(old9) else ''))
@@ -405,29 +446,48 @@ def reference_text(fg, ts, nf):
     at = lambda L: float(r.iloc[(r.lead_yr - L).abs().argmin()].rms)
     peak = r.loc[r.rms.idxmax()]
     fin = bool((ts[ts.run == 'REF'].finite_frac == 1).all())
+    state = ('the state it starts from is the September reference leg\'s year 180, the production spin-up\'s own; the cost formula '
+             'applied to that leg\'s last-year monthly velocity gives 0.450 for a cost of %.4f' % float(fg.set_index('run').fc['REF'])) if IS43 else (
+             'the state it starts from is the production spin-up\'s: the year-170 pickup of the new spin-up and the year-180 pickup of '
+             'the reference leg are byte-identical to 31203\'s own, and the monthly cost proxy of the adjoint\'s forward sweep at year '
+             '185 equals 31203\'s to ten digits')
+    where = ('<p>At a lead of 30 days the temperature sensitivity lies on the cost section and along the two walls that close it, the '
+             'eastern wall south of 43° N and the western wall north of it to 50° N. After a year it has moved into the equatorial '
+             'waveguide, into the first Rossby-wave crests leaving the western wall 10–20° either side of the equator, and into the lobes '
+             'north of the section where the deep water forms. After five years it lies in bands that slope towards the equator from west '
+             'to east across both subtropical gyres, and in the subpolar lobes. The control gradients integrate this history: '
+             '∂J/∂κ<sub>v</sub> is largest, and negative, in the north-western subpolar corner, at whose edge the section now sits, which '
+             'is why it is 3.5 times what it was at 26° N; ∂J/∂Q<sub>net</sub>, ∂J/∂Q<sub>sw</sub> and ∂J/∂(E−P−R) share one pattern '
+             'centred on that corner.</p>') if IS43 else (
+             '<p>At a lead of 30 days the temperature sensitivity lies on the cost section and along the two boundaries that close it, the '
+             'western boundary north of 26° N and the eastern boundary south of it, upstream along the paths of boundary waves. After a '
+             'year it has moved into the tropics of both hemispheres and, below 500 m, along the western boundary between 25° and 55° N. '
+             'After five years it lies in bands that slope towards the equator from west to east across both subtropical gyres, and at '
+             '1400 m north of the section, between 30° and 50° N. The control gradients integrate this history: ∂J/∂κ<sub>v</sub> is '
+             'largest, and negative, in the north-western subpolar corner and in a band just north of the section, and positive over the '
+             'eastern tropics and the southern subtropics; ∂J/∂Q<sub>net</sub>, ∂J/∂Q<sub>sw</sub> and ∂J/∂(E−P−R) share one pattern.</p>')
     return ('<p>The reference adjoint runs the live <code>input_tap/data</code> for five years from the reference leg\'s year-180 state. '
-            'Its cost, J = %.6f, is the forward model\'s, and the state it starts from is the production spin-up\'s: the year-170 '
-            'pickup of the new spin-up and the year-180 pickup of the reference leg are byte-identical to 31203\'s own, and the monthly '
-            'cost proxy of the adjoint\'s forward sweep at year 185 equals 31203\'s to ten digits. The '
+            'Its cost, J = %.6f, is the forward model\'s, and %s. The '
             'adjoint %s: the RMS of ADJtheta peaks at %s per K at a lead of %.0f days and falls to %s at one year and %s at five years%s.</p>'
-            '<p>At a lead of 30 days the temperature sensitivity lies on the cost section and along the two boundaries that close it, the '
-            'western boundary north of 26° N and the eastern boundary south of it, upstream along the paths of boundary waves. After a '
-            'year it has moved into the tropics of both hemispheres and, below 500 m, along the western boundary between 25° and 55° N. '
-            'After five years it lies in bands that slope towards the equator from west to east across both subtropical gyres, and at '
-            '1400 m north of the section, between 30° and 50° N. The control gradients integrate this history: ∂J/∂κ<sub>v</sub> is '
-            'largest, and negative, in the north-western subpolar corner and in a band just north of the section, and positive over the '
-            'eastern tropics and the southern subtropics; ∂J/∂Q<sub>net</sub>, ∂J/∂Q<sub>sw</sub> and ∂J/∂(E−P−R) share one pattern.</p>' % (
-                float(fg.set_index('run').fc['REF']), 'stays bounded' if fin else 'does not stay finite', fmt(float(peak.rms), 2),
-                366 * peak.lead_yr, fmt(at(1.0), 2), fmt(at(5.0), 2), ', and every dump is finite' if fin else '; some dumps are not finite'))
+            % (float(fg.set_index('run').fc['REF']), state, 'stays bounded' if fin else 'does not stay finite', fmt(float(peak.rms), 2),
+               366 * peak.lead_yr, fmt(at(1.0), 2), fmt(at(5.0), 2), ', and every dump is finite' if fin else '; some dumps are not finite')
+            + where)
 
 
 def checks_text(fd, prev):
     if fd is None:
         return ''
-    g = prev['gm_test_2026_09_11']
-    old = [g['kappa_dJdkappa']['adjoint_31237'] / g['kappa_dJdkappa']['fd']] + [g[k]['adjoint_31237'] / g[k]['fd'] for k in ('deepN', 'midTrop', 'soUpper')]
     row = lambda key: _fd_row(fd, key)
-    lin = [row(k) for k in ('kappa', '40-50 N', '0-10 N')]
+    pfd = _parent('fd_checks.csv')
+    if IS43 and pfd is not None:
+        old = list(pfd.adjoint[:4] / pfd.fd_central[:4])
+        old_what = 'the 26° N cost of September, from the same legs'
+        lin = [row(k) for k in ('kappa', '45-60 N', '0-10 N')]
+    else:
+        g = prev['gm_test_2026_09_11']
+        old = [g['kappa_dJdkappa']['adjoint_31237'] / g['kappa_dJdkappa']['fd']] + [g[k]['adjoint_31237'] / g[k]['fd'] for k in ('deepN', 'midTrop', 'soUpper')]
+        old_what = 'the 2026-09-11 test of the same adjoint from the 31205 state'
+        lin = [row(k) for k in ('kappa', '40-50 N', '0-10 N')]
     noisy = [row(k) for k in ('net surface heat flux', 'meridional surface stress')]
     ep = row('freshwater')
     items = ''.join('<li>%s: finite difference %s (one-sided %s and %s), adjoint %s: <b>%s</b> (%s).</li>' % (
@@ -438,14 +498,14 @@ def checks_text(fd, prev):
             'one-sided differences say how linear the response is at the chosen amplitude: they differ by at most %.0f %% of the central '
             'difference for κ<sub>v</sub> and the two deeper temperature boxes, by %.0f %% for the upper Southern Ocean box and by %.0f %% '
             'for the zonal stress.</p><ul class="findings">%s</ul>'
-            '<p>The errors for κ<sub>v</sub> and the three temperature boxes are those of the 2026-09-11 test of the same adjoint from the '
-            '31205 state (%s), so they belong to the approximate adjoint rather than to the state it starts from. The three failed forcing '
-            'checks are of another kind. For the net heat flux and the meridional stress both one-sided responses are at least %.0f times '
+            '<p>For κ<sub>v</sub> and the temperature boxes %s gave %s, so the errors belong to the approximate adjoint rather than '
+            'to the state it starts from%s. The three failed forcing checks are of another kind. For the net heat flux and the meridional stress both one-sided responses are at least %.0f times '
             'smaller than the prediction; for E−P−R the finite difference is clean and %.0f times smaller. The model damps surface heat and '
             'freshwater anomalies through its 6.5-day restoring of surface temperature and salinity; why the adjoint overestimates their '
             'effect has not yet been established.</p>' % (
                 100 * max(r.one_sided_spread for r in lin), 100 * row('40-60 S').one_sided_spread, 100 * row('zonal').one_sided_spread,
-                items, _and([pct(q - 1) for q in old]),
+                items, old_what, _and([pct(q - 1) if 0.5 < q < 2 else '%.1f times' % q for q in old]),
+                ('; the section changes them, the 43° N κ<sub>v</sub> error being the smaller') if IS43 else '',
                 min(abs(r.adjoint) / max(abs(r.fd_plus), abs(r.fd_minus)) for r in noisy), ep.adjoint / ep.fd_central))
 
 
@@ -467,24 +527,33 @@ def ensemble_text(fg, ms, dec, nf, prev):
     if fg is None:
         return ''
     fgi = fg.set_index('run')
-    old = prev['gmFree_ReMax2_2026_09_10']
-    oj = lambda f: old['fc'][old['factor'].index(f)]
+    pfg = _parent('fc_gradient.csv')
     sec, gm, lo = _secants(fg)
     hi = lo >= 4
     G = fg.sort_values('factor')
     Ghi = G[G.factor >= 4].G_dJdkappa_uniform
-    fac = np.maximum(sec[~hi] / gm[~hi], gm[~hi] / sec[~hi])
+    fac = np.maximum(np.abs(sec[~hi] / gm[~hi]), np.abs(gm[~hi] / sec[~hi]))
+    if IS43 and pfg is not None:
+        pj = pfg.set_index('run').fc
+        shape = ('The 26° N cost of September, from the same legs, has the same shape (%.3f at the reference, %.3f at 2x, %.3f at 32x), '
+                 'as do the two older ensembles, so the shape belongs to the forward model\'s response rather than to the section or to '
+                 'any one adjoint.' % (pj['REF'], pj['M3'], pj['M7']))
+    else:
+        old = prev['gmFree_ReMax2_2026_09_10']
+        oj = lambda f: old['fc'][old['factor'].index(f)]
+        shape = ('The 2026-09-10 ensemble, with a GM-free adjoint and legs from the 2× spin-up, has the same shape (%.3f at the reference, '
+                 '%.3f at 2x, %.3f at 32x), so the shape belongs to the forward model\'s response rather than to either adjoint.'
+                 % (oj(1.0), oj(2.0), oj(32.0)))
     txt = ('<p>J(κ<sub>v</sub>) has the shape the forward legs set up: highest at the weakest and the strongest mixing and lowest at %gx, '
-           'with every member far outside the cost\'s internal variability. The 2026-09-10 ensemble, with a GM-free adjoint and legs from '
-           'the 2× spin-up, has the same shape (%.3f at the reference, %.3f at 2x, %.3f at 32x), so the shape belongs to the forward '
-           'model\'s response rather than to either adjoint.</p>' % (c.FACTOR[fgi.fc.idxmin()], oj(1.0), oj(2.0), oj(32.0)))
+           'with every member far outside the cost\'s internal variability. %s</p>' % (c.FACTOR[fgi.fc.idxmin()], shape))
+    low = G[G.factor <= 2].G_dJdkappa_uniform.values
+    lowtxt = ('changes sign between neighbouring members (%s from 0.25x to 2x)' if (np.sign(low) != np.sign(low[0])).any()
+              else 'keeps one sign (%s from 0.25x to 2x)') % ', '.join('%.0f' % g for g in low)
     txt += ('<p>The adjoint gradient dJ/dκ<sub>v</sub> falls into two regimes. From 4x to 32x every member gives %.0f to %.0f per m² s⁻¹, '
             'and the mean of two neighbours\' gradients matches the secant of J between them to within %.0f %%: there J is close to linear '
-            'in κ<sub>v</sub>, and the local gradient describes it over a factor of eight. At and below 2x the gradient changes sign between '
-            'neighbouring members (%s from 0.25x to 2x) and differs from the secants by factors of %.1f to %.0f, since those carry the '
-            'ten-year adjustment of the state.</p>' % (
-                Ghi.min(), Ghi.max(), 100 * np.abs(gm[hi] / sec[hi] - 1).max(),
-                ', '.join('%.0f' % g for g in G[G.factor <= 2].G_dJdkappa_uniform), fac.min(), fac.max()))
+            'in κ<sub>v</sub>, and the local gradient describes it over a factor of eight. At and below 2x the gradient %s and differs '
+            'from the secants by factors of %.1f to %.0f, since those carry the ten-year adjustment of the state.</p>' % (
+                Ghi.min(), Ghi.max(), 100 * np.abs(gm[hi] / sec[hi] - 1).max(), lowtxt, fac.min(), fac.max()))
     if dec is not None and len(dec):
         d = dec.set_index('run')
         within = lambda col, k: [r for r in d.index if 1.0 / k <= d[col][r] / d.dJ_measured[r] <= k]
@@ -501,12 +570,13 @@ def ensemble_text(fg, ms, dec, nf, prev):
     if len(ms):
         m = ms.set_index('run')
         near = m[m.factor.between(0.25, 4)]
+        best = m.corr_diffkr_5.idxmax()
         txt += ('<p>All member adjoints stay bounded, and their amplitude falls with κ<sub>v</sub>: the RMS of ADJtheta at five years goes '
                 'from %.2f times the reference\'s at 0.25x to %.2f at 32x, stronger mixing damping the adjoint as it damps forward '
                 'anomalies. The patterns change faster than the amplitude. A year before the end of the window ADJtheta correlates with the '
-                'reference\'s at %.2f or more from 0.25x to 4x and at %.2f at 32x; the five-year ∂J/∂κ<sub>v</sub> at %.2f at best (2x), '
-                '%.2f and %.2f four times away (0.25x and 4x), and %.2f at 32x.</p>' % (
-                    m.ratio5['M1'], m.ratio5['M7'], near.corr_theta_1.min(), m.corr_theta_1['M7'], m.corr_diffkr_5.max(),
+                'reference\'s at %.2f or more from 0.25x to 4x and at %.2f at 32x; the five-year ∂J/∂κ<sub>v</sub> at %.2f at best (%gx), '
+                '%.2f and %.2f at 0.25x and 4x, and %.2f at 32x.</p>' % (
+                    m.ratio5['M1'], m.ratio5['M7'], near.corr_theta_1.min(), m.corr_theta_1['M7'], m.corr_diffkr_5.max(), c.FACTOR[best],
                     m.corr_diffkr_5['M1'], m.corr_diffkr_5['M4'], m.corr_diffkr_5['M7']))
     return txt
 
@@ -518,24 +588,33 @@ def target_text(tgt, prev):
     lp = tgt.get('local_predictors', {})
     ident = lp.get('adjoint identity (window-mean state)', {})
     locs = {k: v.get('spearman_abs_within_levels') for k, v in lp.items() if not k.startswith('adjoint')}
-    s0 = prev['structure_31237']
+    ptg = _parent('target_structure.json', 'json')
+    if IS43 and ptg:
+        pl5 = ptg['leads']['5.000']; pid = ptg['local_predictors']['adjoint identity (window-mean state)']
+        s0 = dict(frac_cells_50pct_5yr=pl5['frac_cells_50pct'], frac_cells_90pct_5yr=pl5['frac_cells_90pct'],
+                  identity_pattern_corr=pid['pattern_corr'], identity_regression_slope=pid['regression_slope'])
+        cmpwhat = 'the 26° N cost of September'
+    else:
+        s0 = prev['structure_31237']
+        cmpwhat = 'the 2026-09-11 adjoint from another state'
+    s0 = dict(s0)
     return ('<p>The surrogate plan makes ∂J/∂κ<sub>v</sub> the primary output. At the five-year lead half of Σ|∂J/∂κ<sub>v</sub>| sits '
             'in %.1f %% of the wet cells and 90 %% in %.0f %%, and its magnitude spans %d decades from the 1st percentile to the maximum; '
-            'the 2026-09-11 adjoint from another state gave %.1f %% and %.0f %%. An unweighted squared-error loss would be dominated by a '
+            '%s gave %.1f %% and %.0f %%. An unweighted squared-error loss would be dominated by a '
             'few per cent of the cells, so the loss has to be normalised.</p>'
             '<p>The target needs the whole five-year adjoint. The gradient accumulated over the last year of the window correlates with the '
             'five-year one at only %.2f, over two years at %.2f and over four at %.2f: the long-lead sensitivity is not a rescaled copy of '
             'the short-lead one.</p>'
-            '<p>The field is, to a correlation of %.3f and a regression slope of %.3f (%.3f and %.3f in the 2026-09-11 adjoint), the time '
+            '<p>The field is, to a correlation of %.3f and a regression slope of %.3f (%.3f and %.3f for %s), the time '
             'integral of −(∂<sub>z</sub>λ<sub>T</sub> ∂<sub>z</sub>T + ∂<sub>z</sub>λ<sub>S</sub> ∂<sub>z</sub>S) built from the 5-day '
             'ADJtheta and ADJsalt dumps and the window-mean stratification. The part a network cannot see in the forward state is λ, the '
             'adjoint of temperature and salinity: the stratification alone ranks |∂J/∂κ<sub>v</sub>| only to %.2f (|∂T/∂z|), %.2f '
             '(|∂S/∂z|) and %.2f (|∂ρ/∂z|) within each level.</p>' % (
                 100 * L5.get('frac_cells_50pct', np.nan), 100 * L5.get('frac_cells_90pct', np.nan),
-                int(round(L5.get('log10_max', 0) - L5.get('log10_p01', 0))), 100 * s0['frac_cells_50pct_5yr'], 100 * s0['frac_cells_90pct_5yr'],
+                int(round(L5.get('log10_max', 0) - L5.get('log10_p01', 0))), cmpwhat, 100 * s0['frac_cells_50pct_5yr'], 100 * s0['frac_cells_90pct_5yr'],
                 _lead_corr('ADJdiffkr', 1.0), _lead_corr('ADJdiffkr', 2.0), _lead_corr('ADJdiffkr', 4.0),
                 ident.get('pattern_corr', np.nan), ident.get('regression_slope', np.nan), s0['identity_pattern_corr'],
-                s0['identity_regression_slope'], locs.get('|dT/dz|'), locs.get('|dS/dz|'), locs.get('|drho/dz| (N^2 proxy)')))
+                s0['identity_regression_slope'], cmpwhat, locs.get('|dT/dz|'), locs.get('|dS/dz|'), locs.get('|drho/dz| (N^2 proxy)')))
 
 
 def surrogate_text(fg, fd, ms, dec, tgt, h):
@@ -546,7 +625,8 @@ def surrogate_text(fg, fd, ms, dec, tgt, h):
     lp = tgt.get('local_predictors', {}) if tgt else {}
     ident = lp.get('adjoint identity (window-mean state)', {})
     k = row('kappa')
-    temp = [row(x) for x in ('40-50 N', '0-10 N', '40-60 S')]
+    temp = [r for _, r in fd[fd.test.str.startswith('Theta')].iterrows() if _verdict(r) != 'finite difference at the noise level']
+    usable_err = max(abs(r.adjoint_rel_err) for _, r in fd.iterrows() if _verdict(r) in ('agrees', 'approximate'))
     usable = {'agrees': chip('usable', 'good'), 'approximate': chip('with care', 'warn')}
     rows = [('κ<sub>v</sub>', chip('required', 'good'), '∂J/∂κ<sub>v</sub>: ' + chip('primary', 'good'),
              'J runs from %.3f to %.3f across the ensemble, and the five-year gradient pattern correlates with the reference\'s at only '
@@ -575,7 +655,7 @@ def surrogate_text(fg, fd, ms, dec, tgt, h):
             'salinity should be as well. The surface-forcing controls should not be inputs of a network trained on a κ<sub>v</sub> '
             'ensemble: they are identical in every member, so the network could learn nothing from them, and they become inputs only if the '
             'training ensemble also perturbs the forcing. As targets, the gradients with respect to κ<sub>v</sub>, temperature and salinity '
-            'are supported by finite differences to within 30 %%; of the forcing gradients only the zonal-stress one is, and only '
+            'are supported by finite differences to within %.0f %%; of the forcing gradients only the zonal-stress one is, and only '
             'approximately.</p>'
             '<div class="table-wrap"><table><thead><tr><th>Variable</th><th>As input</th><th>As target</th><th>Evidence</th></tr></thead>'
             '<tbody>%s</tbody></table></div>'
@@ -583,18 +663,19 @@ def surrogate_text(fg, fd, ms, dec, tgt, h):
             '<li><b>Assemble the primary target.</b> Since ∂J/∂κ<sub>v</sub> is the adjoint tracer fields acting on the stratification, a '
             'network that predicts ADJtheta and ADJsalt from the state and κ<sub>v</sub> and assembles ∂J/∂κ<sub>v</sub> from them has the '
             'physics built in, instead of learning the product of a field it cannot see with one it can.</li>'
-            '<li><b>Sample κ<sub>v</sub> across the whole range, densely at and below 2x.</b> Below 4x J is far from linear in '
+            '<li><b>Sample κ<sub>v</sub> across the whole range, densely below 4x.</b> Below 4x J is far from linear in '
             'κ<sub>v</sub> and the gradient pattern decorrelates within a factor of four (%.2f at 0.25x, %.2f at 4x); above 4x J is nearly '
             'linear, but the pattern still changes (%.2f at 8x, %.2f at 32x).</li>'
             '<li><b>Train on full five-year adjoints.</b> A one-year adjoint gives a ∂J/∂κ<sub>v</sub> that correlates only %.2f with the '
             'five-year one.</li>'
             '<li><b>Keep the failed forcing gradients out of the loss</b> until the adjoint\'s treatment of the surface fluxes is understood, '
             'and weight the zonal-stress gradient down.</li>'
-            '<li><b>Calibrate the κ<sub>v</sub> gradient\'s bias.</b> The adjoint overestimates dJ/dκ<sub>v</sub> by about a fifth in all '
-            'three finite-difference tests; a surrogate trained on it inherits that, and finite differences at a few κ<sub>v</sub> values '
-            'would measure it across the range.</li>'
+            '<li><b>Calibrate the κ<sub>v</sub> gradient\'s bias.</b> The adjoint overestimates dJ/dκ<sub>v</sub> %s; a surrogate trained '
+            'on it inherits that, and finite differences at a few κ<sub>v</sub> values would measure it across the range.</li>'
             '<li><b>%s</b> under the current configuration: %s member adjoints stay bounded over five years.</li>'
-            '</ul>' % (tab, m.corr_diffkr_5['M1'], m.corr_diffkr_5['M4'], m.corr_diffkr_5['M5'], m.corr_diffkr_5['M7'],
+            '</ul>' % (100 * usable_err, tab, m.corr_diffkr_5['M1'], m.corr_diffkr_5['M4'], m.corr_diffkr_5['M5'], m.corr_diffkr_5['M7'],
                        _lead_corr('ADJdiffkr', 1.0),
+                       ('by %s at 43° N and by about a fifth at 26° N, in every finite-difference test so far' % _ratio(k)) if IS43
+                       else 'by about a fifth in all three finite-difference tests',
                        'The range 0.25x–32x needs no adjoint-mode viscosity' if nb == 7 else 'Part of the range needs adjoint-mode viscosity',
                        'all seven' if nb == 7 else NUM[nb] + ' of the seven'))
