@@ -40,7 +40,7 @@ https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuil
 | `adjoint_products.py` | Run verification, RMS by lead, member-against-reference metrics, fields at selected leads, control gradients, cost and gradient tables, the decomposition of each member's ΔJ, the finite-difference table, and the structure of the ∂J/∂κ_v target |
 | `make_figures.py` | Figures (PNG) and two animations (GIF), each frame normalised to itself to show the pattern. `ref_ADJtheta_depth_lead_wide` (2026-09-16) draws the nine temperature-sensitivity maps of `ref_ADJtheta_depth_lead` in one row, grouped by lead, for the 16:9 deck |
 | `make_films.py` | **Films of every `ADJ*` dump** (2026-09-16), each written twice: a multi-page PDF, one page per frame, which the beamer deck plays with the `animate` package, and a GIF. `profiles` measures the per-level RMS of every 3-D dump and draws `figures/adj_level_choice.png`; `reference` films all twelve dumps of run 31374; `members` films `ADJtheta` and `ADJdiffkr` for all eight members plus the two eight-panel films. One fixed colour scale per film, so growth and decay are visible — the opposite convention from `make_figures.py`'s GIFs. `--deck <dir>` drops the deck's copies into the slide deck's `figures/` — the six in `DECK_FILMS` and the two eight-panel films (all twelve reference films until 2026-09-16). Writes `animations/films_index.tsv` |
-| `adjoint_waves.py` | **Adjoint Kelvin and Rossby waves** (2026-09-16), measured in `ADJtheta` at 915 m for all eight adjoints: `slices` caches the level at every dump (`cache/adjtheta_915m_<run>.npy`), `measure` writes arrival leads along the eastern wall, the equator and the western wall, the interior crossing speeds and, for comparison, the first-mode speed c₁ of each leg's stratification and the long Rossby speed βc₁²/f² (`stats/adjoint_waves.json`), `plot` draws `figures/adjoint_waves.png`. See below |
+| `adjoint_waves.py` | **Adjoint Kelvin and Rossby waves** (2026-09-16), measured in `ADJtheta` at the upper level of the deck's temperature film (791 m for the 43 N campaign, 915 m for the 26 N one; `make_films.levels_of`) for all eight adjoints: `slices` caches the level at every dump (`cache/adjtheta_<level>m_<run>.npy`), `measure` writes arrival leads along the eastern wall, the equator and the western wall, the interior crossing speeds and, for comparison, the first-mode speed c₁ of each leg's stratification and the long Rossby speed βc₁²/f² (`stats/adjoint_waves.json`), `plot` draws `figures/adjoint_waves.png`. See below |
 | `build_explorer.py`, `explorer_template.html` | **The interactive depth-level explorer** (2026-09-16): one page with a variable selector, a depth slider over all 36 levels plus the column sum, a time slider that plays, and a choice of colour scaling, for the reference adjoint's twelve dumps and for `ADJtheta`/`ADJdiffkr` across all eight members. Since 2026-10-13 it opens on what the deck's films show — the eight-member view on the column sum with the film's one scale for all members and frames, the reference view on the film's upper level with the film's scale — and the manifest carries, per variable, one scale per level (`lscale`, the film convention applied to any level) and the deck film's own scale (`deck_film`, read from `animations/films_index.tsv`, so build the films first). Build output in `explorer/` (ignored by git; the copy that matters is the one on scratch) |
 | `overturning_maximum.py` | **Where the cell peaks** (2026-10-13): the maximum of the depth-space overturning streamfunction north of 20 N and below 300 m, from the monthly `dynDiag` of the spin-up, the reference leg, the adjoint window and each member's last year; writes `stats/overturning_maximum.json`. The row and interface it reports are the cost section's `jsec` and `kmaxdepth` since that day |
 | `file_runs.py` | Files the run directories under `runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/` and relinks the member adjoints' pickups |
@@ -99,31 +99,44 @@ ran forward in time until 2026-09-16.
 
 The adjoint runs backwards in time with the transpose of the forward operator, so each wave of the
 forward model has an adjoint counterpart travelling the other way as the lead grows. `adjoint_waves.py`
-checks that reading against the dumps (915 m, run 31374 unless stated; `stats/adjoint_waves.json`):
+checks that reading against the dumps at the upper level of the deck's temperature film (791 m for the
+43 N campaign, 915 m for the 26 N one; run 31553 unless stated; `stats/adjoint_waves.json`):
 
-- **adjoint Kelvin waves.** From the section the sensitivity reaches the equator down the *eastern*
-  wall in 30 days, the western end of the equator by day 65, and 45° N up the *western* wall by day 40
-  — the reverse of forward Kelvin waves, which keep the coast on their right in the northern
-  hemisphere. The front follows the first-mode speed of the leg's own stratification, c₁ = 1.95 m/s.
-  At the western end of the equator the signal forks and runs poleward along the western wall in
-  *both* hemispheres (5° N by day 70 and 15° N by day 90; 10° S by day 80 and 20° S by day 95), at
-  1–3 % of the level maximum, because the forward equatorial Kelvin wave is fed by coastal waves from
-  both hemispheres. The figure's second panel is the whole western wall, 40° S to 60° N, so the two
-  branches from the corner and the separate, stronger branch the section feeds directly (26° N
-  northward, from lead 5 d) sit in one Hovmöller; until 2026-10-09 it showed 26° N to 60° N only.
-- **adjoint Rossby waves.** Crests leave the western wall and move *east*; at 25° N and 25° S they run
-  parallel to the long Rossby speed βc₁²/f², 2.7–2.8 cm/s. The zonal-mean flow at 915 m is a few mm/s,
-  so this is propagation, not advection. The simple long-wave speed does not follow the crests at every
-  latitude — at 35° they are faster than it, at 20° slower — so the figure shows 25°, where it
-  does.
-- **across the ensemble** the waves speed up with κ_v: c₁ at the equator rises from 1.90 m/s (0.25×) to
-  2.65 m/s (32×), the eastern-wall arrival at the equator falls from 35 to 15 days, the western end of
-  the equator is reached in 40 days instead of 100, and the crossing at 30° N (lag of best correlation
-  between 40.5° W and 20.5° W) rises from 2.1 to 3.5 cm/s against 1.8 to 3.1 cm/s from βc₁²/f².
+- **adjoint Kelvin waves.** From the section the sensitivity runs down the *eastern* wall — 40° N on
+  day 5, 26° N on day 25, 5° N on day 60, 0.8 m/s by the 1 % threshold against a first-mode speed of
+  1.9–2.2 m/s along that wall — and up the *western* wall to 50° N within ten days and no further
+  (55° N only after 280 days): the reverse of forward Kelvin waves, which keep the coast on their
+  right in the northern hemisphere. From 43° N the equator is far: in the reference run what reaches
+  it stays below 1 % of the level maximum (0.7 % at the eastern end on day 70, 0.25 % at 25° W), so
+  the fork at the western end of the equator, where the signal splits and runs poleward along the
+  western wall in *both* hemispheres because the forward equatorial Kelvin wave is fed by coastal
+  waves from both hemispheres, is seen only in the 32× member (the whole equator by day 55–65, 5° N
+  and 10° S by day 60, 30° N and 20° S by day 80–85, just above the 1 % threshold); the front reaches
+  the equator's eastern end from 2× up (day 50 at 2×, day 25 at 32×). The figure's second panel is
+  the whole western wall, 40° S to 60° N, so the fork and the separate, stronger branch the section
+  feeds directly (43° N northward, from lead 5 d) sit in one Hovmöller; until 2026-10-09 it showed the
+  wall north of the section only.
+- **adjoint Rossby waves.** Crests leave the western wall and move *east*; at 25° N and 25° S the lag
+  of best correlation between 40.5° W and 20.5° W gives 1.6 and 2.0 cm/s (r = 0.95–0.96) against the
+  long Rossby speed βc₁²/f² of 2.7–2.85 cm/s, and between 20° and 35° the measured 1.6–2.6 cm/s
+  stand against 1.3–4.4 from theory (faster than theory at 35°, slower at 20°). The zonal-mean flow
+  at 791 m is a few mm/s, so this is propagation, not advection. With the cost at 26 N the 25° N
+  strip held the section's own imprint and its crossing speed could not be measured; at 43 N it can.
+- **across the ensemble** the waves speed up with κ_v: c₁ at the equator rises from 1.90 m/s (0.25×)
+  to 2.65 m/s (32×), the eastern-wall arrival at 10° N falls from 70 to 20 days, and the crossing at
+  35° N rises from 1.8 to 3.1 cm/s against 1.2 to 2.1 cm/s from βc₁²/f².
+
+The 26 N campaign (run 31374 at 915 m; `CAMPAIGN_NAME=kappa_v_ensemble_gmFwd`) showed the fuller
+circuit in the reference run itself: the equator in 30 days down the eastern wall, its western end by
+day 65, 45° N up the western wall by day 40, and the fork at the equator corner at 1–3 % of the level
+maximum (5° N by day 70, 15° N by day 90, 10° S by day 80, 20° S by day 95); c₁ = 1.95 m/s there too.
+The signal fed southward from 43 N is a smaller fraction of the level's maximum, which now sits on the
+section at the western wall, so the same threshold is crossed later and not at all on the equator.
 
 Arrival leads use a 1 % threshold of the level's largest value and the 5-day dump interval, so they
 are good to about 5 days; the crossing speed is noisy where the cost section's own imprint dominates
-the Hovmöller (25° N) and at low latitude, and `adjoint_waves.json` gives its correlation for each.
+the Hovmöller (25° N with the cost at 26 N) and at low latitude, and `adjoint_waves.json` gives its
+correlation for each.
 
 ## Running the films and the explorer
 
