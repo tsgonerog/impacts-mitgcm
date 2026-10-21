@@ -574,19 +574,27 @@ files is itself an object of study — see
 ## Cost function and controls
 
 **Cost** (`code_tap/cost_atlantic_heat.F`, enabled by `mult_atl` in
-`data.cost`): meridional heat transport across a zonal section. Section indices
-are compiled in — for DINO, `isecbeg=1, isecend=51, jsec=127`, chosen with
-`analyses/DINO_1deg/grid_and_cost_sections.ipynb`. Vertical extent is set by
-`kmaxdepth`, also compiled in, and guarded by
-`#ifdef ALLOW_COST_ATLANTIC_HEAT_DOMASS`. Every setup that defines
+`data.cost`): the northward transport across a zonal section, integrated from
+the surface to one interface. The row (`jsec`, whose southern face is
+integrated across) and the depth (`kmaxdepth` levels) are, in DINO since
+2026-10-20, the `data.cost` settings `cost_atl_jsec` and `cost_atl_kmaxdepth`
+(`code_tap/cost.h` and `cost_readparms.F`, shadows of the `pkg/cost` files), so
+one executable serves every section: `IMPACTS_COST_JSEC` /
+`IMPACTS_COST_KMAXDEPTH` set them per run, and the run directory's name carries
+the section (`_sec43N`). Until then, and in SOMA still, they are `parameter`
+statements, so a section is a build. The depth lives under
+`#ifdef ALLOW_COST_ATLANTIC_HEAT_DOMASS`; every setup that defines
 `ALLOW_COST_ATLANTIC_HEAT` also defines `DOMASS`, so the `#else` branch
-(14 levels, inherited from `pkg/cost`) is never the one in effect — and the
-live value is per setup, not shared:
+(14 levels, inherited from `pkg/cost`) is never the one in effect. The sections
+in use (the setup READMEs say why):
 
-| Setup | `kmaxdepth` | Depth |
-| --- | --- | --- |
-| DINO | 25 | upper 982 m of 36 levels / 4600 m |
-| SOMA | 21 | upper 954 m of 31 levels / 3500 m |
+| Setup | Section | `jsec` | `kmaxdepth` | Depth |
+| --- | --- | --- | --- | --- |
+| DINO | 26 N (every adjoint run up to job 31434) | 127 | 25 | upper 982 m of 36 levels / 4600 m |
+| DINO | 43 N, the overturning maximum (production since 2026-10-13) | 148 | 24 | upper 848 m |
+| DINO | 60 N, subpolar (2026-10-20) | 175 | 25 | upper 982 m |
+| DINO | 25 S, north of the Deacon cell (2026-10-20) | 74 | 24 | upper 848 m |
+| SOMA | ~40 N (compiled in) | 27 | 21 | upper 954 m of 31 levels / 3500 m |
 
 **Controls** (`data.ctrl`), via `ctrl_genarr`/`ctrl_gentim`. DINO's, since
 2026-09-12:

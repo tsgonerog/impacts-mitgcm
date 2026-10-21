@@ -10,3 +10,5 @@
 gad_implicit_r.F               pkg/generic_advdiff/gad_implicit_r.F          5b82ef13d4720a0d53929a2cb2ad054e809233c7
 the_main_loop.F                model/src/the_main_loop.F                     41496b94444addd6f288b84cc733d3894e12ff64
 cost_atlantic_heat.F           pkg/cost/cost_atlantic_heat.F                 e47db446142c82eef7ef756c139c38b1a44cf10c
+cost.h                         pkg/cost/cost.h                               175049c613fe34c3fd75cd1fb7f0546235359050
+cost_readparms.F               pkg/cost/cost_readparms.F                     9eeb0bff0b44a6ff6b9de1c893be0f6d777adee7

@@ -38,34 +38,38 @@ C     ========= Local variables =========================
       _RL     sum
       parameter( petawatt = 1. _d +15 )
 
-C     adjust the following line of code to define the zonal section
-C     where you are interested to calculated AMOC transport.
+C     The zonal section: isecbeg..isecend is the whole row (51 cells).
 C     jsec is the (1-based) grid row whose SOUTHERN face carries the vVel
 C     the section integrates; analyses/DINO_1deg/grid_and_cost_sections.ipynb
-C     maps a latitude to a row.
-C     jsec = 148 since 2026-10-13: the row of the overturning maximum of
-C     the 200-year spin-up 31203 (row centre 43.2 N, face 42.8 N; psi peaks
-C     there, 7.37 Sv at the 848 m interface, in every decade of the
-C     spin-up), found by analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/
-C     overturning_maximum.py. Until then jsec = 127 (26.05 N), the section
-C     of every adjoint run up to job 31434; a run's build_info.txt records
-C     its section (cost_section_jsec=).
-      parameter( isecbeg = 1, isecend = 51, jsec = 148 )
+C     maps a latitude to a row. Since 2026-10-20 it is cost_atl_jsec of
+C     data.cost (cost.h, cost_readparms.F), so one executable serves every
+C     section and the staged data.cost of a run says which it measured;
+C     until then it was a parameter statement here (jsec = 127, row centre
+C     26.05 N, in every adjoint run up to job 31434; jsec = 148, the row of
+C     the overturning maximum of the spin-up 31203, centre 43.2 N, from
+C     2026-10-13, recorded in those runs' build_info.txt as
+C     cost_section_jsec=). The rows in use: 127 (26 N), 148 (43 N),
+C     175 (60 N) and 74 (25 S); analyses/DINO_1deg/adjoint/
+C     kappa_v_ensemble_gmFwd/overturning_maximum.py locates the maximum.
+      parameter( isecbeg = 1, isecend = 51 )
 C     the following line defines a meridional section, but I am not using
 C     it in the soma-adjoint setup. To confirm, search for
 C     jsecbeg/jsecend in the compiled version of this file (.f file) in the build
 C     directory: there should be only two instances of them
       parameter( jsecbeg = 1, jsecend = 62, isec = 30 )
-#ifdef ALLOW_COST_ATLANTIC_HEAT_DOMASS
-C     integrate only the upper 24 vertical levels (upper 848 m; see "delR"
-C     in input_tap/data): the interface at which psi peaks on row jsec, so
-C     the cost is the overturning maximum itself (since 2026-10-13; the
-C     upper 25 levels, 982 m, until then, when the section was at 26 N and
-C     psi was still rising at the cut)
-      parameter ( kmaxdepth = 24 )
-#else
-      parameter ( kmaxdepth = 14 )
-#endif
+C     kmaxdepth: how many levels, from the surface, the section integrates
+C     (see "delR" in input_tap/data): cost_atl_kmaxdepth of data.cost since
+C     2026-10-20 (a parameter statement here until then: 25, the upper
+C     982 m, with the 26 N section; 24, the upper 848 m, from 2026-10-13,
+C     the interface at which psi peaks on the 43 N row, so that the cost is
+C     the overturning maximum itself). In use: 25 at 26 N and 60 N (the
+C     interface of each row's maximum), 24 at 43 N and 25 S (at 25 S psi
+C     has no interior maximum, so the 43 N interface is kept).
+
+C     the section of this run, from data.cost (cost_readparms.F checked the
+C     ranges); the comments above say what the two are
+      jsec      = cost_atl_jsec
+      kmaxdepth = cost_atl_kmaxdepth
 
 C------------------------------------------------------
 C     Accumulate meridionally integrated transports

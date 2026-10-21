@@ -4,13 +4,18 @@
 # TWO MODES (since 2026-10-13):
 #
 #   CAMPAIGN_LEGS_FROM=<campaign>   (the default, kappa_v_ensemble_gmFwd): reuse that campaign's spin-up, legs,
-#       perturbed pickups and forcing files, and submit only the eight 5-yr adjoints and the sixteen
+#       perturbed pickups and forcing files, and submit only the eight 5-yr adjoints and the eighteen
 #       finite-difference sweeps -- the rerun of 2026-10-13 with the cost section moved to the overturning
-#       maximum (43 N; code_tap/cost_atlantic_heat.F, overturning_maximum.py). The leg rows are copied into the new
-#       job_map.tsv so campaign.py resolves the same leg directories. No dependencies: the legs have finished.
+#       maximum (43 N; code_tap/cost_atlantic_heat.F, overturning_maximum.py), and the two sections of 2026-10-20
+#       (60 N, 25 S). The leg rows are copied into the new job_map.tsv so campaign.py resolves the same leg
+#       directories. No dependencies: the legs have finished.
 #   CAMPAIGN_LEGS_FROM=  (empty): the full chain below, as run on 2026-09-13.
 #
-# CAMPAIGN_NAME names the campaign (analysis/<name>/job_map.tsv; the 43 N rerun by default, see campaign.py).
+# CAMPAIGN_NAME names the campaign (analysis/<name>/job_map.tsv; the 43 N rerun by default, see campaign.py) and
+# selects the cost section (the table below): since 2026-10-20 the section is a data.cost setting (cost_atl_jsec,
+# cost_atl_kmaxdepth) that the submit body patches in from IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH, exported here
+# for every adjoint and finite-difference submission, so one build serves every campaign; the build must record
+# cost_section=namelist (the 2026-10-13 build compiled its section in and is refused, as the submit body would).
 #
 # The full chain, as submitted on /scratch on 2026-09-13 (/scratch2, which holds the production spin-up 31203, had
 # failed on 2026-09-12 at 18:45):
@@ -38,14 +43,20 @@ SUB=../../../tools/submit.sh
 env | grep -q '^IMPACTS_' && { echo "unset the IMPACTS_* variables in this shell first"; exit 1; }
 [ -z "${CAMPAIGN_SPINUP_JOB:-}" ] || [ -n "${CAMPAIGN_SPINUP_DIR:-}" ] || { echo "CAMPAIGN_SPINUP_JOB needs CAMPAIGN_SPINUP_DIR"; exit 1; }
 [ -f "$SHARED/perturbed_forcing/empmr_m.bin" ] || { echo "perturbed forcing files missing in $SHARED/perturbed_forcing"; exit 1; }
-# The cost section is compiled in: refuse to submit a campaign named for a section the executable does not carry.
+# The cost section of the campaign (1-based row, levels from the surface; campaign.py's COST_SECTION holds the
+# same rows 0-based), handed to every adjoint and FD submission through the submit body's override.
 case "$CAMPAIGN" in
-  *_sec43N) want_jsec=148 ;;
-  kappa_v_ensemble_gmFwd) want_jsec=127 ;;
-  *) want_jsec= ;;
+  kappa_v_ensemble_gmFwd)        JSEC=127; KMAX=25 ;;    # 26 N, 982 m
+  kappa_v_ensemble_gmFwd_sec43N) JSEC=148; KMAX=24 ;;    # 43 N, 848 m: the overturning maximum
+  kappa_v_ensemble_gmFwd_sec60N) JSEC=175; KMAX=25 ;;    # 60 N, 982 m: subpolar, the OSNAP latitudes
+  kappa_v_ensemble_gmFwd_sec25S) JSEC=74;  KMAX=24 ;;    # 25 S, 848 m: north of the Deacon cell
+  *) echo "campaign $CAMPAIGN has no cost section in this script (add a case)"; exit 1 ;;
 esac
-have_jsec=$(sed -n 's/^cost_section_jsec=\([0-9]*\).*/\1/p' "$SETUP/build_tapAdj_ckpAll/build_info.txt" 2>/dev/null || true)
-[ -z "$want_jsec" ] || [ "$have_jsec" = "$want_jsec" ] || { echo "build_tapAdj_ckpAll records cost_section_jsec=${have_jsec:-none}; campaign $CAMPAIGN needs $want_jsec -- rebuild first"; exit 1; }
+BI=$SETUP/build_tapAdj_ckpAll/build_info.txt
+grep -q '^cost_section=namelist' "$BI" 2>/dev/null \
+  || { echo "build_tapAdj_ckpAll does not record cost_section=namelist (its section is compiled in, or there is no build): rebuild first"; exit 1; }
+export IMPACTS_COST_JSEC=$JSEC IMPACTS_COST_KMAXDEPTH=$KMAX
+echo "campaign $CAMPAIGN: cost section row $JSEC, $KMAX levels (IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH exported)"
 mkdir -p "$A"
 cd "$SETUP"
 MAP=$A/job_map.tsv
@@ -73,7 +84,10 @@ if [ -n "$LEGS_FROM" ]; then
   [ -f "$REF_DIR/pickup.0003162240.data" ] || { echo "REF leg's year-180 pickup missing in $REF_DIR"; exit 1; }
   for k in 1 2 3 4 5 6 7; do legdir M$k >/dev/null || exit 1; done
   PK=$SHARED/perturbed_pickups
-  for n in deepN_p deepN_m midTrop_p midTrop_m soUpper_p soUpper_m; do
+  # deepNN (45-60 N below 1500 m) was added on 2026-10-14 for the 43 N campaign, whose deepN box sits under its
+  # section; the four boxes are run for every section since 2026-10-20 (the pickups moved to the shared directory)
+  THETA_BOXES="deepN_p deepN_m midTrop_p midTrop_m soUpper_p soUpper_m deepNN_p deepNN_m"
+  for n in $THETA_BOXES; do
     [ -f "$PK/$n/pickup.0003162240.data" ] || { echo "perturbed pickup missing: $PK/$n"; exit 1; }
   done
 
@@ -95,7 +109,7 @@ if [ -n "$LEGS_FROM" ]; then
         $SUB scripts/submit_tapAdj.sh --parsable --mail-type=NONE | jid)
     row "$j" "FD forcing sweep ${ctl}_$t" "fd_checks/${ctl}FD${t}_ReMax2_gmFwd_approxAdv" "REF leg ${LEG[REF]} yr 180" "-"
   done; done
-  for n in deepN_p deepN_m midTrop_p midTrop_m soUpper_p soUpper_m; do
+  for n in $THETA_BOXES; do
     j=$(IMPACTS_TEST_CASE=fd_checks/thetaPatchFD_ReMax2_gmFwd_approxAdv IMPACTS_PICKUP_RUN_DIR=$PK/$n \
         $SUB scripts/submit_tapAdj.sh --parsable --mail-type=NONE | jid)
     row "$j" "FD theta sweep $n" "fd_checks/thetaPatchFD_ReMax2_gmFwd_approxAdv" "REF leg yr 180 + $n (of $LEGS_FROM)" "-"

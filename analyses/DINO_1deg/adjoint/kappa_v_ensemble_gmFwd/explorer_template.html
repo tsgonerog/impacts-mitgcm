@@ -1,6 +1,6 @@
 <title>DINO Sensitivity Explorer</title>
 <!--
-  The page half of build_explorer.py. `/*MANIFEST*/null` below is replaced at build time by the
+  The page half of build_explorer.py. The MANIFEST placeholder in the script below is replaced at build time by the
   manifest: the grid, the colour table, and for every (dataset, variable) the payload file name and
   its per-(frame, level) scales. The payloads are greyscale PNGs used as data containers, tiled time
   down and level across; the page decodes each one once and colours a single 51x198 tile whenever a
@@ -176,10 +176,17 @@
       window; red at a point means <em>raise the field there and J goes up</em>. The films on the
       slides have to pick a level &mdash; this picks any of them, and opens on what the slides show, with the
       slides&rsquo; own colour scale. Time runs backwards, as the adjoint
-      computes it: the first frame is the end of the window, and Play walks back to five years of lead.</p>
+      computes it: the first frame is the end of the window, and Play walks back to five years of lead.
+      <span id="seclede" hidden>Where the cost is measured is a choice too: the same adjoint experiments exist for
+      four sections, and switching the section keeps the field, the level and the lead, so the maps compare at one
+      slice.</span></p>
   </header>
 
   <div class="rail">
+    <div class="field" id="secfield" hidden>
+      <span>Cost section</span>
+      <div class="seg" id="secseg"></div>
+    </div>
     <div class="field">
       <span>Dataset</span>
       <div class="seg" id="dsseg"></div>
@@ -250,6 +257,7 @@
     percentile saturate there rather than at their value).
     <dl>
       <dt>Built</dt><dd id="fbuilt">&mdash;</dd>
+      <dt>Section</dt><dd id="fsec">&mdash;</dd>
       <dt>Runs</dt><dd id="fruns">&mdash;</dd>
       <dt>Code</dt><dd><code>impacts-mitgcm/analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/build_explorer.py</code></dd>
       <dt>Films</dt><dd><code>&lt;scratch&gt;/DINO_1deg_outputs/analysis/kappa_v_ensemble_gmFwd/animations/</code>
@@ -267,8 +275,16 @@
   const $ = (id) => document.getElementById(id);
   let savedProj = null;
   try { savedProj = window.localStorage.getItem("dinoExplorer.proj"); } catch (e) { savedProj = null; }
-  const state = { ds: "reference", v: null, lev: 24, t: 0, scale: "film", playing: false, timer: null,
+  // Several cost sections share one page since 2026-10-20 (M.sections, built by build_explorer.py --merge):
+  // the dataset key is then "<kind>@<section>", and the section's own row, depth and latitude replace the
+  // grid-wide ones a one-campaign manifest carries. A one-campaign manifest still works: one implicit section.
+  const SECS = M.sections || [{ key: "only", label: "", campaign: M.campaign, jsec: G.jsec, kcost: G.kcost,
+                                cost_depth_m: G.cost_depth_m, lat_sec: G.lat_sec, note: "" }];
+  const MULTI = !!M.sections;
+  const state = { sec: SECS[0].key, kind: "reference", v: null, lev: 24, t: 0, scale: "film", playing: false, timer: null,
                   proj: savedProj === "grid" ? "grid" : "lonlat" };
+  const sec = () => SECS.find((x) => x.key === state.sec) || SECS[0];
+  const dsKey = (kind) => (MULTI ? kind + "@" + state.sec : kind);
 
   /* ---------- the map: longitude-latitude, or one square per model cell ---------- */
   function edgesFrom(c) {                      // only if a manifest predates lat_edges/lon_edges
@@ -337,7 +353,7 @@
     return p;
   }
 
-  const ds = () => M.datasets[state.ds];
+  const ds = () => M.datasets[dsKey(state.kind)];
   const vinfo = () => ds().vars[state.v];
 
   function scalesFor(run) {
@@ -425,7 +441,7 @@
     else for (let j = 0; j < NY; j++) ctx.drawImage(off, 0, NY - 1 - j, NX, 1, 0, LL.y0[j], P.w, LL.hh[j]);
     // the cost section as a thin line at its latitude, over the data rather than in place of a row
     ctx.fillStyle = "rgba(20,18,10,.8)";
-    ctx.fillRect(0, Math.round(yFracOfLat(G.lat_sec) * P.h) - 1, P.w, 2);
+    ctx.fillRect(0, Math.round(yFracOfLat(sec().lat_sec) * P.h) - 1, P.w, 2);
   }
 
   function colourbar() {
@@ -565,7 +581,7 @@
     band.hidden = !three;
     if (three) {
       band.style.top = "0%";
-      band.style.height = pos(G.kcost - 1).toFixed(2) + "%";
+      band.style.height = pos(sec().kcost - 1).toFixed(2) + "%";
     }
     if (!three) return;
     const filmset = new Set(vi.film_levels || []);
@@ -625,7 +641,7 @@
                + "this view opens on; the two levels marked <span style='color:var(--accent2)'>&larr; film</span> "
                + "are the ones the per-member films on scratch show."
              : " The two levels marked <span style='color:var(--accent2)'>&larr; film</span> are the ones the "
-               + "slide deck&rsquo;s film shows: the level of largest time-mean RMS inside the " + Math.round(G.cost_depth_m || 0)
+               + "slide deck&rsquo;s film shows: the level of largest time-mean RMS inside the " + Math.round(sec().cost_depth_m || 0)
                + " m the cost integrates, and the largest below it; the film has a frame every " + df.stride_days
                + " days, this page every other one.")
       + (ens ? " Gridlines mark every 30&deg; of latitude." : "");
@@ -678,18 +694,38 @@
     if (!ds().vars[state.v]) state.v = Object.keys(ds().vars)[0];
     sel.value = state.v;
   }
-  function switchDataset(key) {
-    state.ds = key;
+  function sectionReadouts() {
+    const S = sec();
+    $("latsec").innerHTML = Math.abs(S.lat_sec).toFixed(0) + "&deg;" + (S.lat_sec >= 0 ? "N" : "S");
+    if (S.cost_depth_m) $("costdepth").textContent = String(Math.round(S.cost_depth_m));
+    $("fsec").textContent = MULTI
+      ? S.label + " — row " + (S.jsec + 1) + " (centre " + Math.abs(S.lat_sec).toFixed(2) + "°" + (S.lat_sec >= 0 ? "N" : "S")
+        + "), upper " + Math.round(S.cost_depth_m) + " m; campaign " + S.campaign + (S.note ? " — " + S.note : "")
+      : "row " + (S.jsec + 1) + ", upper " + Math.round(S.cost_depth_m) + " m";
+    for (const b of $("secseg").children) b.setAttribute("aria-pressed", String(b.dataset.sec === state.sec));
+  }
+  function switchDataset(kind) {
+    state.kind = kind;
     state.t = 0;
     fillVars();
     // open on what the deck's film of this dataset shows: the column sum for the eight-member films, the
     // film's upper level for the reference films
     const vi0 = vinfo();
-    state.lev = key === "ensemble" ? vi0.nlev - 1
+    state.lev = kind === "ensemble" ? vi0.nlev - 1
               : (vi0.film_levels && vi0.film_levels.length ? vi0.film_levels[0] : Math.min(state.lev, vi0.nlev - 1));
     buildCells();
     buildDepthAxis();
-    for (const b of $("dsseg").children) b.setAttribute("aria-pressed", String(b.dataset.ds === key));
+    for (const b of $("dsseg").children) b.setAttribute("aria-pressed", String(b.dataset.ds === kind));
+    $("fruns").textContent = ds().label + " — " + ds().note;
+    render();
+  }
+  function switchSection(key) {              // same variable, level and lead: the sections compare at one slice
+    state.sec = key;
+    play(false);
+    sectionReadouts();
+    fillVars();
+    buildCells();
+    buildDepthAxis();
     $("fruns").textContent = ds().label + " — " + ds().note;
     render();
   }
@@ -703,14 +739,33 @@
     }, 320);
   }
 
+  const KINDS = [];
   for (const key of Object.keys(M.datasets)) {
+    const kind = key.split("@")[0];
+    if (KINDS.indexOf(kind) < 0) KINDS.push(kind);
+  }
+  for (const kind of KINDS) {
     const b = document.createElement("button");
     b.type = "button";
-    b.dataset.ds = key;
-    b.textContent = key === "reference" ? "Reference adjoint" : "κᵥ ensemble";
+    b.dataset.ds = kind;
+    b.textContent = kind === "reference" ? "Reference adjoint" : "κᵥ ensemble";
     b.setAttribute("aria-pressed", "false");
-    b.addEventListener("click", () => switchDataset(key));
+    b.addEventListener("click", () => switchDataset(kind));
     $("dsseg").appendChild(b);
+  }
+  if (MULTI) {
+    $("secfield").hidden = false;
+    $("seclede").hidden = false;
+    for (const S of SECS) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.sec = S.key;
+      b.textContent = S.label;
+      b.title = "campaign " + S.campaign + (S.note ? ": " + S.note : "");
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", () => switchSection(S.key));
+      $("secseg").appendChild(b);
+    }
   }
   $("varsel").addEventListener("change", (e) => {
     state.v = e.target.value; buildCells(); buildDepthAxis(); render();
@@ -745,9 +800,8 @@
   }
   window.addEventListener("resize", layoutMaps);
 
-  $("fbuilt").textContent = M.built + "  ·  campaign " + M.campaign;
-  $("latsec").innerHTML = Math.abs(G.lat_sec).toFixed(0) + "&deg;" + (G.lat_sec >= 0 ? "N" : "S");
-  if (G.cost_depth_m) $("costdepth").textContent = String(Math.round(G.cost_depth_m));
+  $("fbuilt").textContent = M.built + "  ·  " + (MULTI ? SECS.length + " campaigns, one per cost section" : "campaign " + M.campaign);
+  sectionReadouts();
   switchDataset("reference");
 })();
 </script>

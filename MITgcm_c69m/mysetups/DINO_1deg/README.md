@@ -828,7 +828,7 @@ Four files matter more than the rest when following how a sensitivity is produce
 | File | Role |
 | --- | --- |
 | `code_tap/the_main_loop.F` | **The differentiation head.** `genmake2` runs `tapenade -b -head 'the_main_loop(fc)/(xx_genarr3d_dummy, xx_genarr2d_dummy, xx_gentim2d_dummy)'` — the cost `fc` is differentiated with respect to those control dummies, so everything reachable from this routine is what gets an adjoint |
-| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: meridional heat transport across a zonal section. Section indices are compiled in as `parameter` statements, so moving the section means editing this file and rebuilding |
+| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: the northward transport across a zonal section, from the surface to one interface. Since 2026-10-20 the row and the depth come from `data.cost` (`cost_atl_jsec`, `cost_atl_kmaxdepth`; `code_tap/cost.h` and `cost_readparms.F`), so a section is a namelist setting, not a build |
 | `../../mods_tapenade_hooks/dummy_tap.F` | **Where `ADJ*` output is written.** The hand-written `DUMMY_IN_STEPPING_XYZ_RL_B` and its three siblings — one per field shape, each a halo fold followed by `CALL DUMP_ADJ_*(..., 'ADJtheta', ...)` over its adjoint argument — produce the files the analysis notebooks read; `DUMMY_FOR_ETAN_TAP_B` in the same file writes `ADJetan`. Each signature must match the call Tapenade generates; the build body asserts this |
 | `../../mods_tapenade_hooks/forward_step.F`, `dummy_in_stepping_tap.F` and `flow_tap` | **How the dump calls get generated.** The shadowed `forward_step.F` calls `DUMMY_IN_STEPPING_TAP`, a wrapper Tapenade differentiates, which calls one external per output field; the directory's `flow_tap` declares each field argument read-then-written (active), so Tapenade emits the `_B` call of every active field in the reverse sweep — TAF's `ADNAME` directive has no Tapenade equivalent, and this activity-through-arguments design replaced the old hand-patched `forward_step_b.f_modified` |
 
@@ -1112,14 +1112,31 @@ scheme and the forward model does not (`../SOMA_1deg/README.md`).
 
 ---
 
-The cost function is `code_tap/cost_atlantic_heat.F`, with its section indices
-compiled in as `parameter` statements (`isecbeg=1, isecend=51, jsec=148`,
-`kmaxdepth=24` since 2026-10-13; `jsec=127`, `kmaxdepth=25` until then). Moving
-the section means editing that file and rebuilding — it is not a namelist
-setting — and since 2026-10-13 every adjoint build records its section in
-`build_info.txt` (`cost_section_jsec=`, `cost_kmaxdepth=`, read off the
-preprocessed source), so a run directory says which section it measured.
-Indices are located with `analyses/DINO_1deg/grid_and_cost_sections.ipynb`.
+The cost function is `code_tap/cost_atlantic_heat.F`: the northward transport
+across one grid row (`isecbeg=1, isecend=51`, the whole row), integrated from
+the surface over `kmaxdepth` levels, averaged over the last 30 days of the run.
+**Since 2026-10-20 the row and the depth are `data.cost` settings**,
+`cost_atl_jsec` and `cost_atl_kmaxdepth`, read by `code_tap/cost_readparms.F`
+into a common block in `code_tap/cost.h` (both shadows of the `pkg/cost` files,
+listed in `code_tap/TREE_BASE.txt`; defaults 148 and 24; range-checked, and
+printed in the cost-configuration block of `STDOUT.0000`), so one executable
+serves every section. Per run, `IMPACTS_COST_JSEC` and `IMPACTS_COST_KMAXDEPTH`
+patch the staged `data.cost` (the shared submit body; refused for a build whose
+`build_info.txt` does not record `cost_section=namelist`), and the run
+directory's name ends in `_sec<label>` (`cost_section_token` in
+`scripts/setup_params.sh`: `sec26N`, `sec43N`, `sec60N`, `sec25S`, any other
+row `jsec<n>`), so the staged `data.cost` and the name both say which section a
+run measured. Until 2026-10-20 both were `parameter` statements in the source,
+so moving the section meant a rebuild; from 2026-10-13 such a build recorded its
+section in `build_info.txt` (`cost_section_jsec=`, `cost_kmaxdepth=`), and runs
+before that day carry no `_sec` token: every one up to job 31434 measured 26 N,
+31553–31578 and 31616 43 N. The namelist route reproduces the compiled one bit
+for bit (2026-10-20, 5-day runs from the production year-180 pickup: 31619
+against 31616 at 43 N through the live `data.cost`, 31620 against 31424 at 26 N
+through the override). Indices are located with
+`analyses/DINO_1deg/grid_and_cost_sections.ipynb`; the build body's
+`COMPILED_NAME_CHECKS` entry fails a build whose compiled `cost_readparms.f`
+lacks the namelist route.
 
 **The section is the overturning maximum since 2026-10-13.** `jsec` is the
 1-based row whose southern face the section integrates `vVel` across, named by
@@ -1135,8 +1152,25 @@ cells do not count). `kmaxdepth` followed, 25 → 24, so J is the maximum itself
 at that row the transport above 982 m is 3.5 % less than above 848 m. The
 members' own maxima sit elsewhere (M4–M6 in the far north, M7 at 35 N); the
 section is the reference state's, fixed for the ensemble. The κ_v campaign was
-rerun for it as `kappa_v_ensemble_gmFwd_sec43N` (jobs 31553–31576, the 2026-09
+rerun for it as `kappa_v_ensemble_gmFwd_sec43N` (jobs 31553–31578, the 2026-09
 legs reused).
+
+**Two more sections since 2026-10-20**, asked for by the advisor on 2026-10-15
+to give the surrogate a more diverse set of sensitivity fields and to see how
+the patterns change with latitude, the 26 N and 43 N sections kept: `jsec=175`,
+"60 N" (centre 59.77 N, the row nearest 60 N; face 59.52 N), subpolar, near the
+OSNAP latitudes, integrated to 982 m (`kmaxdepth=25`), the interface where psi
+peaks on that row (6.04 Sv, 82 % of the 43 N maximum); and `jsec=74`, "25 S"
+(centre 25.15 S; face 25.60 S), north of the Deacon cell, integrated to 848 m
+(`kmaxdepth=24`): on that row psi falls monotonically from the Ekman layer and
+has no interior maximum (4.0 Sv at 319 m, 1.62 Sv at 848 m, zero near 1500 m),
+so the 43 N interface is kept and the two costs differ in latitude only. No
+other northern latitude for now, because of the surface cell on the deck's
+overturning slide. Each has its κ_v campaign on the same legs
+(`kappa_v_ensemble_gmFwd_sec60N`, jobs 31621–31646; `_sec25S`, 31647–31672:
+the eight adjoints, then the κ_v, forcing and four Theta-box sweeps, as in the
+43 N campaign), and `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/compare_sections.py`
+compares the four.
 
 Two verified subtleties of what `fc` actually measures (2026-08-30; full
 statement in the root `CLAUDE.md` and in

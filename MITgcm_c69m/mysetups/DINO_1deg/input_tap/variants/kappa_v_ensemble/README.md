@@ -51,5 +51,14 @@ reference 31553 (the live `input_tap/data` from the reference leg's year 180) an
 (31374–31381) measured 26 N and stay filed under `runs/adjoint/kappa_v_ensemble_gmFwd/`; each run's
 `build_info.txt` says which section it carries (`cost_section_jsec=`).
 
+**Two more sections on 2026-10-20**, 60 N (`cost_atl_jsec=175`, `cost_atl_kmaxdepth=25`) and 25 S
+(`cost_atl_jsec=74`, `cost_atl_kmaxdepth=24`), the advisor's request of 2026-10-15 (the setup README
+says how the rows were chosen): the section is a `data.cost` setting since that day, so the same
+namelists here ran again from one build, `submit_campaign.sh` exporting `IMPACTS_COST_JSEC` /
+`IMPACTS_COST_KMAXDEPTH` per campaign (`kappa_v_ensemble_gmFwd_sec60N`: reference 31621, members 31622–31628;
+`kappa_v_ensemble_gmFwd_sec25S`: reference 31647, members 31648–31654), and each run directory ends in `_sec60N` or `_sec25S`
+and carries the section in its staged `data.cost`. The four campaigns are compared by
+`analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/compare_sections.py`.
+
 The earlier adjoint variants of this group (`M<k>` of 2026-08 and `M<k>_ReMax2` of
 2026-09-10, both GM-free) were removed on 2026-09-12; git history has them.

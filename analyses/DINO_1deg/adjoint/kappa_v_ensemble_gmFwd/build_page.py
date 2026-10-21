@@ -26,9 +26,12 @@ def esc(x):
     return html.escape(str(x))
 
 
-def fig(name, caption, cls='', alt=None, gif=False):
-    """A figure block; copies the file into page/fig/. A GIF gets a still PNG for reduced motion."""
-    src = (c.ANIMS if gif else c.FIGS) / (name + ('.gif' if gif else '.png'))
+def fig(name, caption, cls='', alt=None, gif=False, src_dir=None):
+    """A figure block; copies the file into page/fig/. A GIF gets a still PNG for reduced motion.
+    src_dir names another figures (or animations) directory than the campaign's own (the cross-section
+    comparison's, analysis/cost_sections/, since 2026-10-20)."""
+    src = Path(src_dir) / (name + ('.gif' if gif else '.png')) if src_dir else \
+        (c.ANIMS if gif else c.FIGS) / (name + ('.gif' if gif else '.png'))
     if not src.exists():          # a partial build leaves the figure out and says so in the log
         print('missing figure, left out:', src.name)
         return ''
@@ -36,7 +39,7 @@ def fig(name, caption, cls='', alt=None, gif=False):
     shutil.copy2(src, FIGDIR / src.name)
     alt = esc(alt or caption.split('.')[0])
     if gif:
-        still = c.ANIMS / (name + '_still.png')
+        still = (Path(src_dir) if src_dir else c.ANIMS) / (name + '_still.png')
         pic = '<img src="fig/%s" alt="%s" loading="lazy">' % (src.name, alt)
         if still.exists():
             shutil.copy2(still, FIGDIR / still.name)

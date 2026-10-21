@@ -319,11 +319,20 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
         echo "tap_extra=$(sed -n 's/^TAP_EXTRA *= *//p' Makefile)"
         echo "hooks_mods=${HOOKS_MODS:-none (the tree carries the hooks)}"
         echo "approx_advection_implicit_vertical=$APPROX_IMPLICIT_VERTICAL   # yes: gad_implicit_r.f carries the useApproxAdvectionInAdMode replacement"
-        # The cost section is compiled in (cost_atlantic_heat.F's parameter statements), so it is
-        # part of the build's identity and nothing in a namelist or run-directory name says which
-        # section a run measured: record it from the preprocessed source (since 2026-10-13, when
-        # DINO's moved from jsec=127 to the overturning maximum at jsec=148).
-        if [ -f cost_atlantic_heat.f ]; then
+        # The cost section (cost_atlantic_heat.F). Two forms: a setup whose cost_readparms.f reads
+        # cost_atl_jsec takes the section from the staged data.cost (DINO since 2026-10-20: cost.h and
+        # cost_readparms.F shadowed in code_tap/; the run directory's name and its data.cost say which
+        # section it measured, and the submit body honours IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH
+        # only for such a build), recorded as cost_section=namelist with the compiled defaults; a setup
+        # with the tree's parameter statements (SOMA; DINO until 2026-10-20, from 2026-10-13 recorded as
+        # cost_section_jsec=) has the section as part of the build's identity, recorded from the
+        # preprocessed source, since nothing in a namelist or run-directory name says which it is.
+        if [ -f cost_readparms.f ] && grep -q 'cost_atl_jsec' cost_readparms.f; then
+            echo "cost_section=namelist   # cost_atl_jsec / cost_atl_kmaxdepth of the staged data.cost; the run directory's data.cost is the record"
+            echo "cost_atl_jsec_default=$(sed -n 's/^ *cost_atl_jsec *= *\([0-9]*\).*/\1/p' cost_readparms.f | head -1)   # compiled default, used when data.cost does not set cost_atl_jsec"
+            echo "cost_atl_kmaxdepth_default=$(sed -n 's/^ *cost_atl_kmaxdepth *= *\([0-9]*\).*/\1/p' cost_readparms.f | head -1)   # compiled default for cost_atl_kmaxdepth"
+        elif [ -f cost_atlantic_heat.f ]; then
+            echo "cost_section=compiled   # parameter statements in cost_atlantic_heat.f: the section is part of this build"
             echo "cost_section_jsec=$(sed -n 's/.*parameter *( *isecbeg *= *[0-9]*, *isecend *= *[0-9]*, *jsec *= *\([0-9]*\) *).*/\1/p' cost_atlantic_heat.f | head -1)   # row whose southern face cost_atlantic_heat.f integrates VVEL across"
             echo "cost_kmaxdepth=$(sed -n 's/.*parameter *( *kmaxdepth *= *\([0-9]*\) *).*/\1/p' cost_atlantic_heat.f | head -1)   # levels integrated, from the surface (the preprocessed file keeps only the compiled branch)"
         fi

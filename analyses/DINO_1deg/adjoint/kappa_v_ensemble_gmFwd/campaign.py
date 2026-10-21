@@ -17,17 +17,31 @@ analysis/kappa_v_ensemble_gmFwd/ under OUTPUTS), submitted by submit_campaign.sh
 Job IDs come from job_map.tsv. The cost J (code_tap/cost_atlantic_heat.F) is the section transport index across
 one grid row over the upper kmaxdepth levels, averaged over the final 30 d of the window and normalised per MPI tile.
 
-TWO CAMPAIGNS SHARE THIS SUITE (since 2026-10-13), selected by the CAMPAIGN_NAME environment variable:
+FOUR CAMPAIGNS SHARE THIS SUITE (two since 2026-10-13, four since 2026-10-20), one per cost section, selected by the
+CAMPAIGN_NAME environment variable. All four use the same legs 31366-31373, the same perturbed pickups and forcing
+files (they belong to the state, not to the section); each has its own eight 5-yr adjoints and its own
+finite-difference sweeps:
 
 * `kappa_v_ensemble_gmFwd` (2026-09-13): the cost section at jsec = 127 (row centre 26.05 N), upper 25 levels (982 m);
   runs 31366-31398, analysed 2026-09-15.
-* `kappa_v_ensemble_gmFwd_sec43N` (2026-10-13, the default): the same legs 31366-31373, the same perturbed pickups and
-  forcing files, and the adjoints and finite-difference sweeps rerun with the cost section moved to the overturning
-  maximum, jsec = 148 (row centre 43.21 N, southern face 42.84 N), upper 24 levels (848 m) -- see
-  overturning_maximum.py. Its job_map.tsv copies the leg rows of the first campaign, so LEG_JOB resolves to the same
-  run directories (filed under runs/forward/kappa_v_ensemble_gmFwd/).
+* `kappa_v_ensemble_gmFwd_sec43N` (2026-10-13, the default): the section moved to the overturning maximum, jsec = 148
+  (row centre 43.21 N, southern face 42.84 N), upper 24 levels (848 m) -- see overturning_maximum.py; runs 31553-31578.
+* `kappa_v_ensemble_gmFwd_sec60N` (2026-10-20): the subpolar section the advisor asked for on 2026-10-15, near the
+  OSNAP latitudes: jsec = 175 (row centre 59.77 N, the row nearest 60 N; southern face 59.52 N), upper 25 levels
+  (982 m, the interface where psi peaks on that row: 6.04 Sv, 82 % of the 43 N maximum).
+* `kappa_v_ensemble_gmFwd_sec25S` (2026-10-20): the Southern Hemisphere section, north of the Deacon cell:
+  jsec = 74 (row centre 25.15 S, the row nearest 25 S; southern face 25.60 S), upper 24 levels (848 m: on that row
+  psi falls monotonically from the Ekman layer and has no interior maximum, so the 43 N interface is kept, and the
+  two costs differ in latitude only; psi there is 1.62 Sv).
 
-COST_SECTION below holds what differs; JSEC, KMAX, SEC_LAT and SEC_AMOC are the current campaign's.
+The section is a data.cost setting since 2026-10-20 (cost_atl_jsec, cost_atl_kmaxdepth; a parameter statement in
+code_tap/cost_atlantic_heat.F until then, so the first two campaigns each needed a build), which submit_campaign.sh
+passes through IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH; the run directories of the last two carry _sec60N / _sec25S.
+Every campaign's job_map.tsv copies the leg rows of the first, so LEG_JOB resolves to the same run directories (filed
+under runs/forward/kappa_v_ensemble_gmFwd/).
+
+COST_SECTION below holds what differs; JSEC, KMAX, SEC_LAT and SEC_AMOC are the current campaign's. compare_sections.py
+reads all four.
 """
 from __future__ import annotations
 
@@ -41,12 +55,18 @@ import numpy as np
 OUTPUTS = Path(os.environ.get('CAMPAIGN_OUTPUTS', '/scratch2/tshahriar/DINO_1deg_outputs'))  # the campaign's runs, moved back 2026-09-15
 EARLIER_OUTPUTS = Path('/scratch/tshahriar/DINO_1deg_outputs')                               # the tree it ran in while /scratch2 was down
 # Which campaign this suite reads: CAMPAIGN_NAME in the environment, the 43 N rerun by default (see the module docstring).
-COST_SECTION = {
+COST_SECTION = {   # jsec is 0-based here (the Fortran row is jsec + 1); kmax the number of levels from the surface
     'kappa_v_ensemble_gmFwd': dict(jsec=126, kmax=25, sec_name='26 N', sec_amoc='amoc26', since='2026-09-13',
                                    prev_5yr_job=31237, legs_from=None),
     'kappa_v_ensemble_gmFwd_sec43N': dict(jsec=147, kmax=24, sec_name='43 N', sec_amoc='amoc43', since='2026-10-13',
                                           prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd'),
+    'kappa_v_ensemble_gmFwd_sec60N': dict(jsec=174, kmax=25, sec_name='60 N', sec_amoc='amoc60', since='2026-10-20',
+                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd'),
+    'kappa_v_ensemble_gmFwd_sec25S': dict(jsec=73, kmax=24, sec_name='25 S', sec_amoc='amoc25S', since='2026-10-20',
+                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd'),
 }
+SECTION_ORDER = ['kappa_v_ensemble_gmFwd_sec25S', 'kappa_v_ensemble_gmFwd', 'kappa_v_ensemble_gmFwd_sec43N',
+                 'kappa_v_ensemble_gmFwd_sec60N']      # south to north, for the cross-section comparison
 CAMPAIGN = os.environ.get('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
 if CAMPAIGN not in COST_SECTION:
     raise SystemExit('CAMPAIGN_NAME=%s is not one of %s' % (CAMPAIGN, sorted(COST_SECTION)))
@@ -78,6 +98,16 @@ THETA_BOXES = {   # (k0, k1, j0, j1, i0, i1), 0-based end-exclusive, as in pertu
     # floor; the 43 N adjoint predicts +1.2e-4), so a deep box NORTH of the section, where the 43 N adjoint predicts
     # +5.1e-3 for the same amplitude, was added and run as one more pair of sweeps (jobs in job_map.tsv, deepNN_p/m).
     'deepNN': dict(box=(28, 36, 150, 175, 0, 51), amp=0.016, what='45-60 N, below 1500 m'),
+    # 2026-10-21, for the 60 N and 25 S costs: with the amplitudes above, no check at 60 N and only two at 25 S (the
+    # zonal stress and soUpper) clear twice those costs' monthly noise (1.8e-3 and 1.9e-3), so one pair of boxes per
+    # section was added where its reference adjoint predicts about 5 sigma: for 60 N the subpolar deep water
+    # (55-68 N below 1500 m, +-0.05 K) and the thermocline just north of the section (56-64 N, 300-1000 m, +-0.10 K);
+    # for 25 S the South Atlantic thermocline (35-10 S, 300-1000 m, +-0.06 K) and deep water (35-10 S below 1500 m,
+    # +-0.10 K). Run for those two campaigns only (jobs in their job_map.tsv); pickups beside the others.
+    'subpolarDeep': dict(box=(28, 36, 165, 194, 0, 51), amp=0.05, what='55-68 N, below 1500 m'),
+    'secN60': dict(box=(16, 26, 167, 184, 0, 51), amp=0.10, what='56-64 N, 300-1000 m'),
+    'sAtlThermo': dict(box=(16, 26, 62, 90, 0, 51), amp=0.06, what='35-10 S, 300-1000 m'),
+    'sAtlDeep': dict(box=(28, 36, 62, 90, 0, 51), amp=0.10, what='35-10 S, below 1500 m'),
 }
 FORCING_TESTS = {   # control: (adxx file, amplitude, unit, what) -- files in analysis/<campaign>/perturbed_forcing/
     'fu': ('adxx_fu', 0.005, 'N/m2', 'zonal surface stress'),
@@ -309,9 +339,11 @@ def pattern_corr(a, r, w=None):
 # JSEC is the 0-based row whose SOUTHERN face the compiled cost integrates VVEL across (Fortran jsec = JSEC + 1); KMAX the
 # number of levels from the surface (Fortran kmaxdepth). 126 / 25 for the 26 N campaign, 147 / 24 for the 43 N rerun.
 JSEC, KMAX, SNX, NTILE = _CS['jsec'], _CS['kmax'], 17, 3
-SEC_NAME = _CS['sec_name']                   # how the section is named in titles: '26 N' / '43 N' (the row centre, rounded)
+SEC_NAME = _CS['sec_name']                   # how the section is named in titles: '26 N' / '43 N' / '60 N' / '25 S' (the row centre, rounded)
 SEC_AMOC = _CS['sec_amoc']                   # the forward_state.py column holding the overturning maximum at the section's row
-AMOC_INDEX_LATS = {'amoc26': 26.0, 'amoc43': 43.2}   # the overturning index columns forward_state.py writes (nearest row)
+AMOC_INDEX_LATS = {'amoc26': 26.0, 'amoc43': 43.2, 'amoc60': 59.8, 'amoc25S': -25.2}   # the overturning index columns
+                                                      # forward_state.py writes (nearest row); at 25 S the maximum above
+                                                      # 1000 m is the Ekman layer's, not an AMOC cell (jproxy is the cost)
 
 
 def sec_lat():

@@ -58,6 +58,23 @@ their runs' were removed on 2026-09-12 (next section), and every record left
 gives the configuration of its runs (`stability_study/from180yrPk_viscRef_ReMax2`
 that of 31279 and 31282, not of its first run 31163, which was GM-free and exact).
 
+## The cost section (since 2026-10-20)
+
+The row and depth of the cost section are `data.cost` settings (`cost_atl_jsec`,
+`cost_atl_kmaxdepth`; the live `input_tap/data.cost` sets the production section,
+43 N) and not part of any tag here: a variant that needs another section is
+submitted with the override, which the submit body patches into the staged
+`data.cost` and names in the run directory (`_sec60N`):
+
+```bash
+IMPACTS_COST_JSEC=175 IMPACTS_COST_KMAXDEPTH=25 IMPACTS_TEST_CASE=<group>/<tag> ../../../tools/submit.sh scripts/submit_tapAdj.sh
+```
+
+The rows in use are listed in `input_tap/data.cost`; the setup README says how
+each was chosen. A `data.cost_<tag>` sibling would work too, but every run of a
+tag would then carry that section, which is not how the κ_v campaigns are run
+(one tag set, one section per campaign).
+
 ## Groups
 
 | Group | What it varies |

@@ -46,7 +46,15 @@ DUMP_CALLS=5
 # of the approxAdv build became every build's.
 COMPILED_NAME_CHECKS=(
     "useApproxAdvectionInAdMode gad_advection.f gad_advection_b.f gad_implicit_r.f gad_implicit_r_b.f"
+    "cost_atl_jsec cost_readparms.f cost_atlantic_heat.f cost_atlantic_heat_b.f"
 )
+# The second entry (since 2026-10-20): the cost section is a data.cost setting
+# (cost_atl_jsec, cost_atl_kmaxdepth; code_tap/cost.h and cost_readparms.F, shadows
+# of the pkg/cost files, and cost_atlantic_heat.F reads them), so every DINO
+# adjoint build must compile that route -- the vendored files have the section as
+# parameter statements and no such name. The build body records
+# cost_section=namelist for a build that carries it, and the submit body applies
+# IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH only to such a build.
 
 # ---------- naming a run of the live namelist ----------
 # The live input*/data has no tag of its own, so a run of it would be named by
@@ -96,6 +104,28 @@ run_suffix_from_namelist() {
       if (a!="" && a!=33) v=v "_adv" a                                              # tempAdvScheme other than 33 -> _adv<n>
       print s "_" v gm ((a==33) ? ax : "")                                         # _approxAdv only where there is a scheme to replace
     }' "$1"
+}
+
+# ---------- naming the cost section of an adjoint run ----------
+# The section (code_tap/cost_atlantic_heat.F) is cost_atl_jsec / cost_atl_kmaxdepth
+# of the staged data.cost since 2026-10-20 (a parameter statement, and so a
+# property of the build, until then), and nothing in a tag says which section a
+# run measured: the submit body appends _sec<label> to every adjoint run
+# directory's name, the label from this function, given the 1-based row. The
+# rows in use are named by the row's centre, as the project has always named
+# them (jsec=127 "26 N", centre 26.05 N; 148 "43 N", 43.21 N; 175 "60 N",
+# 59.77 N; 74 "25 S", 25.15 S); any other row is named by its number, so the
+# name never claims a latitude nobody checked. Runs before 2026-10-20 carry no
+# token: every one up to job 31434 measured 26 N, 31553-31578 and 31616 43 N
+# (their build_info.txt says so, cost_section_jsec=).
+cost_section_token() {
+  case "$1" in
+    127) echo sec26N ;;
+    148) echo sec43N ;;
+    175) echo sec60N ;;
+    74)  echo sec25S ;;
+    *)   echo "jsec$1" ;;
+  esac
 }
 
 # ---------- the pickup an adjoint run starts from ----------

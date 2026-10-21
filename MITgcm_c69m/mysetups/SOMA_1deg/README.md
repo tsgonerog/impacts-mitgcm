@@ -199,6 +199,9 @@ file vimdiffs cleanly against its counterpart.
 The cost function is `code_tap/cost_atlantic_heat.F` with indices compiled in
 (`isecbeg=1, isecend=62, jsec=27` — a zonal section at ~40°N — and
 `kmaxdepth=21`). Changing the section means editing the file and rebuilding.
+(DINO's section is a `data.cost` setting since 2026-10-20, through its own
+`cost.h` and `cost_readparms.F` shadows; SOMA has not taken that over, and its
+`build_info.txt` records `cost_section=compiled`.)
 
 `useGrdchk = .TRUE.`, so every adjoint job also runs the finite-difference
 gradient check and pays for it. As in DINO, whether its perturbation point sits

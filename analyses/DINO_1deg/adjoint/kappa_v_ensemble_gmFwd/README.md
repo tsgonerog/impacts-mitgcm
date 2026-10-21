@@ -1,11 +1,36 @@
 # `kappa_v_ensemble_gmFwd/` — the κ_v ensemble and the 5-year adjoint under the current configuration
 
-**Two campaigns, one suite (since 2026-10-13).** Every script here reads `CAMPAIGN_NAME` from the
-environment: `kappa_v_ensemble_gmFwd` is the September campaign described below, with the cost section
-at 26 N (`jsec=127`, upper 982 m); `kappa_v_ensemble_gmFwd_sec43N`, **the default**, is its rerun with
-the section moved to the overturning maximum — `jsec=148` (row centre 43.21 N), upper 848 m
-(`kmaxdepth=24`) — after the advisor pointed out on the deck's overturning slide that the cell is
-cored near 43 N, not 26 N. `overturning_maximum.py` makes and records that computation
+**Four campaigns, one suite (two since 2026-10-13, four since 2026-10-20), one per cost section.** Every
+script here reads `CAMPAIGN_NAME` from the environment: `kappa_v_ensemble_gmFwd` is the September
+campaign described below, with the cost section at 26 N (`jsec=127`, upper 982 m);
+`kappa_v_ensemble_gmFwd_sec43N`, **the default**, is its rerun with the section moved to the
+overturning maximum — `jsec=148` (row centre 43.21 N), upper 848 m (`kmaxdepth=24`) — after the
+advisor pointed out on the deck's overturning slide that the cell is cored near 43 N, not 26 N;
+`kappa_v_ensemble_gmFwd_sec60N` (`jsec=175`, row centre 59.77 N, upper 982 m: subpolar, the OSNAP
+latitudes) and `kappa_v_ensemble_gmFwd_sec25S` (`jsec=74`, row centre 25.15 S, upper 848 m: north of
+the Deacon cell) are the two sections the advisor asked for on 2026-10-15, to give the surrogate a
+more diverse set of sensitivity fields and to see how the patterns change with latitude; the setup
+README says how each row and depth was chosen. Since 2026-10-20 the section is a `data.cost` setting
+(`cost_atl_jsec`, `cost_atl_kmaxdepth`), which `submit_campaign.sh` passes through `IMPACTS_COST_JSEC` /
+`IMPACTS_COST_KMAXDEPTH`, so the last two campaigns ran from one build (jobs 31621–31646 and 31647–31672, submitted 2026-10-20) and their run
+directories end in `_sec60N` / `_sec25S`. All four differentiate the same eight states (the legs below), so whatever
+differs between them is the cost section; **`compare_sections.py` compares them** (its figures, table
+and four-panel film go to `analysis/cost_sections/`).
+
+**What the four sections gave (2026-10-21; `analysis/cost_sections/stats/sections_table.csv`).** The cost's
+dependence on κ_v changes shape and sign with latitude: a U with its minimum at 2–4× at 26 N and 43 N, a
+maximum at the reference at 60 N (0.84 at 0.25×, 0.72 at 8×), a rise to 1.44× at 8× at 25 S; dJ/dκ_v at the
+reference −2226, −7844, −301 and +1201 per m² s⁻¹ (26 N, 43 N, 60 N, 25 S), against finite differences
++21 %, +12 %, no signal (the ±10 % response is half the 60 N cost's noise, σ 1.8e-3) and −10 %. The
+amplitudes stay within a factor of 2–3 of each other; the 43 N and 60 N temperature sensitivities lose 90 %
+of their RMS within a year, the 26 N and 25 S ones keep two to three times as much at five, while 43 N and
+60 N accumulate twice the κ_v sensitivity. The three northern patterns share the equatorial band and the
+subtropical Rossby crests but correlate only 0.25–0.38 (five-year temperature field; the κ_v gradient 0.70
+between 26 N and 43 N, 0.17 to 60 N), and the 25 S sensitivity, the southern mirror image, correlates with
+none of them (|r| ≤ 0.08). How much κ_v changes a pattern depends on the section: the member-vs-reference
+correlation of the one-year temperature field is 0.84–0.99 at 25 S, 0.55–0.93 at 26 N and 43 N, 0.25–0.78
+at 60 N, and the 60 N κ_v gradient collapses to |r| ≤ 0.1 from 2× up. The surface-flux gradients fail the
+finite-difference check at every section in the same way (the freshwater one about ten times too large). `overturning_maximum.py` makes and records that computation
 (`stats/overturning_maximum.json`: the same row and interface in every decade of the spin-up 31203,
 in the reference leg and in the 2026-09 adjoint's window). The rerun reuses the eight 10-year legs
 31366–31373, the perturbed pickups and the forcing files of the September campaign (they belong to
@@ -43,6 +68,7 @@ https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuil
 | `adjoint_waves.py` | **Adjoint Kelvin and Rossby waves** (2026-09-16), measured in `ADJtheta` at the upper level of the deck's temperature film (791 m for the 43 N campaign, 915 m for the 26 N one; `make_films.levels_of`) for all eight adjoints: `slices` caches the level at every dump (`cache/adjtheta_<level>m_<run>.npy`), `measure` writes arrival leads along the eastern wall, the equator and the western wall, the interior crossing speeds and, for comparison, the first-mode speed c₁ of each leg's stratification and the long Rossby speed βc₁²/f² (`stats/adjoint_waves.json`), `plot` draws `figures/adjoint_waves.png`. See below |
 | `build_explorer.py`, `explorer_template.html` | **The interactive depth-level explorer** (2026-09-16): one page with a variable selector, a depth slider over all 36 levels plus the column sum, a time slider that plays, and a choice of colour scaling, for the reference adjoint's twelve dumps and for `ADJtheta`/`ADJdiffkr` across all eight members. Since 2026-10-13 it opens on what the deck's films show — the eight-member view on the column sum with the film's one scale for all members and frames, the reference view on the film's upper level with the film's scale — and the manifest carries, per variable, one scale per level (`lscale`, the film convention applied to any level) and the deck film's own scale (`deck_film`, read from `animations/films_index.tsv`, so build the films first). Build output in `explorer/` (ignored by git; the copy that matters is the one on scratch) |
 | `overturning_maximum.py` | **Where the cell peaks** (2026-10-13): the maximum of the depth-space overturning streamfunction north of 20 N and below 300 m, from the monthly `dynDiag` of the spin-up, the reference leg, the adjoint window and each member's last year; writes `stats/overturning_maximum.json`. The row and interface it reports are the cost section's `jsec` and `kmaxdepth` since that day |
+| `compare_sections.py` | **The four sections compared** (2026-10-20): `table` writes `stats/sections_table.csv` and `sections_summary.json` under `analysis/cost_sections/` (geometry and the spin-up's psi at each section, J, noise floor, dJ/dκ_v and its finite-difference error, the amplitude of the temperature sensitivity at 30 d / 1 yr / 5 yr, each member's pattern correlation with its reference, and the pattern correlations between the sections' reference adjoints); `figures` draws the sections on the overturning, J and dJ/dκ_v against κ_v per section, amplitude against lead, the 791 m and column-sum temperature-sensitivity maps and the control gradients per section (each map on its own scale, amplitude printed), the correlation matrices, the κ_v dependence per section and the finite-difference checks per section; `film` writes `animations/film_sections_theta.pdf/.gif`, the column sum of the temperature sensitivity of the four reference adjoints side by side (`--deck` copies it into the deck). Reads every campaign in `campaign.SECTION_ORDER` whose products exist, so it runs at any stage |
 | `file_runs.py` | Files the run directories under `runs/{forward,adjoint}/kappa_v_ensemble_gmFwd/` and relinks the member adjoints' pickups |
 | `build_page.py`, `page_style.css`, `page_text.py`, `page_setup_text.py` | Assemble the published page (build output in `page/`, ignored by git) |
 | `previous_campaigns_reference.json` | The earlier campaigns' numbers the comparisons use (the 2026-08 and 2026-09-10 ensembles, the 2026-09-11 GM test), copied from scratch before `/scratch2` failed |

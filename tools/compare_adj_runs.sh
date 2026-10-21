@@ -34,6 +34,11 @@
 # monitor comparison matches the new run's lines against the reference run's
 # LEADING BLOCK of the same length rather than comparing wholesale.
 #
+# A difference in data.cost confined to comments and the cost_atl_* keys (the
+# cost section, a namelist setting since 2026-10-20) is reported as CONFIG, like
+# a differing build_info.txt key, and does not fail the verdict: whether the two
+# runs measured the same section is printed for the reader to judge.
+#
 # A fourth difference is EXPECTED between two runs of the PROFILER build
 # (profile) and is likewise classified rather than reported as a failure:
 #
@@ -174,6 +179,16 @@ if [ "$odiff" -gt 0 ]; then
         case "$f" in
             data.pkg|output_tap_adj.txt|output.txt|xx_theta.effective.*)
                 tag="[expected: grdchk]" ;;
+            data.cost)
+                # The cost section is a data.cost setting since 2026-10-20 (DINO: cost_atl_jsec,
+                # cost_atl_kmaxdepth), so two runs may legitimately stage different files here --
+                # of the same section (one wrote the keys, the other took the compiled defaults;
+                # comments) or of different sections, which is a configuration difference, as a
+                # differing build_info.txt key is below. Any other key differing stays unexpected.
+                strip() { grep -vE '^[[:space:]]*(#|$)' "$1" | grep -viE '^[[:space:]]*cost_atl_'; }
+                if diff <(strip "$OLD/$f") <(strip "$NEW/$f") > /dev/null 2>&1
+                then tag="[CONFIG: the cost section (cost_atl_* keys and comments only)]"
+                else tag="[UNEXPECTED: a key other than the cost section differs]"; unexpected=$((unexpected+1)); fi ;;
             tapenade_profile.*.txt)
                 # the profiler's table: measured times masked, rows sorted --
                 # what is left (call sites, counts, peak stack, memory) must match
@@ -195,6 +210,10 @@ nz=np.nonzero(a-b)[0]
 print(f'      elements differing: {nz.size} of {a.size}')
 if nz.size: print(f'      magnitudes: {sorted(set(np.round(a[nz]-b[nz],12)))[:5]}  (expect one value == grdchk_eps)')
 " 2>/dev/null || echo "      (numpy check unavailable)" ;;
+          data.cost)
+            echo "      ref: $(grep -iE '^[[:space:]]*cost_atl_' "$OLD/$f" | tr -s ' ' | tr '\n' ' ')"
+            echo "      new: $(grep -iE '^[[:space:]]*cost_atl_' "$NEW/$f" | tr -s ' ' | tr '\n' ' ')"
+            echo "      (a run without the keys measured the build's compiled section: its build_info.txt says which)" ;;
           *) diff "$OLD/$f" "$NEW/$f" 2>/dev/null | head -14 | sed 's/^/      /' ;;
         esac
     done < "$WORK/other_diff.txt"

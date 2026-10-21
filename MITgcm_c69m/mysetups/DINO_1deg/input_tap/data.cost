@@ -1,8 +1,28 @@
 #
+# The cost J (code_tap/cost_atlantic_heat.F): the northward transport across one
+# grid row, integrated from the surface over cost_atl_kmaxdepth levels, averaged
+# over the final lastinterval (default 30 d) of the run, mult_atl times.
+#
+# The section is a namelist setting since 2026-10-20 (a parameter statement in
+# the source until then, so that a section meant a build): cost_atl_jsec is the
+# 1-based row whose SOUTHERN face is integrated across, named by the row's
+# centre, and cost_atl_kmaxdepth the number of levels. The sections in use, and
+# the interface each integrates to (input_tap/data delR):
+#     26 N   cost_atl_jsec=127  cost_atl_kmaxdepth=25  (982 m)   every run up to job 31434
+#     43 N   cost_atl_jsec=148  cost_atl_kmaxdepth=24  (848 m)   the overturning maximum: production since 2026-10-13
+#     60 N   cost_atl_jsec=175  cost_atl_kmaxdepth=25  (982 m)   subpolar, the OSNAP latitudes (2026-10-20)
+#     25 S   cost_atl_jsec=74   cost_atl_kmaxdepth=24  (848 m)   north of the Deacon cell (2026-10-20)
+# IMPACTS_COST_JSEC and IMPACTS_COST_KMAXDEPTH override the two per run from the
+# environment (tools/lib/submit_body.sh); the run directory's name carries the
+# section (_sec43N, ...) and its staged copy of this file is the record.
+# analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/overturning_maximum.py has the
+# streamfunction behind the choices.
 #
 # ******************
 # cost function
 # ******************
  &COST_NML
   mult_atl = 1.,
+  cost_atl_jsec = 148,
+  cost_atl_kmaxdepth = 24,
  &

@@ -117,6 +117,7 @@ def body(h):
                '<li><a href="#findings">Findings</a></li><li><a href="#setup">What ran</a></li>'
                '<li><a href="#forward">Forward legs</a></li><li><a href="#reference">Reference adjoint</a></li>'
                '<li><a href="#checks">Gradient checks</a></li><li><a href="#ensemble">Ensemble</a></li>'
+               '<li><a href="#sections">Four cost sections</a></li>'
                '<li><a href="#target">The target field</a></li><li><a href="#surrogate">For the surrogate</a></li>'
                '<li><a href="#provenance">Provenance</a></li></ol></nav><main>')
     lat_sec, dep_sec = _sec_meta()
@@ -237,6 +238,7 @@ def body(h):
     out.append('</section>')
 
     # ---------------------------------------------------------------- the target
+    out.append(sections_text(h))
     out.append('<section id="target"><h2>The primary target, ∂J/∂κ<sub>v</sub></h2>')
     out.append(target_text(tgt, prev))
     out.append(fig('target_structure', '<b>Lead dependence and local predictors.</b> Left: pattern correlation of each dump with the same '
@@ -679,3 +681,82 @@ def surrogate_text(fg, fd, ms, dec, tgt, h):
                        else 'by about a fifth in all three finite-difference tests',
                        'The range 0.25x–32x needs no adjoint-mode viscosity' if nb == 7 else 'Part of the range needs adjoint-mode viscosity',
                        'all seven' if nb == 7 else NUM[nb] + ' of the seven'))
+
+
+# ---------------------------------------------------------------- the four cost sections (2026-10-20)
+CS_DIR = c.OUTPUTS / 'analysis' / 'cost_sections'
+
+
+def sections_text(h):
+    """The same experiments at four cost sections, compared (compare_sections.py): a table of what each section is
+    and what its adjoint gives, and the comparison figures. Every number is read from stats/sections_summary.json
+    at build time; the section is left out when that file does not exist yet."""
+    fig, table, esc = h['fig'], h['table'], h['esc']
+    p = CS_DIR / 'stats' / 'sections_summary.json'
+    if not p.exists():
+        return ''
+    S = json.loads(p.read_text())
+    df = pd.DataFrame(S['table'])
+    out = ['<section id="sections"><h2>The same experiments at four cost sections</h2>']
+    out.append('<p>On 15 October 2026 the advisor asked for the cost to be measured at more latitudes beside 26° N and '
+               'the overturning maximum at 43° N: a subpolar section near the OSNAP array (60° N) and one north of the '
+               'Deacon cell (25° S), so that the surrogate gets a more diverse set of sensitivity fields and the '
+               'dependence of the patterns on latitude can be seen. Since 20 October the section is a namelist setting '
+               '(<code>cost_atl_jsec</code>, <code>cost_atl_kmaxdepth</code> in <code>data.cost</code>), bit for bit '
+               'the compiled one, and the whole campaign — eight 5-year adjoints and eighteen finite-difference sweeps on '
+               'the same eight legs — exists for each of the four sections (campaigns <code>kappa_v_ensemble_gmFwd</code>, '
+               '<code>_sec43N</code>, <code>_sec60N</code>, <code>_sec25S</code>). Whatever differs between them is the '
+               'cost. The figures and numbers here are <code>compare_sections.py</code>\'s, in '
+               '<code>analysis/cost_sections/</code>; %s lets the section be switched with the field, level and lead '
+               'held fixed.</p>' % explorer_link('the explorer'))
+    FD = CS_DIR / 'figures'
+    out.append(fig('sections_on_psi', '<b>Where the four costs are measured.</b> The depth-space overturning of the spin-up '
+                   '31203 (years 190–200) with each section drawn as what it is: the transport across one grid row from the '
+                   'surface to the marked interface. 43° N and 60° N integrate to the interface where the cell peaks on their '
+                   'row; at 25° S the streamfunction has no interior maximum, so the 848 m interface of 43° N is kept.',
+                   src_dir=FD))
+    cols = ['section', 'lat_face', 'interface_m', 'psi_at_interface_sv', 'J_ref', 'sigma_monthly', 'dJdkappa_ref',
+            'dJdkappa_fd_err', 'rms_ADJtheta_1yr', 'member_corr_ADJtheta_1yr_min', 'member_corr_ADJdiffkr_5yr_min']
+    cols = [k for k in cols if k in df.columns]
+    heads = {'section': 'section', 'lat_face': 'face (°)', 'interface_m': 'depth (m)', 'psi_at_interface_sv': 'ψ there (Sv)',
+             'J_ref': 'J (reference)', 'sigma_monthly': 'σ monthly', 'dJdkappa_ref': 'dJ/dκ_v (adjoint)',
+             'dJdkappa_fd_err': 'vs FD', 'rms_ADJtheta_1yr': 'RMS ADJtheta, 1 yr',
+             'member_corr_ADJtheta_1yr_min': 'min member corr, θ 1 yr', 'member_corr_ADJdiffkr_5yr_min': 'min member corr, κ_v 5 yr'}
+    fmts = {'lat_face': lambda v, r: '%.1f' % v, 'interface_m': lambda v, r: '%.0f' % v, 'psi_at_interface_sv': lambda v, r: '%.2f' % v,
+            'J_ref': lambda v, r: '%.4f' % v, 'sigma_monthly': lambda v, r: '%.1e' % v, 'dJdkappa_ref': lambda v, r: '%.0f' % v,
+            'dJdkappa_fd_err': lambda v, r: ('%+.0f %%' % (100 * v)) if v == v else 'no signal',
+            'rms_ADJtheta_1yr': lambda v, r: '%.1e' % v,
+            'member_corr_ADJtheta_1yr_min': lambda v, r: '%.2f' % v, 'member_corr_ADJdiffkr_5yr_min': lambda v, r: '%.2f' % v}
+    out.append(table(df, cols, [heads[k] for k in cols], num=cols[1:], fmt={k: fmts[k] for k in cols if k in fmts}))
+    out.append('<p class="caption">One row per section, south to north. <i>face</i> is the latitude of the row\'s southern '
+               'face, the one integrated across; <i>ψ there</i> the spin-up\'s streamfunction at that row and interface; '
+               '<i>σ monthly</i> the noise floor of the cost (the standard deviation of the monthly index over years 100–170 '
+               'of the spin-up); <i>vs FD</i> the adjoint\'s dJ/dκ_v against the central difference of the ±10 % sweeps; the '
+               'last two columns the smallest pattern correlation of any member\'s field with its own section\'s reference.</p>')
+    out.append(fig('sections_J_gradient', '<b>The cost and its κ<sub>v</sub> gradient at each section.</b> J across the '
+                   'ensemble (left), the same relative to each section\'s reference (middle), and the adjoint gradient with '
+                   'the finite difference at the reference (right).', src_dir=FD))
+    out.append(fig('sections_amplitude_vs_lead', '<b>Amplitude against lead, one curve per section.</b> Wet-cell RMS of the '
+                   'temperature sensitivity (an adjoint state), the κ<sub>v</sub> sensitivity and the heat-flux sensitivity '
+                   '(running totals).', src_dir=FD))
+    out.append(fig('sections_ADJtheta_maps', '<b>The temperature sensitivity at the four sections.</b> Rows: the sections; '
+                   'columns: 30 days, one year and five years before the end of the window at 791 m, and the five-year '
+                   'column sum. Each map on its own scale (printed), so these are patterns.', src_dir=FD))
+    if (CS_DIR / 'animations' / 'film_sections_theta.gif').exists():
+        out.append(fig('film_sections_theta', '<b>The four reference adjoints side by side.</b> Column sum of the temperature '
+                       'sensitivity, backwards in time, one scale for every panel and frame.', gif=True,
+                       src_dir=CS_DIR / 'animations'))
+    out.append(fig('sections_adxx_maps', '<b>The control gradients at the four sections.</b> Initial temperature at 791 m, '
+                   'the column sum of the κ<sub>v</sub> gradient, and the net heat flux, zonal stress and freshwater flux '
+                   'over the window; each map on its own scale.', src_dir=FD))
+    out.append(fig('sections_pattern_corr', '<b>Pattern correlation between the sections\' reference adjoints</b>, for the '
+                   'temperature sensitivity at three leads and five control gradients: the same state and executable, only '
+                   'the cost differs.', src_dir=FD))
+    out.append(fig('sections_kappa_dependence', '<b>Does the κ<sub>v</sub> dependence depend on the section?</b> Each '
+                   'member\'s pattern correlation with its own section\'s reference (temperature at one year, κ<sub>v</sub> '
+                   'gradient at five years) and its amplitude at five years, one curve per section.', src_dir=FD))
+    out.append(fig('sections_fd_checks', '<b>The finite-difference checks at every section</b>, from the same perturbed '
+                   'states. A hollow bar is a check without signal: the finite difference is below twice the cost\'s monthly '
+                   'noise there.', src_dir=FD))
+    out.append('</section>')
+    return ''.join(out)

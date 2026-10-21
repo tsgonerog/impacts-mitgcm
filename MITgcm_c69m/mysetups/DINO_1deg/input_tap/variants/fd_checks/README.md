@@ -56,7 +56,26 @@ box (40–50° N below 1500 m) now sits right under the section and moves J by 4
 Results at 43 N (adjoint against the central difference): κ_v +12 %, the tropical box +5 %, the
 Southern Ocean box +34 %, the deep box north of the section +48 %, the zonal stress −29 %; the net
 heat flux and meridional stress have no finite-difference signal and the freshwater flux is over by
-13×, as in September. Do not put the
+13×, as in September. **Rerun on 2026-10-20 for the 60 N and 25 S sections** (campaigns
+`kappa_v_ensemble_gmFwd_sec60N`, sweeps 31629–31646, and `_sec25S`, 31655–31672, in the order of the 43 N
+campaign with `deepNN` last; the section now a `data.cost` setting the campaign
+script passes through `IMPACTS_COST_JSEC` / `IMPACTS_COST_KMAXDEPTH`), with all four Theta boxes for
+every section: the `deepNN` pickups moved to `analysis/kappa_v_ensemble_gmFwd/perturbed_pickups/`
+beside the other three that day (symlinks left in the 43 N campaign's directory, so 31577/31578 still
+resolve), since a perturbed pickup belongs to the state, not to a section. With those amplitudes no check at 60 N and
+only two at 25 S (the zonal stress, +8.4e-3, and the upper Southern Ocean box, +8.1e-3) clear twice the
+cost's monthly noise (1.8e-3 at 60 N, 1.9e-3 at 25 S: twice the 43 N value), so on 2026-10-21 one pair of
+boxes per section was added where that section's own reference adjoint predicts about 5σ
+(`campaign.THETA_BOXES`, pickups beside the others): for 60 N the subpolar deep water (`subpolarDeep`,
+55–68° N below 1500 m, ±0.05 K; jobs 31677/31678) and the thermocline just north of the section (`secN60`,
+56–64° N, 300–1000 m, ±0.10 K; 31679/31680); for 25 S the South Atlantic thermocline (`sAtlThermo`,
+35–10° S, 300–1000 m, ±0.06 K; 31681/31682) and deep water (`sAtlDeep`, 35–10° S below 1500 m, ±0.10 K;
+31683/31684). The κ_v check itself cannot be made strong at 60 N: the adjoint there gives dJ/dκ_v = −301 per
+m² s⁻¹, so a ±10 % sweep predicts 3.6e-4, a fifth of the noise. Results of the targeted pairs (adjoint against the
+central difference, 2026-10-21): at 60 N the thermocline box −9 % (the two one-sided differences within 5 % of
+each other, the cleanest check of any section) and the deep box −36 % (one-sided −2.0e-2 and −0.7e-2: nonlinear at
+0.05 K); at 25 S the thermocline box +23 % (one-sided within 10 %) and the deep box +38 %. The results per section
+are in `analysis/cost_sections/stats/` (`compare_sections.py`). Do not put the
 words the model prints before the cost value into a namelist comment: the model echoes
 every namelist into `STDOUT.0000`, and a script that searches for that line matches the
 comment.

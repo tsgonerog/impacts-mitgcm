@@ -99,8 +99,10 @@ CONSISTENCY_43 = [
     ('Forward legs and executable', 'Unchanged from September (build_frd of 2026-09-12, runs 31366–31373): the cost is not compiled '
      'into the forward model, and the legs\' year-180 pickups are the states every adjoint and sweep here starts from.'),
     ('Namelists', 'The live input_tap/data, data.pkg, data.gmredi and data.autodiff of September, unchanged; the member and '
-     'finite-difference variants likewise. The cost is compiled in, not a namelist setting, so the staged namelists of the two '
-     'campaigns are identical and only build_info.txt tells a 43 N run from a 26 N one.'),
+     'finite-difference variants likewise. For these runs the cost was compiled in, not a namelist setting, so their staged '
+     'namelists are identical to the 26 N campaign\'s and only build_info.txt tells a 43 N run from a 26 N one; since 2026-10-20 '
+     'the section is a data.cost setting (cost_atl_jsec, cost_atl_kmaxdepth), bit for bit the compiled one, which is how the '
+     '60 N and 25 S campaigns ran (the four-section part below).'),
     ('Adjoint-mode switches', 'Every adjoint staged data.autodiff with useGMRediInAdMode=.FALSE. and '
      'useApproxAdvectionInAdMode=.TRUE.; the submit body checked both before each run.'),
     ('Cost against the forward model', 'The reference adjoint\'s forward sweep gives J = 0.4484; the cost formula applied to the '
@@ -131,12 +133,14 @@ and the September legs under <code>kappa_v_ensemble_gmFwd/</code>) and <code>run
 <code>analysis/kappa_v_ensemble_gmFwd_sec43N/</code>, with the job map in <code>job_map.tsv</code>, the overturning maximum in
 <code>stats/overturning_maximum.json</code> and the validation record in <code>validation_20261014.md</code>; the September
 campaign's products stay under <code>analysis/kappa_v_ensemble_gmFwd/</code> and its page is the previous version of this one.
-Analysis code: <code>analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/</code> in impacts-mitgcm, which serves both campaigns
+Analysis code: <code>analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/</code> in impacts-mitgcm, which serves all four campaigns
 through <code>CAMPAIGN_NAME</code> (<code>campaign.py</code>, <code>overturning_maximum.py</code>, <code>forward_state.py</code>,
 <code>adjoint_products.py</code>, <code>make_figures.py</code>, <code>make_films.py</code>, <code>adjoint_waves.py</code>,
 <code>build_explorer.py</code>, <code>build_page.py</code>). The
 <a href="https://claude.ai/artifact/M14dASutpLo9EohDruuwwL" target="_blank" rel="noopener">sensitivity explorer</a> was rebuilt
-for this campaign on 2026-10-14 and opens on what the slide deck's films show. The September campaign is compared through
+for this campaign on 2026-10-14, opens on what the slide deck's films show and, since 2026-10-21, switches between the four
+cost sections (<code>build_explorer.py --merge</code>; <code>analysis/cost_sections/</code> holds the merged page and the
+comparison's figures, film and tables, from <code>compare_sections.py</code>). The September campaign is compared through
 its own stats files; the two older ensembles through <code>previous_campaigns_reference.json</code>.</p>
 """
 

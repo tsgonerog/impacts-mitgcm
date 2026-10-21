@@ -166,7 +166,9 @@ notebooks that read them are gone.
 `grid_and_cost_sections.ipynb` is the one other parts of the repo point at — it
 is how `isecbeg/isecend/jsec` in `code_tap/cost_atlantic_heat.F` were chosen
 until 2026-10-13 (since then `jsec` is the row of the overturning maximum, found
-by `adjoint/kappa_v_ensemble_gmFwd/overturning_maximum.py`; the notebook still
+by `adjoint/kappa_v_ensemble_gmFwd/overturning_maximum.py`, and since 2026-10-20
+the row is a `data.cost` setting with four sections in use, compared by
+`adjoint/kappa_v_ensemble_gmFwd/compare_sections.py`; the notebook still
 maps a latitude to a row), and both `README.md` and `CLAUDE.md` cite it by name. It reads grid only, from
 the 5-day adjoint 31281 (from 31022 until that run was deleted on 2026-09-12).
 

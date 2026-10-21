@@ -58,6 +58,17 @@
 #                     namelists are staged (after stage_extra) and exits to
 #                     refuse a combination the setup does not allow (DINO: an
 #                     adjoint without its adjoint-mode switches)
+#   cost_section_token()  optional; given the 1-based row of the cost section
+#                     (cost_atl_jsec of the staged data.cost), prints the token
+#                     appended to an adjoint run directory's name (DINO: sec43N;
+#                     since 2026-10-20)
+#
+# Per-run overrides from the environment, read here: IMPACTS_COST_JSEC and
+# IMPACTS_COST_KMAXDEPTH (adjoint only) set cost_atl_jsec / cost_atl_kmaxdepth
+# in the STAGED data.cost -- only for a build whose build_info.txt records
+# cost_section=namelist (DINO since 2026-10-20; a build with the section as
+# parameter statements is refused, since the namelist would not reach it).
+# The duration and frequency overrides are read by the definition.
 #
 # The definition runs under `set -e` and `set -x`, and so does this file.
 
@@ -231,6 +242,42 @@ if [[ -z "$test_cases" && -n "$suffix" ]]; then
   for t in ${suffix//_/ }; do [[ "_${run_token}_" == *"_${t}_"* ]] || kept="${kept}_$t"; done
   suffix=$kept
 fi
+# ---------- the cost section: a namelist setting, named in the run directory ----------
+# Since 2026-10-20 DINO's cost section (the row and depth of code_tap/cost_atlantic_heat.F)
+# is cost_atl_jsec / cost_atl_kmaxdepth of data.cost, and a build that reads them records
+# cost_section=namelist. The effective row of this run is IMPACTS_COST_JSEC, else the
+# cost_atl_jsec of the data.cost that will be staged (a variant's data.cost_<tag> sibling,
+# else the live one), else the build's compiled default -- and the setup's
+# cost_section_token names it in the run directory (_sec43N, ...), so a tag that says
+# nothing about the section (the kappa members, the finite-difference sweeps) still gets
+# a name that does. Computed here, before the run directory is made; applied to the
+# staged data.cost below. An override on a build that compiles the section in is refused:
+# the namelist would be read and ignored, and the run would be named for a section it
+# does not measure.
+cost_section_rec=$(sed -n 's/^cost_section=//p' "$build_info" | sed 's/[[:space:]]*#.*$//')
+if [[ -n "${IMPACTS_COST_JSEC:-}${IMPACTS_COST_KMAXDEPTH:-}" ]]; then
+  [[ "$RUN_MODE" = tapAdj ]] || { echo "ERROR: IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH apply to an adjoint run only"; exit 1; }
+  [[ "$cost_section_rec" = namelist ]] || {
+    echo "ERROR: IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH are set, but $build_dir's build_info.txt does not record"
+    echo "       cost_section=namelist: its cost section is compiled in (${cost_section_rec:-no cost_section line}),"
+    echo "       so the namelist would be ignored. Rebuild from a code_tap/ that carries cost.h and cost_readparms.F."
+    exit 1; }
+  for v in IMPACTS_COST_JSEC IMPACTS_COST_KMAXDEPTH; do
+    [[ -z "${!v:-}" || "${!v}" =~ ^[0-9]+$ ]] || { echo "ERROR: $v must be a whole number, got '${!v}'"; exit 1; }
+  done
+fi
+cost_token=""
+if [[ "$RUN_MODE" = tapAdj && "$cost_section_rec" = namelist ]] && declare -F cost_section_token > /dev/null; then
+  cost_src="$SETUP_DIR/$INPUT_DIR/data.cost"
+  if [[ -n "$test_cases" && -f "$(dirname "$namelist_data")/data.cost_${test_cases##*/}" ]]; then
+    cost_src="$(dirname "$namelist_data")/data.cost_${test_cases##*/}"
+  fi
+  jsec_eff=${IMPACTS_COST_JSEC:-$(sed -n 's/^[[:space:]]*cost_atl_jsec[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/ip' "$cost_src" | head -1)}
+  jsec_eff=${jsec_eff:-$(sed -n 's/^cost_atl_jsec_default=\([0-9]*\).*/\1/p' "$build_info")}
+  [[ "$jsec_eff" =~ ^[0-9]+$ ]] || { echo "ERROR: could not determine the cost section's row (cost_atl_jsec) for this run"; exit 1; }
+  cost_token="_$(cost_section_token "$jsec_eff")"
+  echo "cost section: row $jsec_eff, named ${cost_token#_} in the run directory"
+fi
 # Duration label: whole years as "<n>yr", otherwise "<n>d", so the run
 # directory matches the scratch naming convention (DINO: 366-day years, SOMA: 360).
 if (( duration_days % DAYS_PER_YEAR == 0 )); then
@@ -238,7 +285,7 @@ if (( duration_days % DAYS_PER_YEAR == 0 )); then
 else
     dur_label="${duration_days}d"
 fi
-run_dir="$SCRATCH_ROOT/${SETUP_NAME}_outputs/runs/${RUNS_SUB}/${SETUP_NAME}_${run_token}_${dur_label}${suffix}_run$SLURM_JOB_ID"  # unique per job
+run_dir="$SCRATCH_ROOT/${SETUP_NAME}_outputs/runs/${RUNS_SUB}/${SETUP_NAME}_${run_token}_${dur_label}${suffix}${cost_token}_run$SLURM_JOB_ID"  # unique per job
 
 # ========== STAGE THE RUN DIRECTORY ==========
 
@@ -280,6 +327,38 @@ fi
 # script adds its lines to data.autodiff here).
 if declare -F stage_extra > /dev/null; then
   stage_extra
+fi
+
+# ---------- the cost section override, into the STAGED data.cost ----------
+# IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH (checked above: adjoint, namelist-section
+# build, whole numbers) replace the key's value if the staged file sets it, or add the
+# key before the end of the COST_NML group if it does not. Asserted afterwards, as the
+# time-stepping patches are: a sed that matched nothing would run another section under
+# this run's name.
+if [[ "$RUN_MODE" = tapAdj ]]; then
+  set_cost_key() {   # <key> <value>: in ./data.cost
+    local key=$1 val=$2
+    if grep -qiE "^[[:space:]]*${key}[[:space:]]*=" data.cost; then
+      sed -i -E "s|^([[:space:]]*${key}[[:space:]]*=)[^,]+|\1 ${val}|I" data.cost
+    else
+      awk -v key="$key" -v val="$val" '
+        BEGIN { ingrp=0 }
+        tolower($0) ~ /^[[:space:]]*&cost_nml/ { ingrp=1 }
+        ingrp && /^[[:space:]]*(&|\/)[[:space:]]*$/ { printf "  %s = %s,\n", key, val; ingrp=0 }
+        { print }' data.cost > data.cost.new && mv data.cost.new data.cost
+    fi
+    grep -qiE "^[[:space:]]*${key}[[:space:]]*=[[:space:]]*${val}," data.cost \
+      || { echo "ERROR: ${key} not set to ${val} in the staged data.cost"; exit 1; }
+    echo "staged data.cost: ${key} = ${val} (IMPACTS_${key#cost_atl_} override)"
+  }
+  [[ -z "${IMPACTS_COST_JSEC:-}" ]]      || set_cost_key cost_atl_jsec "$IMPACTS_COST_JSEC"
+  [[ -z "${IMPACTS_COST_KMAXDEPTH:-}" ]] || set_cost_key cost_atl_kmaxdepth "$IMPACTS_COST_KMAXDEPTH"
+  if [[ -n "$cost_token" ]]; then
+    # the row the name was derived from must be the row the staged file sets (or the compiled default)
+    jsec_staged=$(sed -n 's/^[[:space:]]*cost_atl_jsec[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/ip' data.cost | head -1)
+    jsec_staged=${jsec_staged:-$(sed -n 's/^cost_atl_jsec_default=\([0-9]*\).*/\1/p' "$build_info")}
+    [[ "$jsec_staged" = "$jsec_eff" ]] || { echo "ERROR: the run is named for row $jsec_eff but the staged data.cost gives row $jsec_staged"; exit 1; }
+  fi
 fi
 
 # The setup's own check of the staged namelists, if scripts/setup_params.sh

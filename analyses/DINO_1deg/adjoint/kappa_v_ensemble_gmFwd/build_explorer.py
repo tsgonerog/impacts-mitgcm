@@ -35,6 +35,14 @@ drawing changes; the payloads are the same, so
 
     python build_explorer.py --page-only   # re-render index.html and manifest.json around existing payloads
 
+FOUR COST SECTIONS ON ONE PAGE (2026-10-20). Each campaign builds its own explorer as above (CAMPAIGN_NAME
+selects it); `--merge` then assembles the explorers of every campaign in campaign.SECTION_ORDER that has one into
+analysis/cost_sections/explorer/: the payloads hard-linked under data/<section>/, one manifest whose datasets are
+keyed "<kind>@<section>" and which carries `sections` (row, depth, latitude, campaign, reference run of each),
+and the same page with a cost-section control that keeps the field, the level and the lead when the section
+changes, so the four sections compare at one slice. `--merge --repo-copy` also copies the result into this
+directory's explorer/ (ignored by git), which is what gets published.
+
 TIME RUNS BACKWARDS (2026-09-16). A dump ADJxxx.<N> is the adjoint at forward iteration N, so the backward
 sweep writes the largest N first. Frame 0 is therefore the end of the window (lead 0.08 yr) and Play walks
 back to lead 5 yr, as the deck's films do; until the fix of that day the frames ran the other way, forward
@@ -164,6 +172,75 @@ def page_only(out=None):
     write_page(out, man)
     print('rewrote %s and manifest.json around %d existing payloads'
           % (out / 'index.html', len(list((out / 'data').glob('*.png')))))
+
+
+def merge(out=None, repo_copy=False):
+    """One explorer for every cost section that has its own (analysis/<campaign>/explorer/manifest.json)."""
+    import os
+    out = Path(out or (c.OUTPUTS / 'analysis' / 'cost_sections' / 'explorer'))
+    (out / 'data').mkdir(parents=True, exist_ok=True)
+    man = None
+    sections, datasets = [], {}
+    total, nfiles = 0, 0
+    for name in c.SECTION_ORDER:
+        src = c.OUTPUTS / 'analysis' / name / 'explorer'
+        mp = src / 'manifest.json'
+        if not mp.exists():
+            print('  %-32s no explorer yet, left out' % name)
+            continue
+        m = json.loads(mp.read_text())
+        cs = c.COST_SECTION[name]
+        key = 'sec' + cs['sec_name'].replace(' ', '')                     # sec25S, sec26N, sec43N, sec60N
+        g = m['grid']
+        ref_job = next((int(r.split('run ')[-1]) for r in [m['datasets']['reference']['label']] if 'run ' in r), None)
+        sections.append({'key': key, 'label': cs['sec_name'].replace(' N', '°N').replace(' S', '°S'), 'campaign': name,
+                         'jsec': g['jsec'], 'kcost': g['kcost'], 'cost_depth_m': g['cost_depth_m'], 'lat_sec': g['lat_sec'],
+                         'ref_job': ref_job, 'built': m['built'],
+                         'note': {'sec43N': 'the overturning maximum; production since 2026-10-13',
+                                  'sec26N': 'the original section (every run up to job 31434)',
+                                  'sec60N': 'subpolar, the OSNAP latitudes (2026-10-20)',
+                                  'sec25S': 'north of the Deacon cell (2026-10-20)'}.get(key, '')})
+        (out / 'data' / key).mkdir(exist_ok=True)
+        for dsn, dsv in m['datasets'].items():
+            d = json.loads(json.dumps(dsv))
+            d['section'], d['kind'] = key, dsn
+            for var, vi in d['vars'].items():
+                files = {None: vi['file']} if 'file' in vi else dict(vi['files'])
+                for run, rel in files.items():
+                    newrel = 'data/%s/%s' % (key, Path(rel).name)
+                    dst = out / newrel
+                    if dst.exists() or dst.is_symlink():
+                        dst.unlink()
+                    try:
+                        os.link(src / rel, dst)
+                    except OSError:
+                        shutil.copy2(src / rel, dst)
+                    total += dst.stat().st_size
+                    nfiles += 1
+                    if run is None:
+                        vi['file'] = newrel
+                    else:
+                        vi['files'][run] = newrel
+            datasets['%s@%s' % (dsn, key)] = d
+        if man is None:
+            grid = dict(g)
+            for k in ('jsec', 'kcost', 'cost_depth_m', 'lat_sec'):
+                grid.pop(k, None)
+            man = {'built': __import__('datetime').date.today().isoformat(), 'campaign': 'cost_sections',
+                   'grid': grid, 'cmap': m['cmap'], 'sections': [], 'datasets': {}}
+        print('  %-32s %s: %d datasets' % (name, key, len(m['datasets'])))
+    if man is None:
+        raise SystemExit('no campaign has an explorer to merge')
+    man['sections'], man['datasets'] = sections, datasets
+    write_page(out, man)
+    print('\nwrote %s  (%d sections, %d payloads, %.1f MB of data, index.html %.2f MB)'
+          % (out, len(sections), nfiles, total / 1e6, (out / 'index.html').stat().st_size / 1e6))
+    if repo_copy:
+        dst = Path(__file__).resolve().parent / 'explorer'
+        if dst.exists():
+            shutil.rmtree(dst)
+        shutil.copytree(out, dst)
+        print('copied to %s (ignored by git; the copy that is published)' % dst)
 
 
 def _tiles(run_dir, var, its, three):
@@ -315,10 +392,14 @@ if __name__ == '__main__':
     ap.add_argument('--stride', type=int, default=12, help='dumps between frames, reference (5 d each)')
     ap.add_argument('--member-stride', type=int, default=12, help='dumps between frames, members (12 = the 60-day frames of the deck film; 24 until 2026-10-13)')
     ap.add_argument('--page-only', action='store_true', help='re-render the page around existing payloads')
+    ap.add_argument('--merge', action='store_true', help='one page for every cost section that has an explorer (-> analysis/cost_sections/explorer/)')
+    ap.add_argument('--repo-copy', action='store_true', help='with --merge: also copy the result into this directory\'s explorer/')
     a = ap.parse_args()
     c.setup_style()
     c.ensure_dirs()
-    if a.page_only:
+    if a.merge:
+        merge(a.out, a.repo_copy)
+    elif a.page_only:
         page_only(a.out)
     else:
         build(a.out, a.stride, a.member_stride)
