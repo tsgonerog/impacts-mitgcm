@@ -86,7 +86,7 @@ because it carries **locally patched build tooling** — see
 
 The project's **direction record** — the planning documents for work underway
 and work proposed but not yet built, and the practical write-ups of workflows
-that have already run — is maintained separately, as `impacts-notes`. It was
+that have already run — is maintained separately, as `impacts-docs` (`impacts-notes` until 2026-10-29). It was
 split out of this repository on 2026-09-04 so that this one stands on its own
 as the shared record of the model configuration, the runs and the analysis.
 
@@ -97,7 +97,7 @@ are checked out side by side:
 
     Proj_ImPACTS/
     ├── impacts-mitgcm/     this repository
-    └── impacts-notes/      the direction record
+    └── impacts-docs/       the direction record
 
 The Overleaf sync tooling (`overleaf_sync.sh` and its self-test) moved with the
 notes, since it only ever operated on them.

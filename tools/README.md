@@ -659,4 +659,4 @@ Related reading: [`README.md`](../README.md) for the science and layout,
 scripts, [`PORTING.md`](../PORTING.md) for a new cluster, the setup's own
 [`README.md`](../MITgcm_c69m/mysetups/DINO_1deg/README.md) for DINO's grid and
 build/submit pairings. Workflows that have actually run are written up in the
-project notes, which live in the companion `impacts-notes` repository.
+project notes, which live in the companion `impacts-docs` repository.

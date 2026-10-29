@@ -4,7 +4,7 @@ One question, one run. Every DINO forward run writes its `dynDiag` stream as a
 **30.5-day time average** (`frequency(2) = 2635200.` — a positive frequency is an
 average, a negative one a snapshot), so every AMOC series this project has drawn
 is a series of monthly means. The slide deck
-`impacts-notes/references/dino_overturning_sensitivity/slides` reports that successive
+`impacts-docs/references/dino_overturning_sensitivity/slides` reports that successive
 months of the current setup differ by 0.003 Sv at 26° N, against 0.047 Sv in the
 previous setup, and the obvious objection is that the averaging, not the ocean,
 is what is smooth.
