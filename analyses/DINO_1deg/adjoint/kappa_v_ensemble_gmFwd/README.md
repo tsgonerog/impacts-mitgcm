@@ -55,8 +55,9 @@ go to scratch `analysis/kappa_v_ensemble_gmFwd/`.
 https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuild it with `python3 build_page.py` and republish `page/`.
 
 **Follow-up runs of 2026-10-28/29**, made to answer the questions of the meeting of 28 October and filed under
-their own campaigns on scratch, each with a `README.md`, `job_map.tsv`, the result tables, figures and copies of the
-scripts that made them (the scripts are not part of this suite yet): `runs/adjoint/kappa_v_operator_vs_state/`
+their own campaigns on scratch, each with a `README.md`, `job_map.tsv`, the result tables and figures; the scripts
+that made them are `followup_20261028/` here (its README has the table of questions, runs and products):
+`runs/adjoint/kappa_v_operator_vs_state/`
 (31709–31716: the reference and 32× states each with its own and the other's κ_v in the adjoint, 30 d and 1 yr; the
 amplitude of the sensitivity follows the state, with diffusion of the adjoint field a second factor of 0.69 by one
 year), `runs/adjoint/cost_section_sweep/` (31721–31734: fourteen 1-yr adjoints with the cost every ~5° from 30 S to
