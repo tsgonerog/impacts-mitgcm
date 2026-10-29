@@ -181,7 +181,7 @@ correlation for each.
 
 ```bash
 PY=~/tools_and_software/miniforge3/envs/py38/bin/python3
-DECK=~/Proj_ImPACTS/impacts-notes/references/dino_sensitivity_vs_mixing/slides/figures
+DECK=~/Proj_ImPACTS/impacts-notes/references/dino_overturning_sensitivity/slides/figures
 $PY make_films.py profiles                       # -> cache/level_rms_profiles.npz + the level figure
 $PY make_films.py reference members --deck $DECK  # 30 films, ~35 min; the deck's six copies land in $DECK
 $PY adjoint_waves.py                             # slices (~3 min), measure, plot

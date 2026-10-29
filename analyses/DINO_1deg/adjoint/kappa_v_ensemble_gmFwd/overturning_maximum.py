@@ -6,7 +6,7 @@
 The cost J (code_tap/cost_atlantic_heat.F) is the northward transport across one grid row, integrated from the
 surface to one interface, averaged over the last 30 days of the window. Until 2026-10-13 that row was jsec = 127
 (row centre 26.05 N) and the interface 982 m (kmaxdepth = 25) -- "the transport at 26 N" -- but the deck's own
-depth-space overturning (slide 6 of references/dino_sensitivity_vs_mixing/slides) shows the cell cored well north
+depth-space overturning (slide 6 of references/dino_overturning_sensitivity/slides) shows the cell cored well north
 of that, which the advisor pointed out. This script locates the maximum of the depth-space streamfunction psi(y, z)
 from the monthly dynDiag VVEL of the production spin-up 31203, the way the deck's figure is drawn (make_slide_figures.py
 compute: cumulative transport from the surface, on the cell interfaces), restricted to the basin north of 20 N and
