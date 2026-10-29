@@ -1,0 +1,96 @@
+# Localised finite-difference check of the production adjoint's kappa_v gradient FIELD (2026-10-28): the live
+# input_tap/data with diffKrFile set to a 3-D field equal to 1.2E-5 everywhere except inside the box 45-65 N,
+# western half of the basin, surface to 127 m, where it is 1.2E-5 x 1.1 (the box in which
+# the reference adjoint's kappa_v gradient is concentrated). diffKrT/diffKrS stay at the reference value; under
+# ALLOW_3D_DIFFKR the file overrides them (ini_mixing.F). Starts from the year-180 pickup of the reference
+# forward leg; cancelled once the forward sweep has printed the cost. The central difference of the pair is
+# compared with the sum of adxx_diffkr over the box times 1.2E-06 (analysis/kappa_v_ensemble_gmFwd_sec43N/
+# perturbed_diffkr/box_definition.json has the box and the predicted response).
+ &PARM01
+ diffKhT=500.,
+ diffKhS=500.,
+ viscAr=1.2E-4,
+ diffKrT=1.2E-5,
+ diffKrS=1.2E-5,
+ no_slip_sides=.FALSE.,
+ no_slip_bottom=.FALSE.,
+ bottomDragQuadratic = 3.0E-3
+ ivdc_kappa=100.,
+ implicitViscosity=.TRUE.,
+ implicitDiffusion=.TRUE.,
+ eosType='JMD95P',
+ tRef =
+     3*23., 3*22., 21., 2*20., 19., 2*18., 17., 2*16., 15.,
+     14., 13., 12., 11., 2*9., 8., 7., 2*6., 2*5., 3*4.,
+     3*3., 2*2.,
+ sRef = 36*35.0,
+ tAlpha=2.E-4,
+ sBeta=7.4E-4,
+ rhoNil=1035.0,
+ gravity=9.81,
+ rigidLid=.FALSE.,
+ implicitFreeSurface=.TRUE.,
+ exactConserv=.TRUE.,
+ tempStepping=.TRUE.,
+ saltStepping=.TRUE.,
+ tempAdvection=.TRUE.,
+ saltAdvection=.TRUE.,
+ tempAdvScheme=33,
+ saltAdvScheme=33,
+ staggerTimeStep=.TRUE.,
+ tempImplVertAdv=.FALSE.,
+ saltImplVertAdv=.FALSE.,
+ useSingleCpuIO=.TRUE.,
+ vectorInvariantMomentum=.TRUE.,
+ viscAhReMax=2.,
+ readBinaryPrec=64,
+ writeBinaryPrec=32,
+ debugLevel=1,
+ &
+
+ &PARM02
+ cg2dTargetResidual=1.E-7,
+ cg2dMaxIters=1000,
+ &
+
+ &PARM03
+ nIter0=3162240,
+ nTimeSteps=87840,
+ deltaT=1800.,
+ pChkptFreq=2635200.,
+ chkptFreq=155520000.,
+ dumpFreq=31104000.,
+ monitorFreq=432000.,
+ monitorSelect=2,
+ tauThetaClimRelax=561600.0,
+ tauSaltClimRelax=561600.0,
+ periodicExternalForcing=.TRUE.,
+ externForcingPeriod=86400.,
+ externForcingCycle=31536000.,
+ adjMonitorFreq=432000.,
+ adjDumpFreq=432000.,
+ &
+
+ &PARM04
+ usingCurvilinearGrid=.TRUE.,
+ delR = 10.139,
+    10.454, 10.836, 11.297, 11.854, 12.527, 13.340, 14.322, 15.507, 16.936,
+    18.658, 20.733, 23.231, 26.233, 29.838, 34.160, 39.331, 45.505, 52.857,
+    61.583, 71.901, 84.049, 98.276, 114.835, 133.974, 152.596, 170.824, 192.859,
+    219.493, 251.677, 290.561, 337.525, 394.227, 462.659, 545.203, 600.0,
+ /
+
+&PARM05
+ diffKrFile='/scratch2/tshahriar/DINO_1deg_outputs/analysis/kappa_v_ensemble_gmFwd_sec43N/perturbed_diffkr/dino_diffKr_box45to65N_west_top127m_p10.bin',
+ bathyFile='dino_bathy.bin',
+ zonalWindFile='dino_utau.bin',
+ thetaClimFile='dino_T_star.bin',
+ saltClimFile='dino_S_star.bin',
+ surfQswFile='dino_q_solar.bin',
+ hydrogThetaFile='dino_T0.bin',
+ hydrogSaltFile='dino_S0.bin',
+ uVelInitFile='dino_U0.bin',
+ vVelInitFile='dino_V0.bin',
+ viscAhDfile='dino_viscAhD.bin',
+ viscAhZfile='dino_viscAhD.bin',
+ /

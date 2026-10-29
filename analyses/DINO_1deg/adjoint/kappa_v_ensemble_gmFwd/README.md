@@ -54,6 +54,18 @@ go to scratch `analysis/kappa_v_ensemble_gmFwd/`.
 **Status (2026-09-15): finished.** Every run completed and was filed, and `run_analysis.sh` (job 31413) produced the products, figures and animations. The runs and their products were moved back to `/scratch2` on 2026-09-15, where `job_map.tsv` is. The campaign's own spin-up, 31329 with its rerun last 61 days 31365, was deleted on 2026-09-16: every output file of both was byte-identical to the production spin-up 31203's first 170 years (`logs/deleted_run_records/spinup_170yr_viscRef_ReMax2__deletion_evidence.txt`). `campaign.py` names 31203 as the spin-up, `forward_state.py spinup` stops at year 170 so the recorded noise floor reproduces, and `job_map.tsv` keeps both rows as the record of what ran. The page is published at
 https://claude.ai/artifact/XRXUEA839efXys3dNTn5KF (private until shared); rebuild it with `python3 build_page.py` and republish `page/`.
 
+**Follow-up runs of 2026-10-28/29**, made to answer the questions of the meeting of 28 October and filed under
+their own campaigns on scratch, each with a `README.md`, `job_map.tsv`, the result tables, figures and copies of the
+scripts that made them (the scripts are not part of this suite yet): `runs/adjoint/kappa_v_operator_vs_state/`
+(31709–31716: the reference and 32× states each with its own and the other's κ_v in the adjoint, 30 d and 1 yr; the
+amplitude of the sensitivity follows the state, with diffusion of the adjoint field a second factor of 0.69 by one
+year), `runs/adjoint/cost_section_sweep/` (31721–31734: fourteen 1-yr adjoints with the cost every ~5° from 30 S to
+60 N; the pattern decorrelates below 0.5 beyond 14–20° in the subtropics, 8–11° at 30–40 N and 5° from 43 N north; and
+31720, the 8× member with the cost at its own maximum at 69 N, whose fields are uncorrelated with its 43 N ones),
+`analysis/cost_sections/baselines/` (interpolation baselines on the 32 adjoints: 0.95–0.98 along κ_v, 0.07–0.68 across
+sections) and, in the 43 N campaign, 31717/31718, the localised κ_v check (`input_tap/variants/fd_checks/README.md`).
+The write-up is the meeting review page, https://claude.ai/artifact/CZGptTdunuHuRgTYNQhAzD.
+
 ## Scripts, in the order they are used
 
 | Script | What it does |

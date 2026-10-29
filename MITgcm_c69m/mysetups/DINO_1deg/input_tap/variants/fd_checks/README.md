@@ -15,6 +15,7 @@ from the same pickup). All three namelists stage the live `data.pkg`, `data.gmre
 | `fvFDp_…`, `fvFDm_…` | `meridWindFile` = ± 2e-8 N m⁻² everywhere | Σ `adxx_fv` × 2e-8 |
 | `qnetFDp_…`, `qnetFDm_…` | `surfQnetFile` = ± 0.003 W m⁻² everywhere | Σ `adxx_qnet` × 0.003 |
 | `empmrFDp_…`, `empmrFDm_…` | `EmPmRFile` = ± 3e-9 kg m⁻² s⁻¹ everywhere | Σ `adxx_empmr` × 3e-9 |
+| `diffkrBoxFDp_…`, `diffkrBoxFDm_…` | `diffKrFile` = 1.2E-5 everywhere, × 1.1 / × 0.9 inside 45–65 N, western half, surface to 127 m (2026-10-28) | Σ `adxx_diffkr` over the box × 1.2E-6 |
 
 The forcing checks read constant perturbation files (365 daily records, the length of DINO's
 forcing cycle) from scratch `analysis/kappa_v_ensemble_gmFwd/perturbed_forcing/`, named by
@@ -79,3 +80,15 @@ are in `analysis/cost_sections/stats/` (`compare_sections.py`). Do not put the
 words the model prints before the cost value into a namelist comment: the model echoes
 every namelist into `STDOUT.0000`, and a script that searches for that line matches the
 comment.
+
+**The localised κ_v check (2026-10-28, runs 31717/31718, filed under `kappa_v_ensemble_gmFwd_sec43N/`).** The
+uniform ±10 % sweep tests only the basin sum of the κ_v gradient field. The two `diffkrBox` namelists read a
+three-dimensional diffusivity file (`analysis/kappa_v_ensemble_gmFwd_sec43N/perturbed_diffkr/`, with
+`box_definition.json`) equal to the reference value everywhere except inside the box 45–65 N, western half of the
+basin, surface to 127 m, where the 43 N reference adjoint's κ_v gradient is concentrated (82 % of its absolute value
+lies at 15–26 m depth); `diffKrT`/`diffKrS` stay at the reference value and the file overrides them under
+`ALLOW_3D_DIFFKR`. Result: central difference −0.01014 against the box sum of the field −0.01013 (−0.1 %, one-sided
+differences within ±4 %, twelve times the cost's noise), so the field's dominant structure is verified directly; the
++12 % of the uniform check is attributable to the remainder of the basin, where the field is weak and partly of
+opposite sign.
+

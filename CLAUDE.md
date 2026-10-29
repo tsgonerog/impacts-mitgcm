@@ -238,9 +238,11 @@ runs/            model output — one directory per job, grouped by campaign
 ├── forward/{spinup_200yr_visc2x,spinup_200yr_viscRef_ReMax2,
 │            stability_study,toolchain_validation}/
 └── adjoint/{stability_study,checkpointing_study,adjViscBoost,
-             toolchain_validation,gradient_check}/
+             toolchain_validation,gradient_check,kappa_v_ensemble_gmFwd{,_sec43N,_sec60N,_sec25S},
+             kappa_v_operator_vs_state,cost_section_sweep}/
 analysis/        multi-run analysis products, one directory per campaign
-└── {spinup_200yr_viscRef_ReMax2,stability_study,gm_in_adjoint}/
+└── {spinup_200yr_viscRef_ReMax2,stability_study,gm_in_adjoint,kappa_v_ensemble_gmFwd*,
+     cost_sections,kappa_v_operator_vs_state,cost_section_sweep}/
 executables/     adjoint binaries kept for provenance, named for their commit
 logs/            build and validation logs, validation_reports/, deleted_run_records/
 ```
