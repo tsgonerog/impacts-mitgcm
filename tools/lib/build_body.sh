@@ -331,6 +331,17 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
             echo "cost_section=namelist   # cost_atl_jsec / cost_atl_kmaxdepth of the staged data.cost; the run directory's data.cost is the record"
             echo "cost_atl_jsec_default=$(sed -n 's/^ *cost_atl_jsec *= *\([0-9]*\).*/\1/p' cost_readparms.f | head -1)   # compiled default, used when data.cost does not set cost_atl_jsec"
             echo "cost_atl_kmaxdepth_default=$(sed -n 's/^ *cost_atl_kmaxdepth *= *\([0-9]*\).*/\1/p' cost_readparms.f | head -1)   # compiled default for cost_atl_kmaxdepth"
+            # What J is (DINO since 2026-10-29): the transport across the whole row in Sv, as the mean
+            # over the covered time, written when the compiled routine carries tileTransport (the
+            # sum each tile adds to objf_atl); the tree's form divided each tile's sum by its own
+            # wet-cell count (countV), giving about 1/16.6 of the transport in DINO. The submit body
+            # refuses a record whose form is not the source's, so a build older than the source
+            # cannot run under the wrong units.
+            if grep -q 'tileTransport' cost_atlantic_heat.f; then
+                echo "cost_units=Sv   # J = transport across the whole row, mean over the covered time, in Sverdrups (cost_atlantic_heat.F since 2026-10-29)"
+            elif grep -q 'countV' cost_atlantic_heat.f; then
+                echo "cost_units=tile_normalised   # J = sum over tiles of each tile's transport divided by its wet-cell count, times 1e-6 (the tree's form; about 1/16.6 of the transport in Sv)"
+            fi
         elif [ -f cost_atlantic_heat.f ]; then
             echo "cost_section=compiled   # parameter statements in cost_atlantic_heat.f: the section is part of this build"
             echo "cost_section_jsec=$(sed -n 's/.*parameter *( *isecbeg *= *[0-9]*, *isecend *= *[0-9]*, *jsec *= *\([0-9]*\) *).*/\1/p' cost_atlantic_heat.f | head -1)   # row whose southern face cost_atlantic_heat.f integrates VVEL across"

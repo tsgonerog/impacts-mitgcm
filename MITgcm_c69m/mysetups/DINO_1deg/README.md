@@ -828,7 +828,7 @@ Four files matter more than the rest when following how a sensitivity is produce
 | File | Role |
 | --- | --- |
 | `code_tap/the_main_loop.F` | **The differentiation head.** `genmake2` runs `tapenade -b -head 'the_main_loop(fc)/(xx_genarr3d_dummy, xx_genarr2d_dummy, xx_gentim2d_dummy)'` — the cost `fc` is differentiated with respect to those control dummies, so everything reachable from this routine is what gets an adjoint |
-| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: the northward transport across a zonal section, from the surface to one interface. Since 2026-10-20 the row and the depth come from `data.cost` (`cost_atl_jsec`, `cost_atl_kmaxdepth`; `code_tap/cost.h` and `cost_readparms.F`), so a section is a namelist setting, not a build |
+| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: the northward volume transport across a zonal section, from the surface to one interface, in Sverdrups since 2026-10-29 (about 1/16.6 of that before: the tree's per-tile normalisation). Since 2026-10-20 the row and the depth come from `data.cost` (`cost_atl_jsec`, `cost_atl_kmaxdepth`; `code_tap/cost.h` and `cost_readparms.F`), so a section is a namelist setting, not a build |
 | `../../mods_tapenade_hooks/dummy_tap.F` | **Where `ADJ*` output is written.** The hand-written `DUMMY_IN_STEPPING_XYZ_RL_B` and its three siblings — one per field shape, each a halo fold followed by `CALL DUMP_ADJ_*(..., 'ADJtheta', ...)` over its adjoint argument — produce the files the analysis notebooks read; `DUMMY_FOR_ETAN_TAP_B` in the same file writes `ADJetan`. Each signature must match the call Tapenade generates; the build body asserts this |
 | `../../mods_tapenade_hooks/forward_step.F`, `dummy_in_stepping_tap.F` and `flow_tap` | **How the dump calls get generated.** The shadowed `forward_step.F` calls `DUMMY_IN_STEPPING_TAP`, a wrapper Tapenade differentiates, which calls one external per output field; the directory's `flow_tap` declares each field argument read-then-written (active), so Tapenade emits the `_B` call of every active field in the reverse sweep — TAF's `ADNAME` directive has no Tapenade equivalent, and this activity-through-arguments design replaced the old hand-patched `forward_step_b.f_modified` |
 
@@ -1112,9 +1112,34 @@ scheme and the forward model does not (`../SOMA_1deg/README.md`).
 
 ---
 
-The cost function is `code_tap/cost_atlantic_heat.F`: the northward transport
-across one grid row (`isecbeg=1, isecend=51`, the whole row), integrated from
-the surface over `kmaxdepth` levels, averaged over the last 30 days of the run.
+The cost function is `code_tap/cost_atlantic_heat.F`: the northward volume
+transport across one grid row (the whole row), integrated from the surface
+over `kmaxdepth` levels, averaged over the last 30 days of the run, **in
+Sverdrups since 2026-10-29**: each tile adds `vVel · dxG · drF · hFacS` over
+its part of the row to `objf_atl`, `cost_final.F` sums the tiles, and a run
+shorter than 30 days averages over its own length. The routine keeps the name
+`pkg/cost` calls it by and computes no heat transport; a build from it
+records `cost_units=Sv` in `build_info.txt`, and the submit body refuses a
+build whose record does not match the source's form (31739, submitted on the
+2026-10-20 nocheckpoint build, stopped at staging). Validated 2026-10-29
+against the model's own velocity, with `dynDiag` every 5 days
+(`input_tap/variants/toolchain_validation/`): `fc` equals the transport
+recomputed offline from the run's `VVEL`, `dxG`, `drF` and `hFacS` over the
+cost's window to 1e-6 — 31737 (5 d) 7.468175 against 7.468179 Sv, 31738
+(30 d) 7.469871 against 7.469866 — and 31737 is the old build's 31619 times
+6 times 16.59 in `fc`, its `adxx_*` fields correlated at 0.9992–0.9996
+(`cost_sv_check.txt` in each run directory under
+`runs/adjoint/toolchain_validation/`). Until then the file kept
+the tree's form, which divided each MPI tile's sum by the tile's wet-cell
+count at each level (16, 17 and 16 along every DINO row): J was about 1/16.6
+of the transport (`fc` = 0.448 against 7.44 Sv in the 43 N reference 31553),
+depended on the decomposition, and a 5-day run reported one sixth of the
+30-day form. Every run up to the rewrite, the four κ_v campaigns included,
+reports that quantity (no `cost_units` line in its `build_info.txt`); since it
+is linear in the transport, the patterns, signs, ratios and finite-difference
+comparisons of those runs stand, and only the absolute values differ in
+units. `input_tap/variants/toolchain_validation/` holds the record that checks
+the value against the run's own `VVEL` diagnostic.
 **Since 2026-10-20 the row and the depth are `data.cost` settings**,
 `cost_atl_jsec` and `cost_atl_kmaxdepth`, read by `code_tap/cost_readparms.F`
 into a common block in `code_tap/cost.h` (both shadows of the `pkg/cost` files,
@@ -1177,9 +1202,10 @@ statement in the root `CLAUDE.md` and in
 `analyses/DINO_1deg/adjoint/kappa_v_ensemble/ensemble_common.py`, retired
 2026-09-12):
 `pkg/cost` averages only the **final 30 days** of the run (`lastinterval`
-default, not overridden in `data.cost`), and the per-level wet-count
-normalisation is computed **per MPI tile**, so `fc` depends on the domain
-decomposition — comparable across runs only at fixed `nPx`/`nPy`.
+default, not overridden in `data.cost`), and, until 2026-10-29, the per-level
+wet-count normalisation was computed **per MPI tile**, so `fc` depended on the
+domain decomposition — comparable across runs only at fixed `nPx`/`nPy`. The
+rewritten routine has no such normalisation (see above).
 
 `useGrdchk = .FALSE.` in `input_tap/data.pkg` since 2026-08-28 (verified
 bit-identical `ADJ*`/`adxx*` output; saves 8.2 h per 5-yr adjoint). It had been

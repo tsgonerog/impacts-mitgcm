@@ -3,9 +3,13 @@
       subroutine cost_atlantic_heat( myThid )
 C     /==========================================================\
 C     | subroutine cost_atlantic_heat                            |
-C     | o This routine computes the meridional heat transport.   |
-C     |   The current indices are for North Atlantic 29N         |
-C     |   2x2 global setup.                                      |
+C     | o DINO_1deg: the meridional volume transport across one  |
+C     |   grid row, from the surface over a set number of        |
+C     |   levels, as a time mean over the end of the run, in Sv. |
+C     |   The routine keeps the name pkg/cost calls it by        |
+C     |   (cost_final.F); it computes no heat transport. Since   |
+C     |   2026-10-29 (the tree file's form, kept here until      |
+C     |   then, is described at the end).                        |
 C     \==========================================================/
        implicit none
 
@@ -14,7 +18,6 @@ C     == Global variables ===
 #include "EEPARAMS.h"
 #include "PARAMS.h"
 #include "GRID.h"
-#include "DYNVARS.h"
 #include "cost.h"
 
 C     ======== Routine arguments ======================
@@ -23,197 +26,88 @@ C     myThid - Thread number for this instance of the routine.
 
 #ifdef ALLOW_COST_ATLANTIC_HEAT
 C     ========= Local variables =========================
-      integer    isecbeg      , isecend      , jsec
-      integer    jsecbeg      , jsecend      , isec
-      integer    kmaxdepth
-      integer i, j, k
-      integer ig, jg
+      integer i, j, k, jg
       integer bi, bj
-      _RL     locfc
-      _RL     uVel_bar(Nr), vVel_bar(Nr), theta_bar(Nr)
-      _RL     thetaUvel_bar(Nr), thetaVvel_bar(Nr)
-      _RL     countU(Nr), countV(Nr), countT(Nr)
-      _RL     countTU(Nr), countTV(Nr)
-      _RL     petawatt
-      _RL     sum
-      parameter( petawatt = 1. _d +15 )
+      _RL     tileTransport
+      _RL     meanFrac
 
-C     The zonal section: isecbeg..isecend is the whole row (51 cells).
-C     jsec is the (1-based) grid row whose SOUTHERN face carries the vVel
-C     the section integrates; analyses/DINO_1deg/grid_and_cost_sections.ipynb
-C     maps a latitude to a row. Since 2026-10-20 it is cost_atl_jsec of
-C     data.cost (cost.h, cost_readparms.F), so one executable serves every
-C     section and the staged data.cost of a run says which it measured;
-C     until then it was a parameter statement here (jsec = 127, row centre
-C     26.05 N, in every adjoint run up to job 31434; jsec = 148, the row of
-C     the overturning maximum of the spin-up 31203, centre 43.2 N, from
-C     2026-10-13, recorded in those runs' build_info.txt as
-C     cost_section_jsec=). The rows in use: 127 (26 N), 148 (43 N),
-C     175 (60 N) and 74 (25 S); analyses/DINO_1deg/adjoint/
-C     kappa_v_ensemble_gmFwd/overturning_maximum.py locates the maximum.
-      parameter( isecbeg = 1, isecend = 51 )
-C     the following line defines a meridional section, but I am not using
-C     it in the soma-adjoint setup. To confirm, search for
-C     jsecbeg/jsecend in the compiled version of this file (.f file) in the build
-C     directory: there should be only two instances of them
-      parameter( jsecbeg = 1, jsecend = 62, isec = 30 )
-C     kmaxdepth: how many levels, from the surface, the section integrates
-C     (see "delR" in input_tap/data): cost_atl_kmaxdepth of data.cost since
-C     2026-10-20 (a parameter statement here until then: 25, the upper
-C     982 m, with the 26 N section; 24, the upper 848 m, from 2026-10-13,
-C     the interface at which psi peaks on the 43 N row, so that the cost is
-C     the overturning maximum itself). In use: 25 at 26 N and 60 N (the
-C     interface of each row's maximum), 24 at 43 N and 25 S (at 25 S psi
-C     has no interior maximum, so the 43 N interface is kept).
+C     The cost J is
+C
+C       J = mult_atl * 1e-6 * < sum_i sum_{k<=kmax}
+C                 vVel(i,jsec,k) dxG(i,jsec) drF(k) hFacS(i,jsec,k) >
+C
+C     where < > is the time mean over the final lastinterval of the
+C     run: the meridional volume transport, in Sverdrups, across the
+C     SOUTHERN face of grid row jsec = cost_atl_jsec, over the whole
+C     row, from the surface over kmax = cost_atl_kmaxdepth levels.
+C     Both come from data.cost (cost.h, cost_readparms.F, since
+C     2026-10-20; the rows in use are 127 "26 N", 148 "43 N", 175
+C     "60 N" and 74 "25 S", named by the row's centre; analyses/
+C     DINO_1deg/grid_and_cost_sections.ipynb maps a latitude to a
+C     row, and analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/
+C     overturning_maximum.py locates the overturning maximum). With
+C     kmax at the interface where the overturning streamfunction
+C     peaks on that row, J is the overturning maximum itself.
+C
+C     The time mean: cost_tile.F calls cost_accumulate_mean.F at
+C     every step whose end time lies in the final lastinterval
+C     (data.cost; default 30 days), adding vVel*deltaTClock/
+C     lastinterval to cMeanVVel, so after a run of at least
+C     lastinterval cMeanVVel is the mean over that window. A shorter
+C     run accumulates every step, and the sum then covers only the
+C     run's length; meanFrac divides that out, so J is the mean over
+C     the time actually covered in either case (a 5-day validation
+C     run reports the 5-day mean, not one sixth of it).
+C
+C     Each tile adds the transport through its own part of the row
+C     to objf_atl(bi,bj); cost_final.F sums the tiles and the
+C     processes, so J is the transport across the whole row and does
+C     not depend on the domain decomposition. hFacS is the wet
+C     fraction of the face (1 in every cell of every DINO section, so
+C     it only masks land here); the free surface is linear, so it is
+C     a grid constant.
+C
+C     Until 2026-10-29 this file kept the tree's form (pkg/cost): at
+C     each level it divided each tile's sum by the tile's own count
+C     of wet cells, then summed the tiles. Along every DINO row the
+C     counts are 16, 17 and 16, so that J was about 1/16.6 of the
+C     transport in Sv, depended on the decomposition, and weighted
+C     the middle third of the row 6 % less than the rest; a run
+C     shorter than lastinterval reported the covered fraction of the
+C     mean. A run of that form has no cost_units line in its
+C     build_info.txt; a run of this form carries cost_units=Sv. The
+C     heat-transport branch of the tree file (the case without
+C     ALLOW_COST_ATLANTIC_HEAT_DOMASS) and its unused meridional
+C     section are gone: this file computes volume transport only,
+C     whatever COST_OPTIONS.h says about ..._DOMASS.
 
-C     the section of this run, from data.cost (cost_readparms.F checked the
-C     ranges); the comments above say what the two are
-      jsec      = cost_atl_jsec
-      kmaxdepth = cost_atl_kmaxdepth
-
-C------------------------------------------------------
-C     Accumulate meridionally integrated transports
-C     Note bar(V)*bar(T) not bar(VT)
-C     Attention pYFaceA [m^2*gravity*rhoConst]
-C------------------------------------------------------
+      meanFrac = MIN( endTime - startTime, lastinterval )
+     &         / lastinterval
 
       DO bj=myByLo(myThid),myByHi(myThid)
        DO bi=myBxLo(myThid),myBxHi(myThid)
 
-        locfc = 0.0
-        sum = 0.0
-
-#define MERID_TRANSPORT
-
-#ifdef MERID_TRANSPORT
-
-#undef ENERGYNORM
-#ifdef ENERGYNORM
-
-        do i=1,sNx
-         ig = myXGlobalLo-1+(bi-1)*sNx+i
-         if ((ig .ge. isecbeg) .and. (ig .le. isecend)) then
-          sum = 0.0
-          do k = 1, kmaxdepth
-           sum = sum
-     &            + (vVel(i,j,k,bi,bj) * maskS(i,j,k,bi,bj)
-     &            * drF(k))**2
-          end do
-          locfc = locfc + sum*dxG(i,j,bi,bj)
-         end if
-        end do
-
-#else
-
-        do j=1,sNy
+        tileTransport = 0. _d 0
+        DO j=1,sNy
          jg = myYGlobalLo-1+(bj-1)*sNy+j
-         if (jg .eq. jsec) then
+         IF ( jg .EQ. cost_atl_jsec ) THEN
+          DO k=1,cost_atl_kmaxdepth
+           DO i=1,sNx
+            tileTransport = tileTransport
+     &           + cMeanVVel(i,j,k,bi,bj) * dxG(i,j,bi,bj)
+     &           * drF(k) * hFacS(i,j,k,bi,bj)
+           ENDDO
+          ENDDO
+         ENDIF
+        ENDDO
 
-          do k = 1, Nr
-           vVel_bar(k) = 0.0
-           thetaVvel_bar(k) = 0.0
-           countV(k) = 0.0
-           countTV(k) = 0.0
-           do i=1,sNx
-            ig = myXGlobalLo-1+(bi-1)*sNx+i
-c
-            if ((ig .ge. isecbeg) .and. (ig .le. isecend)) then
-               vVel_bar(k) = vVel_bar(k)
-     &              + cMeanVVel(i,j,k,bi,bj)*dxG(i,j,bi,bj)
-     &                 *maskS(i,j,k,bi,bj)
-
-               thetaVvel_bar(k) = thetaVvel_bar(k)
-     &            + cMeanThetaVVel(i,j,k,bi,bj)*dxG(i,j,bi,bj)
-     &                 *maskS(i,j,k,bi,bj)*maskC(i,j,k,bi,bj)
-
-             countTV(k) = countTV(k) +
-     &            maskS(i,j,k,bi,bj)*maskC(i,j,k,bi,bj)
-             countV(k) = countV(k) +
-     &            maskS(i,j,k,bi,bj)
-            end if
-
-           enddo
-          enddo
-c
-          do k = 1, Nr
-#ifdef ALLOW_COST_ATLANTIC_HEAT_DOMASS
-           if ( k .LE. kmaxdepth .AND. countV(k) .NE. 0) then
-            sum = sum
-     &            + vVel_bar(k)*drF(k)/countV(k)
-           end if
-#else
-           if ( k .LE. kmaxdepth .AND. countTV(k) .NE. 0) then
-            sum = sum
-     &            + thetaVVel_bar(k)*drF(k)/countTV(k)
-           end if
-#endif
-          end do
-
-#endif /* ENERGYNORM */
-
-#else
-
-cph need to change this part to go from
-cph \bar{u}*\bar{T} to \bar{u*T}
-cph (required store dir. are now in place)
-
-        do i=1,sNx
-         ig = myXGlobalLo-1+(bi-1)*sNx+i
-         if (ig .eq. isec) then
-
-          do k = 1, Nr
-           uVel_bar(k) = 0.0
-           theta_bar(k) = 0.0
-           countT(k) = 0.0
-           countU(k) = 0.0
-           do j=1,sNy
-            jg = myYGlobalLo-1+(bj-1)*sNy+j
-c
-            if ((jg .ge. jsecbeg) .and. (jg .le. jsecend)) then
-             uVel_bar(k) = uVel_bar(k)
-     &                      + cMeanUVel(i,j,k,bi,bj)
-     &                      *maskW(i,j,k,bi,bj)
-     &                      *maskC(i,j,k,bi,bj)*maskC(i-1,j,k,bi,bj)
-             theta_bar(k) = theta_bar(k) +
-     &            0.5*( cMeanTheta(i,j,k,bi,bj)
-     &                 +cMeanTheta(i-,j,k,bi,bj) )
-     &                 *maskW(i,j,k,bi,bj)*dyG(i,j,bi,bj)
-     &                 *maskC(i,j,k,bi,bj)*maskC(i-1,j,k,bi,bj)
-             countT(k) = countT(k) + maskW(i,j,k,bi,bj)
-     &                   *maskC(i,j,k,bi,bj)*maskC(i-1,j,k,bi,bj)
-             countU(k) = countU(k) + maskW(i,j,k,bi,bj)
-     &                   *maskC(i,j,k,bi,bj)*maskC(i-1,j,k,bi,bj)
-            end if
-
-           enddo
-          enddo
-c
-          do k = 1, Nr
-           if ( k .LE. kmaxdepth .AND.
-     &          countT(k) .NE. 0 .AND. countU(k) .NE. 0) then
-            sum = sum
-     &            + uVel_bar(k) * theta_bar(k) * drF(k)
-     &            / ( countT(k) * countU(k) )
-           end if
-          end do
-
-#endif
-
-         end if
-        end do
-
-#ifdef ALLOW_COST_ATLANTIC_HEAT_DOMASS
-        objf_atl(bi,bj) =
-     &     sum*1.E-6
-#else
-        objf_atl(bi,bj) =
-     &     sum*HeatCapacity_Cp*rhoConst/petawatt
-#endif
+C       in Sverdrups (1e6 m3/s), as the mean over the covered time
+        objf_atl(bi,bj) = tileTransport * 1. _d -6 / meanFrac
 
 c--   end of bi,bj loop
-       end do
-      end do
+       ENDDO
+      ENDDO
 
-#endif
+#endif /* ALLOW_COST_ATLANTIC_HEAT */
 
       end
