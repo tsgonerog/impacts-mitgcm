@@ -266,6 +266,28 @@ if [[ -n "${IMPACTS_COST_JSEC:-}${IMPACTS_COST_KMAXDEPTH:-}" ]]; then
     [[ -z "${!v:-}" || "${!v}" =~ ^[0-9]+$ ]] || { echo "ERROR: $v must be a whole number, got '${!v}'"; exit 1; }
   done
 fi
+# What J is, record against source (DINO since 2026-10-29). The build body writes
+# cost_units=Sv when the compiled cost_atlantic_heat.f is the rewritten routine (the
+# transport across the whole row in Sv) and cost_units=tile_normalised for the tree's
+# form (each tile's sum divided by its wet-cell count, about 1/16.6 of the transport).
+# The source in code_tap/ says which form a build from it would get; a record that
+# says otherwise, or says nothing while the source is the rewritten one, is a build
+# older than the source, which this refuses: the submit body otherwise checks the
+# executable against its own record only, and the five adjoint builds all compile
+# the file, so a stale one would compute J in the other units under the same name.
+if [[ "$RUN_MODE" = tapAdj && "$cost_section_rec" = namelist && -f "$SETUP_DIR/code_tap/cost_atlantic_heat.F" ]]; then
+  cost_units_rec=$(sed -n 's/^cost_units=//p' "$build_info" | sed 's/[[:space:]]*#.*$//')
+  if grep -q 'tileTransport' "$SETUP_DIR/code_tap/cost_atlantic_heat.F"; then cost_units_src=Sv
+  elif grep -q 'countV' "$SETUP_DIR/code_tap/cost_atlantic_heat.F"; then cost_units_src=tile_normalised
+  else cost_units_src=""; fi
+  if [[ -n "$cost_units_src" && "$cost_units_rec" != "$cost_units_src" ]]; then
+    echo "ERROR: code_tap/cost_atlantic_heat.F computes J as cost_units=$cost_units_src, but $build_dir's"
+    echo "       build_info.txt records cost_units=${cost_units_rec:-nothing}: the build is older than the source and"
+    echo "       would report J in other units under the same run name. Rebuild with the build script."
+    exit 1
+  fi
+  echo "cost units: J in $cost_units_rec (build record and source agree)"
+fi
 cost_token=""
 if [[ "$RUN_MODE" = tapAdj && "$cost_section_rec" = namelist ]] && declare -F cost_section_token > /dev/null; then
   cost_src="$SETUP_DIR/$INPUT_DIR/data.cost"

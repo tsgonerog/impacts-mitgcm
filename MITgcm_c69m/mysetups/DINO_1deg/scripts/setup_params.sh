@@ -47,7 +47,12 @@ DUMP_CALLS=5
 COMPILED_NAME_CHECKS=(
     "useApproxAdvectionInAdMode gad_advection.f gad_advection_b.f gad_implicit_r.f gad_implicit_r_b.f"
     "cost_atl_jsec cost_readparms.f cost_atlantic_heat.f cost_atlantic_heat_b.f"
+    "tileTransport cost_atlantic_heat.f cost_atlantic_heat_b.f"
 )
+# The third entry (since 2026-10-29): the cost is the transport across the whole row in
+# Sv (tileTransport is the sum each tile adds to objf_atl; the tree's form divided it by
+# the tile's wet-cell count), so a build from an older cost_atlantic_heat.F fails here
+# rather than reporting J in other units; the build body records cost_units=Sv.
 # The second entry (since 2026-10-20): the cost section is a data.cost setting
 # (cost_atl_jsec, cost_atl_kmaxdepth; code_tap/cost.h and cost_readparms.F, shadows
 # of the pkg/cost files, and cost_atlantic_heat.F reads them), so every DINO

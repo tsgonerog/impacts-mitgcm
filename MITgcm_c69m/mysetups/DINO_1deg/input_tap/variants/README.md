@@ -85,6 +85,7 @@ tag would then carry that section, which is not how the κ_v campaigns are run
 | [`kappa_v_ensemble/`](kappa_v_ensemble/) | The seven member adjoints of the κ_v ensemble under the current configuration (`M<k>_ReMax2_gmFwd_approxAdv`): the live namelist with the member's `diffKrT`/`diffKrS`, run from its forward leg's year-180 pickup (since 2026-09-12; the reference member is the live namelist) |
 | [`fd_checks/`](fd_checks/) | Finite-difference forward sweeps of the production adjoint from the reference leg's year 180: κ_v ±10 %, Theta in three boxes (perturbed pickups), and the surface controls `fu`, `fv`, `qnet`, `empmr` (perturbed forcing files named by absolute path); each cancelled once its cost is printed (since 2026-09-12) |
 | [`stability_study/`](stability_study/) | What makes the adjoint blow up, and what holds it: GM/Redi in either sweep, and the finite differences of the 2026-09-11 test; its README keeps the record of the 2026-09-09 viscosity and flux-limiter rows |
+| [`toolchain_validation/`](toolchain_validation/) | Records that check the toolchain rather than the physics: the live namelist with `dynDiag` every 5 days (`from180yrPk_viscRef_ReMax2_dynDiag5d`), so the cost in Sverdrups (since 2026-10-29) can be recomputed offline from the run's own `VVEL` over the window it averaged |
 
 ## Removed on 2026-09-12
 
