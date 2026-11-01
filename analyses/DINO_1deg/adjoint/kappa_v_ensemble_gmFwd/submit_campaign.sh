@@ -51,11 +51,10 @@ case "$CAMPAIGN" in
   kappa_v_ensemble_gmFwd_sec60N) JSEC=175; KMAX=25 ;;    # 60 N, 982 m: subpolar, the OSNAP latitudes
   kappa_v_ensemble_gmFwd_sec25S) JSEC=74;  KMAX=24 ;;    # 25 S, 848 m: north of the Deacon cell
   # second generation (2026-11-01): the same four sections with the cost in Sverdrups (the routine of 2026-10-29)
-  kappa_v_ensemble_gmFwd_sec26N_Sv) JSEC=127; KMAX=25 ;;
   kappa_v_ensemble_gmFwd_sec43N_Sv) JSEC=148; KMAX=24 ;;
-  kappa_v_ensemble_gmFwd_sec60N_Sv) JSEC=175; KMAX=25 ;;
   kappa_v_ensemble_gmFwd_sec25S_Sv) JSEC=74;  KMAX=24 ;;
-  # one interface for every section (2026-11-01): 26 N and 60 N at 848 m, the 982 m *_Sv campaigns kept as the record
+  # one interface for every section (2026-11-01): 26 N and 60 N at 848 m (their 982 m *_Sv submissions of the same
+  # morning, jobs 31748-31773 and 31800-31829, were cancelled and deleted; records in logs/deleted_run_records/)
   kappa_v_ensemble_gmFwd_sec26N_Sv848) JSEC=127; KMAX=24 ;;
   kappa_v_ensemble_gmFwd_sec60N_Sv848) JSEC=175; KMAX=24 ;;
   *) echo "campaign $CAMPAIGN has no cost section in this script (add a case)"; exit 1 ;;

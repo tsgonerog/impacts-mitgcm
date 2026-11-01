@@ -55,10 +55,13 @@ the second generation go to analysis/cost_sections_Sv/ (CROSS_DIR).
 
 ONE INTERFACE FOR EVERY SECTION (decided 2026-11-01, the same morning): the cost integrates to 848 m (24 levels) at
 all four sections. 43 N and 25 S already did; 26 N and 60 N had used 982 m (25 levels), the interface where their own
-cells peak, in both generations so far. Their Sverdrup campaigns at 848 m are `*_sec26N_Sv848` and `*_sec60N_Sv848`,
-and the second generation that the documents report is {25S_Sv, 26N_Sv848, 43N_Sv, 60N_Sv848} (SECTION_ORDER). The
-982 m Sverdrup campaigns `*_sec26N_Sv` and `*_sec60N_Sv` stay as the like-for-like comparison with the first
-generation (units only); the `_Sv848` campaigns compare with them (depth only), through old_campaign / prev_5yr_job.
+cells peak, in the first generation and in the first submission of the second (campaigns `*_sec26N_Sv` and
+`*_sec60N_Sv`, jobs 31748-31773 and 31800-31829, cancelled at the decision and deleted; their job maps and the cost
+lines of their finite-difference sweeps are in logs/deleted_run_records/). Their Sverdrup campaigns at 848 m are
+`*_sec26N_Sv848` and `*_sec60N_Sv848`, and the second generation the documents report is {25S_Sv, 26N_Sv848, 43N_Sv,
+60N_Sv848} (SECTION_ORDER). A `_Sv848` campaign compares with the first generation of its section (old_campaign,
+prev_5yr_job), which differs from it in units AND depth; the units effect alone is measured at 43 N and 25 S, where
+the depth did not change.
 """
 from __future__ import annotations
 
@@ -84,25 +87,20 @@ COST_SECTION = {   # jsec is 0-based here (the Fortran row is jsec + 1); kmax th
                                           prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd', units='tile', old_campaign=None),
     # second generation (2026-11-01): the cost as the row transport in Sverdrups; prev_5yr_job is the first
     # generation's reference adjoint of the same section, so the two generations are compared by the suite itself
-    'kappa_v_ensemble_gmFwd_sec26N_Sv': dict(jsec=126, kmax=25, sec_name='26 N', sec_amoc='amoc26', since='2026-11-01',
-                                             prev_5yr_job=31374, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
-                                             old_campaign='kappa_v_ensemble_gmFwd'),
     'kappa_v_ensemble_gmFwd_sec43N_Sv': dict(jsec=147, kmax=24, sec_name='43 N', sec_amoc='amoc43', since='2026-11-01',
                                              prev_5yr_job=31553, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
                                              old_campaign='kappa_v_ensemble_gmFwd_sec43N'),
-    'kappa_v_ensemble_gmFwd_sec60N_Sv': dict(jsec=174, kmax=25, sec_name='60 N', sec_amoc='amoc60', since='2026-11-01',
-                                             prev_5yr_job=31621, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
-                                             old_campaign='kappa_v_ensemble_gmFwd_sec60N'),
     'kappa_v_ensemble_gmFwd_sec25S_Sv': dict(jsec=73, kmax=24, sec_name='25 S', sec_amoc='amoc25S', since='2026-11-01',
                                              prev_5yr_job=31647, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
                                              old_campaign='kappa_v_ensemble_gmFwd_sec25S'),
-    # the one-interface decision of 2026-11-01: 26 N and 60 N at 848 m (24 levels), compared with their 982 m twins
+    # the one-interface decision of 2026-11-01: 26 N and 60 N at 848 m (24 levels); the 982 m *_Sv submissions of the
+    # same morning were cancelled, so these compare with the first generation (units and depth together)
     'kappa_v_ensemble_gmFwd_sec26N_Sv848': dict(jsec=126, kmax=24, sec_name='26 N', sec_amoc='amoc26', since='2026-11-01',
-                                                prev_5yr_job=31748, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
-                                                old_campaign='kappa_v_ensemble_gmFwd_sec26N_Sv'),
+                                                prev_5yr_job=31374, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                                old_campaign='kappa_v_ensemble_gmFwd'),
     'kappa_v_ensemble_gmFwd_sec60N_Sv848': dict(jsec=174, kmax=24, sec_name='60 N', sec_amoc='amoc60', since='2026-11-01',
-                                                prev_5yr_job=31800, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
-                                                old_campaign='kappa_v_ensemble_gmFwd_sec60N_Sv'),
+                                                prev_5yr_job=31621, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                                old_campaign='kappa_v_ensemble_gmFwd_sec60N'),
 }
 CAMPAIGN = os.environ.get('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
 if CAMPAIGN not in COST_SECTION:
