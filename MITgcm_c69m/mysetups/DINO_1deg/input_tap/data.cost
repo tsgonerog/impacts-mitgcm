@@ -15,10 +15,14 @@
 # 1-based row whose SOUTHERN face is integrated across, named by the row's
 # centre, and cost_atl_kmaxdepth the number of levels. The sections in use, and
 # the interface each integrates to (input_tap/data delR):
-#     26 N   cost_atl_jsec=127  cost_atl_kmaxdepth=25  (982 m)   every run up to job 31434
+#     26 N   cost_atl_jsec=127  cost_atl_kmaxdepth=24  (848 m)   the original section; 25 levels (982 m) until 2026-11-01
 #     43 N   cost_atl_jsec=148  cost_atl_kmaxdepth=24  (848 m)   the overturning maximum: production since 2026-10-13
-#     60 N   cost_atl_jsec=175  cost_atl_kmaxdepth=25  (982 m)   subpolar, the OSNAP latitudes (2026-10-20)
+#     60 N   cost_atl_jsec=175  cost_atl_kmaxdepth=24  (848 m)   subpolar, the OSNAP latitudes; 25 levels until 2026-11-01
 #     25 S   cost_atl_jsec=74   cost_atl_kmaxdepth=24  (848 m)   north of the Deacon cell (2026-10-20)
+# One interface for every section since 2026-11-01: 848 m, the interface of the 43 N
+# maximum, so the four costs differ in latitude only (26 N and 60 N measured to the
+# 982 m interface of their own maxima from 2026-10-20 to 2026-11-01; every run up to
+# job 31434 measured 26 N to 982 m).
 # IMPACTS_COST_JSEC and IMPACTS_COST_KMAXDEPTH override the two per run from the
 # environment (tools/lib/submit_body.sh); the run directory's name carries the
 # section (_sec43N, ...) and its staged copy of this file is the record.

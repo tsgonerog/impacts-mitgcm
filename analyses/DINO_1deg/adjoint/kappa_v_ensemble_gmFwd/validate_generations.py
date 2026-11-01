@@ -158,12 +158,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--self-test', action='store_true', help='compare each first-generation campaign with itself')
     ap.add_argument('--sections', default='', help='comma-separated section tokens to restrict to, e.g. 43N,60N')
+    ap.add_argument('--campaigns', default='', help='comma-separated campaign names to compare (each with its old_campaign); default campaign.SECTION_ORDER')
+    ap.add_argument('--out', default='', help='output subdirectory under analysis/<CROSS_DIR>/ (default validation_vs_tile)')
     a = ap.parse_args()
-    out = c.OUTPUTS / 'analysis' / c.CROSS_DIR / ('validation_selftest' if a.self_test else 'validation_vs_tile')
+    out = c.OUTPUTS / 'analysis' / c.CROSS_DIR / (a.out or ('validation_selftest' if a.self_test else 'validation_vs_tile'))
     out.mkdir(parents=True, exist_ok=True)
     want = [s.strip() for s in a.sections.split(',') if s.strip()]
+    names = [s.strip() for s in a.campaigns.split(',') if s.strip()] or c.SECTION_ORDER
     rows, fdrows, summ = [], [], []
-    for name in c.SECTION_ORDER:
+    for name in names:
         old = name if a.self_test else c.COST_SECTION[name]['old_campaign']
         if old is None or (want and not any(w in name for w in want)):
             continue

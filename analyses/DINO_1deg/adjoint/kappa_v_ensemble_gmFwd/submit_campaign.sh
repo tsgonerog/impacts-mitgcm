@@ -55,6 +55,9 @@ case "$CAMPAIGN" in
   kappa_v_ensemble_gmFwd_sec43N_Sv) JSEC=148; KMAX=24 ;;
   kappa_v_ensemble_gmFwd_sec60N_Sv) JSEC=175; KMAX=25 ;;
   kappa_v_ensemble_gmFwd_sec25S_Sv) JSEC=74;  KMAX=24 ;;
+  # one interface for every section (2026-11-01): 26 N and 60 N at 848 m, the 982 m *_Sv campaigns kept as the record
+  kappa_v_ensemble_gmFwd_sec26N_Sv848) JSEC=127; KMAX=24 ;;
+  kappa_v_ensemble_gmFwd_sec60N_Sv848) JSEC=175; KMAX=24 ;;
   *) echo "campaign $CAMPAIGN has no cost section in this script (add a case)"; exit 1 ;;
 esac
 BI=$SETUP/build_tapAdj_ckpAll/build_info.txt
@@ -63,7 +66,7 @@ grep -q '^cost_section=namelist' "$BI" 2>/dev/null \
 # a *_Sv campaign needs the rewritten cost (cost_units=Sv in the record); a first-generation name needs the old form,
 # which no build on disk has any more -- those campaigns are closed, their runs the record
 case "$CAMPAIGN" in
-  *_Sv) grep -q '^cost_units=Sv' "$BI" || { echo "build_tapAdj_ckpAll does not record cost_units=Sv: rebuild from main first"; exit 1; } ;;
+  *_Sv|*_Sv848) grep -q '^cost_units=Sv' "$BI" || { echo "build_tapAdj_ckpAll does not record cost_units=Sv: rebuild from main first"; exit 1; } ;;
   *)    grep -q '^cost_units=Sv' "$BI" && { echo "campaign $CAMPAIGN is first-generation (tile-normalised cost) but the build computes J in Sv: use the *_Sv campaign of the same section"; exit 1; } ;;
 esac
 export IMPACTS_COST_JSEC=$JSEC IMPACTS_COST_KMAXDEPTH=$KMAX

@@ -52,6 +52,13 @@ record. UNITS says which form a campaign's numbers are in ('tile' or 'Sv'), OLD_
 campaign of the same section (its reference adjoint is PREV_GMFWD_5YR_JOB, so adjoint_products.py members/fields and
 make_figures.py ref_vs_previous compare the two generations), jproxy follows the form, and the cross-section products of
 the second generation go to analysis/cost_sections_Sv/ (CROSS_DIR).
+
+ONE INTERFACE FOR EVERY SECTION (decided 2026-11-01, the same morning): the cost integrates to 848 m (24 levels) at
+all four sections. 43 N and 25 S already did; 26 N and 60 N had used 982 m (25 levels), the interface where their own
+cells peak, in both generations so far. Their Sverdrup campaigns at 848 m are `*_sec26N_Sv848` and `*_sec60N_Sv848`,
+and the second generation that the documents report is {25S_Sv, 26N_Sv848, 43N_Sv, 60N_Sv848} (SECTION_ORDER). The
+982 m Sverdrup campaigns `*_sec26N_Sv` and `*_sec60N_Sv` stay as the like-for-like comparison with the first
+generation (units only); the `_Sv848` campaigns compare with them (depth only), through old_campaign / prev_5yr_job.
 """
 from __future__ import annotations
 
@@ -89,6 +96,13 @@ COST_SECTION = {   # jsec is 0-based here (the Fortran row is jsec + 1); kmax th
     'kappa_v_ensemble_gmFwd_sec25S_Sv': dict(jsec=73, kmax=24, sec_name='25 S', sec_amoc='amoc25S', since='2026-11-01',
                                              prev_5yr_job=31647, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
                                              old_campaign='kappa_v_ensemble_gmFwd_sec25S'),
+    # the one-interface decision of 2026-11-01: 26 N and 60 N at 848 m (24 levels), compared with their 982 m twins
+    'kappa_v_ensemble_gmFwd_sec26N_Sv848': dict(jsec=126, kmax=24, sec_name='26 N', sec_amoc='amoc26', since='2026-11-01',
+                                                prev_5yr_job=31748, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                                old_campaign='kappa_v_ensemble_gmFwd_sec26N_Sv'),
+    'kappa_v_ensemble_gmFwd_sec60N_Sv848': dict(jsec=174, kmax=24, sec_name='60 N', sec_amoc='amoc60', since='2026-11-01',
+                                                prev_5yr_job=31800, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                                old_campaign='kappa_v_ensemble_gmFwd_sec60N_Sv'),
 }
 CAMPAIGN = os.environ.get('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
 if CAMPAIGN not in COST_SECTION:
@@ -98,8 +112,8 @@ UNITS = _CS['units']                           # 'tile' (first generation) or 'S
 OLD_CAMPAIGN = _CS['old_campaign']             # the first-generation campaign of the same section, for a *_Sv campaign
 J_UNIT = 'Sv' if UNITS == 'Sv' else 'tile units'   # what fc is in, for axis labels
 # south to north, for the cross-section comparison: the four campaigns of this campaign's generation
-SECTION_ORDER = (['kappa_v_ensemble_gmFwd_sec25S_Sv', 'kappa_v_ensemble_gmFwd_sec26N_Sv', 'kappa_v_ensemble_gmFwd_sec43N_Sv',
-                  'kappa_v_ensemble_gmFwd_sec60N_Sv'] if UNITS == 'Sv' else
+SECTION_ORDER = (['kappa_v_ensemble_gmFwd_sec25S_Sv', 'kappa_v_ensemble_gmFwd_sec26N_Sv848', 'kappa_v_ensemble_gmFwd_sec43N_Sv',
+                  'kappa_v_ensemble_gmFwd_sec60N_Sv848'] if UNITS == 'Sv' else
                  ['kappa_v_ensemble_gmFwd_sec25S', 'kappa_v_ensemble_gmFwd', 'kappa_v_ensemble_gmFwd_sec43N',
                   'kappa_v_ensemble_gmFwd_sec60N'])
 CROSS_DIR = 'cost_sections_Sv' if UNITS == 'Sv' else 'cost_sections'   # analysis/<CROSS_DIR>/: the sections compared
