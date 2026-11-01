@@ -128,7 +128,7 @@ def body(h):
                'finite differences, and what that implies for the inputs and targets of a neural-network surrogate.</p>'
                '<p class="meta"><span>adjoint window: model years 180–185</span><span>J: %.2f° N transport index, upper %.0f m, final 30 d</span>'
                '<span>κ<sub>v</sub> ∈ {0.25 … 32} × 1.2×10⁻⁵ m² s⁻¹</span></p>' % (
-                   'legs 31366–31373 (Sep 2026), adjoints and sweeps 31553–31578 (13–14 Oct 2026)' if IS43 else 'runs 31329–31398',
+                   ('legs 31366–31373 (Sep 2026), adjoints and sweeps %s' % ('31553–31578 (13–14 Oct 2026)' if c.UNITS == 'tile' else '31774–31799 (1 Nov 2026)')) if IS43 else 'runs 31329–31398',
                    ' — the cost at the overturning maximum, 43° N' if IS43 else '',
                    c.SEC_NAME.replace(' N', '° N'), ', the overturning maximum,' if IS43 else '', lat_sec, dep_sec))
     out.append('<p class="explore">%s — every ADJ* field of the reference adjoint at all 36 depth levels, and ADJtheta and '
@@ -448,8 +448,11 @@ def reference_text(fg, ts, nf):
     at = lambda L: float(r.iloc[(r.lead_yr - L).abs().argmin()].rms)
     peak = r.loc[r.rms.idxmax()]
     fin = bool((ts[ts.run == 'REF'].finite_frac == 1).all())
-    state = ('the state it starts from is the September reference leg\'s year 180, the production spin-up\'s own; the cost formula '
-             'applied to that leg\'s last-year monthly velocity gives 0.450 for a cost of %.4f' % float(fg.set_index('run').fc['REF'])) if IS43 else (
+    state = (('the state it starts from is the September reference leg\'s year 180, the production spin-up\'s own; the cost formula '
+              'applied to that leg\'s last-year monthly velocity gives 0.450 for a cost of %.4f' % float(fg.set_index('run').fc['REF']))
+             if c.UNITS == 'tile' else
+             ('the state it starts from is the September reference leg\'s year 180, the production spin-up\'s own; the cost of the '
+              'window is %.4f Sv' % float(fg.set_index('run').fc['REF']))) if IS43 else (
              'the state it starts from is the production spin-up\'s: the year-170 pickup of the new spin-up and the year-180 pickup of '
              'the reference leg are byte-identical to 31203\'s own, and the monthly cost proxy of the adjoint\'s forward sweep at year '
              '185 equals 31203\'s to ten digits')

@@ -6,7 +6,7 @@ its rerun with the cost at the overturning maximum, 43 N. Each block below exist
 for the current campaign is selected at import; the September texts are kept verbatim so that page can be rebuilt."""
 import campaign as c
 
-IS43 = c.CAMPAIGN == 'kappa_v_ensemble_gmFwd_sec43N'
+IS43 = c.COST_SECTION[c.CAMPAIGN]['sec_name'] == '43 N'   # the section, in either generation (the name test missed *_Sv)
 
 SETUP_INTRO_26 = """
 <p>Every run in this campaign starts from a new 170-year spin-up from rest, <b>31329</b>, integrated under
