@@ -40,7 +40,7 @@ c     and the depth of the section of cost_atlantic_heat.F, which carried
 c     them as parameter statements until then (cost.h says what they are).
       NAMELIST /cost_nml/
      &         mult_atl, mult_test, mult_tracer,
-     &         cost_atl_jsec, cost_atl_kmaxdepth,
+     &         cost_atl_jsec, cost_atl_kmaxdepth, cost_atl_quantity,
      &         multTheta, multSalt, multUvel, multVvel, multEtan,
      &         mult_depth,
 #ifdef ALLOW_COST_HFLUXM
@@ -70,6 +70,8 @@ c--     overturning maximum (centre 43.2 N) and the interface where it peaks
 c--     (848 m, 24 levels); a data.cost that sets neither measures that section
         cost_atl_jsec         =      148
         cost_atl_kmaxdepth    =      24
+c--     what the section integrates: 'volume' (Sv) or 'heat' (PW; 2026-10-31)
+        cost_atl_quantity     =      'volume'
 
 c--     30*24*3600 = 2592000 = 1 model month
         lastinterval = 2592000.
@@ -123,6 +125,23 @@ cgf : to compile previous line user is expected to provide cost_weights.F
        CALL ALL_PROC_DIE( 0 )
        STOP 'ABNORMAL END: S/R COST_READPARMS'
       ENDIF
+      IF ( cost_atl_quantity .NE. 'volume' .AND.
+     &     cost_atl_quantity .NE. 'heat' ) THEN
+       WRITE(msgBuf,'(3A)')
+     & 'S/R COST_READPARMS: cost_atl_quantity = ''',
+     & cost_atl_quantity, ''' is neither volume nor heat'
+       CALL PRINT_ERROR( msgBuf, myThid )
+       CALL ALL_PROC_DIE( 0 )
+       STOP 'ABNORMAL END: S/R COST_READPARMS'
+      ENDIF
+      IF ( cost_atl_quantity .EQ. 'heat' .AND.
+     &     cost_atl_kmaxdepth .LT. Nr ) THEN
+       WRITE(msgBuf,'(A,I3,A,I3,A)')
+     & 'S/R COST_READPARMS: WARNING: heat transport over the upper',
+     & cost_atl_kmaxdepth, ' of ', Nr, ' levels, not the whole column'
+       CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
+     &                     SQUEEZE_RIGHT, myThid )
+      ENDIF
 
       IF ( mult_depth .NE. UNSET_RL ) THEN
        WRITE(msgBuf,'(a)')
@@ -158,6 +177,9 @@ C
       CALL WRITE_0D_I( cost_atl_kmaxdepth, INDEX_NONE,
      &'cost_atl_kmaxdepth =',
      &'   /* levels integrated from the surface (section depth) */')
+      CALL WRITE_0D_C( cost_atl_quantity, -1, INDEX_NONE,
+     &'cost_atl_quantity =',
+     &'   /* volume (Sv) or heat (PW) across the section */')
 
       WRITE(msgBuf,'(A)')
      &'// ======================================================='

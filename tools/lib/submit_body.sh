@@ -68,6 +68,8 @@
 # in the STAGED data.cost -- only for a build whose build_info.txt records
 # cost_section=namelist (DINO since 2026-10-20; a build with the section as
 # parameter statements is refused, since the namelist would not reach it).
+# IMPACTS_COST_QUANTITY (volume or heat; since 2026-10-31) sets cost_atl_quantity
+# the same way, for a build whose record carries cost_quantities.
 # The duration and frequency overrides are read by the definition.
 #
 # The definition runs under `set -e` and `set -x`, and so does this file.
@@ -266,6 +268,19 @@ if [[ -n "${IMPACTS_COST_JSEC:-}${IMPACTS_COST_KMAXDEPTH:-}" ]]; then
     [[ -z "${!v:-}" || "${!v}" =~ ^[0-9]+$ ]] || { echo "ERROR: $v must be a whole number, got '${!v}'"; exit 1; }
   done
 fi
+# The quantity (DINO since 2026-10-31): cost_atl_quantity of data.cost, volume or heat,
+# overridden by IMPACTS_COST_QUANTITY; only a build whose record carries cost_quantities
+# knows the key (an older build's namelist read fails on it, so that case is refused
+# below once the namelists are staged).
+if [[ -n "${IMPACTS_COST_QUANTITY:-}" ]]; then
+  [[ "$RUN_MODE" = tapAdj ]] || { echo "ERROR: IMPACTS_COST_QUANTITY applies to an adjoint run only"; exit 1; }
+  [[ "$IMPACTS_COST_QUANTITY" = volume || "$IMPACTS_COST_QUANTITY" = heat ]] \
+    || { echo "ERROR: IMPACTS_COST_QUANTITY must be volume or heat, got '$IMPACTS_COST_QUANTITY'"; exit 1; }
+  grep -q '^cost_quantities=' "$build_info" || {
+    echo "ERROR: IMPACTS_COST_QUANTITY is set, but $build_dir's build_info.txt records no cost_quantities line:"
+    echo "       its cost routine knows no cost_atl_quantity (DINO since 2026-10-31). Rebuild with the build script."
+    exit 1; }
+fi
 # What J is, record against source (DINO since 2026-10-29). The build body writes
 # cost_units=Sv when the compiled cost_atlantic_heat.f is the rewritten routine (the
 # transport across the whole row in Sv) and cost_units=tile_normalised for the tree's
@@ -299,6 +314,13 @@ if [[ "$RUN_MODE" = tapAdj && "$cost_section_rec" = namelist ]] && declare -F co
   [[ "$jsec_eff" =~ ^[0-9]+$ ]] || { echo "ERROR: could not determine the cost section's row (cost_atl_jsec) for this run"; exit 1; }
   cost_token="_$(cost_section_token "$jsec_eff")"
   echo "cost section: row $jsec_eff, named ${cost_token#_} in the run directory"
+  # the quantity, the same way: the override, else the data.cost to be staged, else volume
+  quantity_eff=${IMPACTS_COST_QUANTITY:-$(sed -n "s/^[[:space:]]*cost_atl_quantity[[:space:]]*=[[:space:]]*'\([a-z]*\)'.*/\1/ip" "$cost_src" | head -1)}
+  quantity_eff=${quantity_eff:-volume}
+  if declare -F cost_quantity_token > /dev/null; then
+    qt=$(cost_quantity_token "$quantity_eff"); [[ -z "$qt" ]] || cost_token="${cost_token}_$qt"
+  fi
+  echo "cost quantity: $quantity_eff"
 fi
 # Duration label: whole years as "<n>yr", otherwise "<n>d", so the run
 # directory matches the scratch naming convention (DINO: 366-day years, SOMA: 360).
@@ -375,11 +397,23 @@ if [[ "$RUN_MODE" = tapAdj ]]; then
   }
   [[ -z "${IMPACTS_COST_JSEC:-}" ]]      || set_cost_key cost_atl_jsec "$IMPACTS_COST_JSEC"
   [[ -z "${IMPACTS_COST_KMAXDEPTH:-}" ]] || set_cost_key cost_atl_kmaxdepth "$IMPACTS_COST_KMAXDEPTH"
+  [[ -z "${IMPACTS_COST_QUANTITY:-}" ]]  || set_cost_key cost_atl_quantity "'$IMPACTS_COST_QUANTITY'"
+  # a staged data.cost that sets cost_atl_quantity needs a build that knows the key (DINO since
+  # 2026-10-31, recorded as cost_quantities=): an older build's namelist read fails at start-up
+  if grep -qiE '^[[:space:]]*cost_atl_quantity[[:space:]]*=' data.cost && ! grep -q '^cost_quantities=' "$build_info"; then
+    echo "ERROR: the staged data.cost sets cost_atl_quantity, which $build_dir's build does not know (no cost_quantities"
+    echo "       line in its build_info.txt): the namelist read would fail at start-up. Rebuild with the build script."
+    exit 1
+  fi
   if [[ -n "$cost_token" ]]; then
     # the row the name was derived from must be the row the staged file sets (or the compiled default)
     jsec_staged=$(sed -n 's/^[[:space:]]*cost_atl_jsec[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/ip' data.cost | head -1)
     jsec_staged=${jsec_staged:-$(sed -n 's/^cost_atl_jsec_default=\([0-9]*\).*/\1/p' "$build_info")}
     [[ "$jsec_staged" = "$jsec_eff" ]] || { echo "ERROR: the run is named for row $jsec_eff but the staged data.cost gives row $jsec_staged"; exit 1; }
+    # and the quantity likewise
+    quantity_staged=$(sed -n "s/^[[:space:]]*cost_atl_quantity[[:space:]]*=[[:space:]]*'\([a-z]*\)'.*/\1/ip" data.cost | head -1)
+    quantity_staged=${quantity_staged:-volume}
+    [[ "$quantity_staged" = "$quantity_eff" ]] || { echo "ERROR: the run is named for quantity $quantity_eff but the staged data.cost gives $quantity_staged"; exit 1; }
   fi
 fi
 

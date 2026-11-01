@@ -342,6 +342,13 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
             elif grep -q 'countV' cost_atlantic_heat.f; then
                 echo "cost_units=tile_normalised   # J = sum over tiles of each tile's transport divided by its wet-cell count, times 1e-6 (the tree's form; about 1/16.6 of the transport in Sv)"
             fi
+            # The quantities the compiled routine can integrate (DINO since 2026-10-31): volume or heat,
+            # chosen by cost_atl_quantity of the staged data.cost. The submit body honours
+            # IMPACTS_COST_QUANTITY, and accepts a data.cost that sets the key, only for a build that
+            # records this line: an older build's namelist read would fail on the unknown key.
+            if grep -q 'cost_atl_quantity' cost_readparms.f; then
+                echo "cost_quantities=volume,heat   # cost_atl_quantity of the staged data.cost: volume (Sv) or heat (PW); a heat run's directory carries _heat"
+            fi
         elif [ -f cost_atlantic_heat.f ]; then
             echo "cost_section=compiled   # parameter statements in cost_atlantic_heat.f: the section is part of this build"
             echo "cost_section_jsec=$(sed -n 's/.*parameter *( *isecbeg *= *[0-9]*, *isecend *= *[0-9]*, *jsec *= *\([0-9]*\) *).*/\1/p' cost_atlantic_heat.f | head -1)   # row whose southern face cost_atlantic_heat.f integrates VVEL across"

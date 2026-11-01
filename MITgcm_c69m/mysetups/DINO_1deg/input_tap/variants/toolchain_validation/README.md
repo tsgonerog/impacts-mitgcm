@@ -10,6 +10,18 @@ the bitwise comparisons of rebuilt executables that use the live namelist.
 Runs: 31737 (5 d) and 31738 (30 d) of 2026-10-29, the validation of the
 rewrite, both under `runs/adjoint/toolchain_validation/` with the check's
 output and script (`cost_sv_check.txt`, `cost_sv_check.py`) inside each.
+On 2026-10-31, for the heat-transport option (`cost_atl_quantity`): 31741
+(5 d, volume, the new build) reproduces 31737 bitwise (comparison report in
+its directory), and 31742 (5 d, `IMPACTS_COST_QUANTITY=heat`,
+`IMPACTS_COST_KMAXDEPTH=36`, named `..._sec43N_heat_run31742`) reports
+0.061584 PW against 0.061581 PW recomputed from its `THETA` and `VVEL`
+records (`cost_heat_check.txt`, `cost_heat_check.py` inside it; the residual
+is the covariance within the window, since the diagnostics are 5-day means
+and the cost accumulates the product every step).
+
+```bash
+IMPACTS_DURATION_DAYS=5 IMPACTS_COST_QUANTITY=heat IMPACTS_COST_KMAXDEPTH=36 IMPACTS_TEST_CASE=toolchain_validation/from180yrPk_viscRef_ReMax2_dynDiag5d ../../../tools/submit.sh scripts/submit_tapAdj.sh
+```
 
 The record does not change the trajectory or the adjoint: `data.diagnostics`
 only sets what is written. A run of it is comparable with a run of the live

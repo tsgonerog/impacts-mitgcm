@@ -48,7 +48,11 @@ COMPILED_NAME_CHECKS=(
     "useApproxAdvectionInAdMode gad_advection.f gad_advection_b.f gad_implicit_r.f gad_implicit_r_b.f"
     "cost_atl_jsec cost_readparms.f cost_atlantic_heat.f cost_atlantic_heat_b.f"
     "tileTransport cost_atlantic_heat.f cost_atlantic_heat_b.f"
+    "cost_atl_quantity cost_readparms.f cost_atlantic_heat.f"
 )
+# The fourth entry (since 2026-10-31): the routine integrates volume or heat as
+# cost_atl_quantity of data.cost says; a build without the key would reject the live
+# data.cost at start-up. The build body records cost_quantities=volume,heat for it.
 # The third entry (since 2026-10-29): the cost is the transport across the whole row in
 # Sv (tileTransport is the sum each tile adds to objf_atl; the tree's form divided it by
 # the tile's wet-cell count), so a build from an older cost_atlantic_heat.F fails here
@@ -130,6 +134,17 @@ cost_section_token() {
     175) echo sec60N ;;
     74)  echo sec25S ;;
     *)   echo "jsec$1" ;;
+  esac
+}
+
+# ---------- naming the quantity of an adjoint run's cost (since 2026-10-31) ----------
+# cost_atl_quantity of the staged data.cost: 'volume' (the production cost, Sv) gets
+# no token, so every run name stays as it was; 'heat' (the heat transport, PW) gets
+# _heat, after the section token.
+cost_quantity_token() {
+  case "$1" in
+    heat) echo heat ;;
+    *)    echo "" ;;
   esac
 }
 

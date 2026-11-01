@@ -82,6 +82,12 @@ C     cost_atl_kmaxdepth :: how many levels, from the surface, it integrates
      &                cost_atl_jsec, cost_atl_kmaxdepth
       integer cost_atl_jsec
       integer cost_atl_kmaxdepth
+C     cost_atl_quantity  :: what the section integrates (2026-10-31):
+C                           'volume', the volume transport in Sv, or
+C                           'heat', the heat transport in PW
+      common /cost_atl_c/
+     &                cost_atl_quantity
+      CHARACTER*(8) cost_atl_quantity
 
 #ifdef ALLOW_COST_STATE_FINAL
       common /cost_state_final_r/

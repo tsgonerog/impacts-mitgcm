@@ -3,13 +3,14 @@
       subroutine cost_atlantic_heat( myThid )
 C     /==========================================================\
 C     | subroutine cost_atlantic_heat                            |
-C     | o DINO_1deg: the meridional volume transport across one  |
-C     |   grid row, from the surface over a set number of        |
-C     |   levels, as a time mean over the end of the run, in Sv. |
+C     | o DINO_1deg: the meridional transport across one grid    |
+C     |   row, from the surface over a set number of levels, as  |
+C     |   a time mean over the end of the run: of volume, in Sv  |
+C     |   (since 2026-10-29), or of heat, in PW (since           |
+C     |   2026-10-31), as data.cost's cost_atl_quantity says.    |
 C     |   The routine keeps the name pkg/cost calls it by        |
-C     |   (cost_final.F); it computes no heat transport. Since   |
-C     |   2026-10-29 (the tree file's form, kept here until      |
-C     |   then, is described at the end).                        |
+C     |   (cost_final.F). The tree file's form, kept here until  |
+C     |   2026-10-29, is described at the end.                   |
 C     \==========================================================/
        implicit none
 
@@ -30,6 +31,7 @@ C     ========= Local variables =========================
       integer bi, bj
       _RL     tileTransport
       _RL     meanFrac
+      LOGICAL doHeat
 
 C     The cost J is
 C
@@ -48,6 +50,24 @@ C     row, and analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/
 C     overturning_maximum.py locates the overturning maximum). With
 C     kmax at the interface where the overturning streamfunction
 C     peaks on that row, J is the overturning maximum itself.
+C
+C     With cost_atl_quantity = 'heat' (2026-10-31) the integrand is
+C     the product cost_accumulate_mean.F accumulates at the same face,
+C     cMeanThetaVVel = < 0.5*(theta(i,j,k)+theta(i,j-1,k)) * vVel >,
+C     and the scaling is rhoConst * HeatCapacity_Cp * 1e-15:
+C
+C       J = mult_atl * rho0 Cp 1e-15 * < sum_i sum_{k<=kmax}
+C                 theta_face vVel dxG drF hFacS >        in petawatts,
+C
+C     the meridional heat transport across the row when kmax = Nr
+C     (cost_readparms.F warns when it is less: the upper branch only).
+C     theta is in degrees C as the model carries it, so the value is
+C     independent of the temperature origin only where the net volume
+C     transport across the row vanishes, as it does across a closed
+C     basin row up to the surface freshwater flux. rho0 and Cp are
+C     rhoConst and HeatCapacity_Cp of PARAMS.h: in DINO rhoConst takes
+C     rhoNil = 1035 kg/m3 (input_tap/data) and Cp its default of
+C     3994 J/kg/K; STDOUT.0000 prints both.
 C
 C     The time mean: cost_tile.F calls cost_accumulate_mean.F at
 C     every step whose end time lies in the final lastinterval
@@ -77,12 +97,14 @@ C     shorter than lastinterval reported the covered fraction of the
 C     mean. A run of that form has no cost_units line in its
 C     build_info.txt; a run of this form carries cost_units=Sv. The
 C     heat-transport branch of the tree file (the case without
-C     ALLOW_COST_ATLANTIC_HEAT_DOMASS) and its unused meridional
-C     section are gone: this file computes volume transport only,
-C     whatever COST_OPTIONS.h says about ..._DOMASS.
+C     ALLOW_COST_ATLANTIC_HEAT_DOMASS: the same per-tile form of the
+C     product) and its unused meridional section are gone; the heat
+C     transport here is the namelist choice above, whatever
+C     COST_OPTIONS.h says about ..._DOMASS.
 
       meanFrac = MIN( endTime - startTime, lastinterval )
      &         / lastinterval
+      doHeat = cost_atl_quantity .EQ. 'heat'
 
       DO bj=myByLo(myThid),myByHi(myThid)
        DO bi=myBxLo(myThid),myBxHi(myThid)
@@ -91,18 +113,34 @@ C     whatever COST_OPTIONS.h says about ..._DOMASS.
         DO j=1,sNy
          jg = myYGlobalLo-1+(bj-1)*sNy+j
          IF ( jg .EQ. cost_atl_jsec ) THEN
-          DO k=1,cost_atl_kmaxdepth
-           DO i=1,sNx
-            tileTransport = tileTransport
-     &           + cMeanVVel(i,j,k,bi,bj) * dxG(i,j,bi,bj)
-     &           * drF(k) * hFacS(i,j,k,bi,bj)
+          IF ( doHeat ) THEN
+           DO k=1,cost_atl_kmaxdepth
+            DO i=1,sNx
+             tileTransport = tileTransport
+     &            + cMeanThetaVVel(i,j,k,bi,bj) * dxG(i,j,bi,bj)
+     &            * drF(k) * hFacS(i,j,k,bi,bj)
+            ENDDO
            ENDDO
-          ENDDO
+          ELSE
+           DO k=1,cost_atl_kmaxdepth
+            DO i=1,sNx
+             tileTransport = tileTransport
+     &            + cMeanVVel(i,j,k,bi,bj) * dxG(i,j,bi,bj)
+     &            * drF(k) * hFacS(i,j,k,bi,bj)
+            ENDDO
+           ENDDO
+          ENDIF
          ENDIF
         ENDDO
 
-C       in Sverdrups (1e6 m3/s), as the mean over the covered time
-        objf_atl(bi,bj) = tileTransport * 1. _d -6 / meanFrac
+        IF ( doHeat ) THEN
+C        in petawatts (1e15 W), as the mean over the covered time
+         objf_atl(bi,bj) = tileTransport * rhoConst * HeatCapacity_Cp
+     &                   * 1. _d -15 / meanFrac
+        ELSE
+C        in Sverdrups (1e6 m3/s), as the mean over the covered time
+         objf_atl(bi,bj) = tileTransport * 1. _d -6 / meanFrac
+        ENDIF
 
 c--   end of bi,bj loop
        ENDDO

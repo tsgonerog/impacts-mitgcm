@@ -6,7 +6,9 @@
 # Since 2026-10-29; until then the routine kept the tree's form, which divided
 # each MPI tile's sum by the tile's wet-cell count, so J was about 1/16.6 of the
 # transport (and a 5-day run reported one sixth of that): a run's build_info.txt
-# says which with cost_units=Sv, absent for the old form.
+# says which with cost_units=Sv, absent for the old form. Since 2026-10-31 the
+# same routine computes the meridional HEAT transport across the row instead, in
+# PW, when cost_atl_quantity = 'heat' (below).
 #
 # The section is a namelist setting since 2026-10-20 (a parameter statement in
 # the source until then, so that a section meant a build): cost_atl_jsec is the
@@ -40,6 +42,13 @@
 # cost_atl_kmaxdepth: how many levels, from the surface, the section integrates.
 # 24 = down to the 848 m interface, where the overturning peaks on the 43 N row.
   cost_atl_kmaxdepth = 24,
+# cost_atl_quantity: what the section integrates. 'volume' = the volume transport
+# in Sv (the production cost). 'heat' = the heat transport rho0*Cp*<v*theta> in PW,
+# from the product pkg/cost accumulates at the face; for the meridional heat
+# transport of the whole column set cost_atl_kmaxdepth = 36 (Nr), otherwise it is
+# the upper branch only. IMPACTS_COST_QUANTITY overrides it per run; a heat run's
+# directory carries _heat.
+  cost_atl_quantity = 'volume',
 # lastinterval: the averaging window of the cost, in seconds, ending at the end of
 # the run. 2592000 = 30 days, the pkg/cost default, written here explicitly. Keep
 # it a multiple of deltaTClock (1800 s). A run shorter than the window accumulates

@@ -828,7 +828,7 @@ Four files matter more than the rest when following how a sensitivity is produce
 | File | Role |
 | --- | --- |
 | `code_tap/the_main_loop.F` | **The differentiation head.** `genmake2` runs `tapenade -b -head 'the_main_loop(fc)/(xx_genarr3d_dummy, xx_genarr2d_dummy, xx_gentim2d_dummy)'` — the cost `fc` is differentiated with respect to those control dummies, so everything reachable from this routine is what gets an adjoint |
-| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: the northward volume transport across a zonal section, from the surface to one interface, in Sverdrups since 2026-10-29 (about 1/16.6 of that before: the tree's per-tile normalisation). Since 2026-10-20 the row and the depth come from `data.cost` (`cost_atl_jsec`, `cost_atl_kmaxdepth`; `code_tap/cost.h` and `cost_readparms.F`), so a section is a namelist setting, not a build |
+| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: the northward volume transport across a zonal section, from the surface to one interface, in Sverdrups since 2026-10-29 (about 1/16.6 of that before: the tree's per-tile normalisation), or since 2026-10-31 the meridional heat transport across it in PW when `data.cost` sets `cost_atl_quantity = 'heat'`. Since 2026-10-20 the row and the depth come from `data.cost` (`cost_atl_jsec`, `cost_atl_kmaxdepth`; `code_tap/cost.h` and `cost_readparms.F`), so a section is a namelist setting, not a build |
 | `../../mods_tapenade_hooks/dummy_tap.F` | **Where `ADJ*` output is written.** The hand-written `DUMMY_IN_STEPPING_XYZ_RL_B` and its three siblings — one per field shape, each a halo fold followed by `CALL DUMP_ADJ_*(..., 'ADJtheta', ...)` over its adjoint argument — produce the files the analysis notebooks read; `DUMMY_FOR_ETAN_TAP_B` in the same file writes `ADJetan`. Each signature must match the call Tapenade generates; the build body asserts this |
 | `../../mods_tapenade_hooks/forward_step.F`, `dummy_in_stepping_tap.F` and `flow_tap` | **How the dump calls get generated.** The shadowed `forward_step.F` calls `DUMMY_IN_STEPPING_TAP`, a wrapper Tapenade differentiates, which calls one external per output field; the directory's `flow_tap` declares each field argument read-then-written (active), so Tapenade emits the `_B` call of every active field in the reverse sweep — TAF's `ADNAME` directive has no Tapenade equivalent, and this activity-through-arguments design replaced the old hand-patched `forward_step_b.f_modified` |
 
@@ -1118,7 +1118,21 @@ over `kmaxdepth` levels, averaged over the last 30 days of the run, **in
 Sverdrups since 2026-10-29**: each tile adds `vVel · dxG · drF · hFacS` over
 its part of the row to `objf_atl`, `cost_final.F` sums the tiles, and a run
 shorter than 30 days averages over its own length. The routine keeps the name
-`pkg/cost` calls it by and computes no heat transport; a build from it
+`pkg/cost` calls it by. **Since 2026-10-31 it computes the meridional heat
+transport across the row instead, in PW, when `data.cost` sets
+`cost_atl_quantity = 'heat'`**: the same loop over the product
+`cMeanThetaVVel` that `pkg/cost` accumulates at the southern face
+(`0.5 · (θ(j) + θ(j−1)) · vVel`), scaled by `rhoConst · HeatCapacity_Cp`
+(1035 kg m⁻³ from DINO's `rhoNil`, and the default 3994 J kg⁻¹ K⁻¹).
+For the heat transport of the whole column set `cost_atl_kmaxdepth = 36`;
+fewer levels give the upper branch only, which `cost_readparms.F` warns
+about. θ is in °C, so the value does not depend on the temperature origin
+only where the net volume transport across the row vanishes, as across a
+closed basin row up to the surface freshwater flux. `IMPACTS_COST_QUANTITY`
+overrides the key per run, a heat run's directory ends in `_heat`, the
+build record carries `cost_quantities=volume,heat`, and the submit body
+refuses the key, or the override, on a build without that line. A build from
+the routine
 records `cost_units=Sv` in `build_info.txt`, and the submit body refuses a
 build whose record does not match the source's form (31739, submitted on the
 2026-10-20 nocheckpoint build, stopped at staging). Validated 2026-10-29
@@ -1129,7 +1143,13 @@ cost's window to 1e-6 — 31737 (5 d) 7.468175 against 7.468179 Sv, 31738
 (30 d) 7.469871 against 7.469866 — and 31737 is the old build's 31619 times
 6 times 16.59 in `fc`, its `adxx_*` fields correlated at 0.9992–0.9996
 (`cost_sv_check.txt` in each run directory under
-`runs/adjoint/toolchain_validation/`). Until then the file kept
+`runs/adjoint/toolchain_validation/`). The heat option was validated the same
+way on 2026-10-31: 31742 (5 d, 43 N, the whole column) reports 0.061584 PW
+against 0.061581 PW recomputed from the run's `THETA` and `VVEL` (ratio
+1.000038, the covariance within the window, since the diagnostics are means
+and the cost accumulates the product; `cost_heat_check.txt` in its
+directory), and the companion volume run 31741 on the same build reproduces
+31737 bitwise. Until then the file kept
 the tree's form, which divided each MPI tile's sum by the tile's wet-cell
 count at each level (16, 17 and 16 along every DINO row): J was about 1/16.6
 of the transport (`fc` = 0.448 against 7.44 Sv in the 43 N reference 31553),
