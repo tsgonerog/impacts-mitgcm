@@ -184,8 +184,12 @@ if [ "$odiff" -gt 0 ]; then
                 # cost_atl_kmaxdepth), so two runs may legitimately stage different files here --
                 # of the same section (one wrote the keys, the other took the compiled defaults;
                 # comments) or of different sections, which is a configuration difference, as a
-                # differing build_info.txt key is below. Any other key differing stays unexpected.
-                strip() { grep -vE '^[[:space:]]*(#|$)' "$1" | grep -viE '^[[:space:]]*cost_atl_'; }
+                # differing build_info.txt key is below. Any other key differing stays unexpected,
+                # except lastinterval written out as its pkg/cost default (2592000 s, explicit in
+                # DINO's data.cost since 2026-10-31): a run that takes the default and one that
+                # writes it out average over the same window.
+                strip() { grep -vE '^[[:space:]]*(#|$)' "$1" | grep -viE '^[[:space:]]*cost_atl_' \
+                          | grep -viE '^[[:space:]]*lastinterval[[:space:]]*=[[:space:]]*2592000\.?0*[[:space:]]*,?[[:space:]]*$'; }
                 if diff <(strip "$OLD/$f") <(strip "$NEW/$f") > /dev/null 2>&1
                 then tag="[CONFIG: the cost section (cost_atl_* keys and comments only)]"
                 else tag="[UNEXPECTED: a key other than the cost section differs]"; unexpected=$((unexpected+1)); fi ;;
