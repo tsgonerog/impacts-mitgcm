@@ -177,7 +177,7 @@ def page_only(out=None):
 def merge(out=None, repo_copy=False):
     """One explorer for every cost section that has its own (analysis/<campaign>/explorer/manifest.json)."""
     import os
-    out = Path(out or (c.OUTPUTS / 'analysis' / 'cost_sections' / 'explorer'))
+    out = Path(out or (c.OUTPUTS / 'analysis' / c.CROSS_DIR / 'explorer'))
     (out / 'data').mkdir(parents=True, exist_ok=True)
     man = None
     sections, datasets = [], {}
@@ -226,7 +226,7 @@ def merge(out=None, repo_copy=False):
             grid = dict(g)
             for k in ('jsec', 'kcost', 'cost_depth_m', 'lat_sec'):
                 grid.pop(k, None)
-            man = {'built': __import__('datetime').date.today().isoformat(), 'campaign': 'cost_sections',
+            man = {'built': __import__('datetime').date.today().isoformat(), 'campaign': c.CROSS_DIR,
                    'grid': grid, 'cmap': m['cmap'], 'sections': [], 'datasets': {}}
         print('  %-32s %s: %d datasets' % (name, key, len(m['datasets'])))
     if man is None:

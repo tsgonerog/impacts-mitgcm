@@ -50,11 +50,22 @@ case "$CAMPAIGN" in
   kappa_v_ensemble_gmFwd_sec43N) JSEC=148; KMAX=24 ;;    # 43 N, 848 m: the overturning maximum
   kappa_v_ensemble_gmFwd_sec60N) JSEC=175; KMAX=25 ;;    # 60 N, 982 m: subpolar, the OSNAP latitudes
   kappa_v_ensemble_gmFwd_sec25S) JSEC=74;  KMAX=24 ;;    # 25 S, 848 m: north of the Deacon cell
+  # second generation (2026-11-01): the same four sections with the cost in Sverdrups (the routine of 2026-10-29)
+  kappa_v_ensemble_gmFwd_sec26N_Sv) JSEC=127; KMAX=25 ;;
+  kappa_v_ensemble_gmFwd_sec43N_Sv) JSEC=148; KMAX=24 ;;
+  kappa_v_ensemble_gmFwd_sec60N_Sv) JSEC=175; KMAX=25 ;;
+  kappa_v_ensemble_gmFwd_sec25S_Sv) JSEC=74;  KMAX=24 ;;
   *) echo "campaign $CAMPAIGN has no cost section in this script (add a case)"; exit 1 ;;
 esac
 BI=$SETUP/build_tapAdj_ckpAll/build_info.txt
 grep -q '^cost_section=namelist' "$BI" 2>/dev/null \
   || { echo "build_tapAdj_ckpAll does not record cost_section=namelist (its section is compiled in, or there is no build): rebuild first"; exit 1; }
+# a *_Sv campaign needs the rewritten cost (cost_units=Sv in the record); a first-generation name needs the old form,
+# which no build on disk has any more -- those campaigns are closed, their runs the record
+case "$CAMPAIGN" in
+  *_Sv) grep -q '^cost_units=Sv' "$BI" || { echo "build_tapAdj_ckpAll does not record cost_units=Sv: rebuild from main first"; exit 1; } ;;
+  *)    grep -q '^cost_units=Sv' "$BI" && { echo "campaign $CAMPAIGN is first-generation (tile-normalised cost) but the build computes J in Sv: use the *_Sv campaign of the same section"; exit 1; } ;;
+esac
 export IMPACTS_COST_JSEC=$JSEC IMPACTS_COST_KMAXDEPTH=$KMAX
 echo "campaign $CAMPAIGN: cost section row $JSEC, $KMAX levels (IMPACTS_COST_JSEC / IMPACTS_COST_KMAXDEPTH exported)"
 mkdir -p "$A"
@@ -87,6 +98,12 @@ if [ -n "$LEGS_FROM" ]; then
   # deepNN (45-60 N below 1500 m) was added on 2026-10-14 for the 43 N campaign, whose deepN box sits under its
   # section; the four boxes are run for every section since 2026-10-20 (the pickups moved to the shared directory)
   THETA_BOXES="deepN_p deepN_m midTrop_p midTrop_m soUpper_p soUpper_m deepNN_p deepNN_m"
+  # the targeted boxes of 2026-10-21 (campaign.THETA_BOXES): one pair per section at 60 N and 25 S, where the
+  # standard boxes' responses sit in those costs' noise; submitted by hand then (31677-31684), part of the chain since
+  case "$CAMPAIGN" in
+    *sec60N*) THETA_BOXES="$THETA_BOXES subpolarDeep_p subpolarDeep_m secN60_p secN60_m" ;;
+    *sec25S*) THETA_BOXES="$THETA_BOXES sAtlThermo_p sAtlThermo_m sAtlDeep_p sAtlDeep_m" ;;
+  esac
   for n in $THETA_BOXES; do
     [ -f "$PK/$n/pickup.0003162240.data" ] || { echo "perturbed pickup missing: $PK/$n"; exit 1; }
   done

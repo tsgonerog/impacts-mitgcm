@@ -104,7 +104,7 @@ def leg_indices_vs_kappa():
     x = [c.FACTOR[r] for r in c.RUN_ORDER]
     fig, axs = plt.subplots(1, 3, figsize=(10.5, 3.1))
     for ax, k, lab in zip(axs, ['jproxy', c.SEC_AMOC, 'Tmean'],
-                          ['cost proxy J at %s (last year of the leg)' % c.SEC_NAME, 'overturning max above 1000 m at %s [Sv]' % c.SEC_NAME,
+                          ['cost proxy J at %s (last year of the leg) [%s]' % (c.SEC_NAME, c.J_UNIT), 'overturning max above 1000 m at %s [Sv]' % c.SEC_NAME,
                            'volume-mean temperature [°C]']):
         ax.plot(x, m[k], '-o', color=c.SERIES[0], ms=5, mec=c.SURFACE, mew=1.5)
         ax.plot([1.0], [m.loc['REF', k]], 'o', color=c.INK, ms=6, mec=c.SURFACE, mew=1.5)
@@ -121,7 +121,7 @@ def leg_indices_vs_kappa():
 def leg_timeseries():
     df = pd.read_csv(c.CACHE / 'leg_series.csv')
     fig, axs = plt.subplots(1, 2, figsize=(10.5, 3.2), sharex=True)
-    for ax, k, lab in zip(axs, ['jproxy', c.SEC_AMOC], ['cost proxy J (30.5-d means)', 'overturning at %s [Sv]' % c.SEC_NAME]):
+    for ax, k, lab in zip(axs, ['jproxy', c.SEC_AMOC], ['cost proxy J (30.5-d means) [%s]' % c.J_UNIT, 'overturning at %s [Sv]' % c.SEC_NAME]):
         for r in c.MEMBERS:
             s = df[df.run == r]
             ax.plot(s.year, s[k], color=c.AXIS_C, lw=0.9)
@@ -201,7 +201,7 @@ def ref_rms_vs_lead():
         ax.plot(s.lead_yr, s.rms, color=c.SERIES[0], lw=1.6, label='reference adjoint')
         if prev is not None:
             q = prev[(prev.run == 'REF') & (prev['var'] == v)].sort_values('lead_yr')
-            ax.plot(q.lead_yr, q.rms, color=c.MUTED, lw=1.1, label='31237 (from 31205)')
+            ax.plot(q.lead_yr, q.rms, color=c.MUTED, lw=1.1, label=('31237 (from 31205)' if c.UNITS == 'tile' else '%d (first generation, tile units)' % c.PREV_GMFWD_5YR_JOB))
         ax.set_yscale('log')
         ax.set_title('%s  RMS [dJ %s]' % (v, units[v]), fontsize=9)
     for ax in axs[1]:
@@ -324,8 +324,8 @@ def ref_vs_previous():
         s = p[p['var'] == v].sort_values('lead_yr')
         axs[0].plot(s.lead_yr, s['corr'], color=col, label=v)
         axs[1].plot(s.lead_yr, s['rms_ratio'], color=col, label=v)
-    axs[0].set_title('pattern correlation, 31237 against the reference', fontsize=9.5)
-    axs[1].set_title('RMS ratio, 31237 / reference', fontsize=9.5)
+    axs[0].set_title('pattern correlation, %d against the reference' % c.PREV_GMFWD_5YR_JOB, fontsize=9.5)
+    axs[1].set_title('RMS ratio, %d / reference' % c.PREV_GMFWD_5YR_JOB, fontsize=9.5)
     axs[1].axhline(1, color=c.AXIS_C, lw=0.8)
     for a in axs:
         a.set_xlabel('lead [yr]')
@@ -423,7 +423,7 @@ def fc_vs_kappa():
         for lab, x, yv, col in series:
             o = np.argsort(x)
             ax.plot(np.array(x)[o], np.array(yv)[o], '-o', color=col, ms=5, mec=c.SURFACE, mew=1.5, label=lab)
-        ax.set_ylabel('J (fc) over the 5-yr window')
+        ax.set_ylabel('J (fc) over the 5-yr window [%s]' % c.J_UNIT)
         ax.legend(loc='upper center', fontsize=8)
     else:
         # this campaign measures another section than every earlier one, so the earlier curves go on a second

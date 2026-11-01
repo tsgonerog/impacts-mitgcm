@@ -42,6 +42,16 @@ under runs/forward/kappa_v_ensemble_gmFwd/).
 
 COST_SECTION below holds what differs; JSEC, KMAX, SEC_LAT and SEC_AMOC are the current campaign's. compare_sections.py
 reads all four.
+
+THE SECOND GENERATION, `*_Sv` (2026-11-01): the same four sections rerun after the cost routine was rewritten on
+2026-10-29 (merged 2026-10-31): J is the row transport in Sverdrups, each tile's sum added without the tree's per-tile
+wet-count normalisation, so every fc is about 16.6 times the first generation's and the middle third of the row is no
+longer weighted 6 % less. The same legs, pickups and forcing files; eight new 5-yr adjoints and the finite-difference
+sweeps per section, filed under runs/adjoint/<campaign>/ and analysis/<campaign>/ beside the old ones, which stay as the
+record. UNITS says which form a campaign's numbers are in ('tile' or 'Sv'), OLD_CAMPAIGN names the first-generation
+campaign of the same section (its reference adjoint is PREV_GMFWD_5YR_JOB, so adjoint_products.py members/fields and
+make_figures.py ref_vs_previous compare the two generations), jproxy follows the form, and the cross-section products of
+the second generation go to analysis/cost_sections_Sv/ (CROSS_DIR).
 """
 from __future__ import annotations
 
@@ -56,21 +66,43 @@ OUTPUTS = Path(os.environ.get('CAMPAIGN_OUTPUTS', '/scratch2/tshahriar/DINO_1deg
 EARLIER_OUTPUTS = Path('/scratch/tshahriar/DINO_1deg_outputs')                               # the tree it ran in while /scratch2 was down
 # Which campaign this suite reads: CAMPAIGN_NAME in the environment, the 43 N rerun by default (see the module docstring).
 COST_SECTION = {   # jsec is 0-based here (the Fortran row is jsec + 1); kmax the number of levels from the surface
+    # first generation: the cost in the tree's per-tile-normalised form (units='tile'), runs up to 2026-10-28
     'kappa_v_ensemble_gmFwd': dict(jsec=126, kmax=25, sec_name='26 N', sec_amoc='amoc26', since='2026-09-13',
-                                   prev_5yr_job=31237, legs_from=None),
+                                   prev_5yr_job=31237, legs_from=None, units='tile', old_campaign=None),
     'kappa_v_ensemble_gmFwd_sec43N': dict(jsec=147, kmax=24, sec_name='43 N', sec_amoc='amoc43', since='2026-10-13',
-                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd'),
+                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd', units='tile', old_campaign=None),
     'kappa_v_ensemble_gmFwd_sec60N': dict(jsec=174, kmax=25, sec_name='60 N', sec_amoc='amoc60', since='2026-10-20',
-                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd'),
+                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd', units='tile', old_campaign=None),
     'kappa_v_ensemble_gmFwd_sec25S': dict(jsec=73, kmax=24, sec_name='25 S', sec_amoc='amoc25S', since='2026-10-20',
-                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd'),
+                                          prev_5yr_job=None, legs_from='kappa_v_ensemble_gmFwd', units='tile', old_campaign=None),
+    # second generation (2026-11-01): the cost as the row transport in Sverdrups; prev_5yr_job is the first
+    # generation's reference adjoint of the same section, so the two generations are compared by the suite itself
+    'kappa_v_ensemble_gmFwd_sec26N_Sv': dict(jsec=126, kmax=25, sec_name='26 N', sec_amoc='amoc26', since='2026-11-01',
+                                             prev_5yr_job=31374, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                             old_campaign='kappa_v_ensemble_gmFwd'),
+    'kappa_v_ensemble_gmFwd_sec43N_Sv': dict(jsec=147, kmax=24, sec_name='43 N', sec_amoc='amoc43', since='2026-11-01',
+                                             prev_5yr_job=31553, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                             old_campaign='kappa_v_ensemble_gmFwd_sec43N'),
+    'kappa_v_ensemble_gmFwd_sec60N_Sv': dict(jsec=174, kmax=25, sec_name='60 N', sec_amoc='amoc60', since='2026-11-01',
+                                             prev_5yr_job=31621, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                             old_campaign='kappa_v_ensemble_gmFwd_sec60N'),
+    'kappa_v_ensemble_gmFwd_sec25S_Sv': dict(jsec=73, kmax=24, sec_name='25 S', sec_amoc='amoc25S', since='2026-11-01',
+                                             prev_5yr_job=31647, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
+                                             old_campaign='kappa_v_ensemble_gmFwd_sec25S'),
 }
-SECTION_ORDER = ['kappa_v_ensemble_gmFwd_sec25S', 'kappa_v_ensemble_gmFwd', 'kappa_v_ensemble_gmFwd_sec43N',
-                 'kappa_v_ensemble_gmFwd_sec60N']      # south to north, for the cross-section comparison
 CAMPAIGN = os.environ.get('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
 if CAMPAIGN not in COST_SECTION:
     raise SystemExit('CAMPAIGN_NAME=%s is not one of %s' % (CAMPAIGN, sorted(COST_SECTION)))
 _CS = COST_SECTION[CAMPAIGN]
+UNITS = _CS['units']                           # 'tile' (first generation) or 'Sv' (second)
+OLD_CAMPAIGN = _CS['old_campaign']             # the first-generation campaign of the same section, for a *_Sv campaign
+J_UNIT = 'Sv' if UNITS == 'Sv' else 'tile units'   # what fc is in, for axis labels
+# south to north, for the cross-section comparison: the four campaigns of this campaign's generation
+SECTION_ORDER = (['kappa_v_ensemble_gmFwd_sec25S_Sv', 'kappa_v_ensemble_gmFwd_sec26N_Sv', 'kappa_v_ensemble_gmFwd_sec43N_Sv',
+                  'kappa_v_ensemble_gmFwd_sec60N_Sv'] if UNITS == 'Sv' else
+                 ['kappa_v_ensemble_gmFwd_sec25S', 'kappa_v_ensemble_gmFwd', 'kappa_v_ensemble_gmFwd_sec43N',
+                  'kappa_v_ensemble_gmFwd_sec60N'])
+CROSS_DIR = 'cost_sections_Sv' if UNITS == 'Sv' else 'cost_sections'   # analysis/<CROSS_DIR>/: the sections compared
 ANALYSIS = OUTPUTS / 'analysis' / CAMPAIGN
 CACHE = ANALYSIS / 'cache'
 STATS = ANALYSIS / 'stats'
@@ -353,13 +385,16 @@ def sec_lat():
 
 
 def jproxy(v, g=None):
-    """The compiled cost formula applied to a meridional-velocity field v (k, j, i): per-tile
-    wet-face normalisation, upper KMAX levels, row JSEC. With a 30.5-d mean v it is a proxy of
-    fc, which averages the final 30 d."""
+    """The compiled cost formula applied to a meridional-velocity field v (k, j, i), upper KMAX
+    levels, row JSEC: for a 'Sv' campaign the row transport in Sverdrups (the rewritten routine of
+    2026-10-29), for a 'tile' campaign the tree's per-tile wet-face normalisation. With a 30.5-d
+    mean v it is a proxy of fc, which averages the final 30 d."""
     g = g or grid()
     msk = g['hFacS'][:, JSEC, :] > 0
     dxg = g['DXG'][JSEC, :]
     vs = v[:, JSEC, :]
+    if UNITS == 'Sv':
+        return 1e-6 * float((vs[:KMAX] * dxg[None, :] * g['DRF'][:KMAX, None] * g['hFacS'][:KMAX, JSEC, :]).sum())
     tot = 0.0
     for t in range(NTILE):
         sl = slice(SNX * t, SNX * (t + 1))

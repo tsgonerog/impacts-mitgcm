@@ -684,7 +684,7 @@ def surrogate_text(fg, fd, ms, dec, tgt, h):
 
 
 # ---------------------------------------------------------------- the four cost sections (2026-10-20)
-CS_DIR = c.OUTPUTS / 'analysis' / 'cost_sections'
+CS_DIR = c.OUTPUTS / 'analysis' / c.CROSS_DIR
 
 
 def sections_text(h):

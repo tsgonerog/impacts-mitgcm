@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 import campaign as c
 import make_films as mf
 
-OUT = c.OUTPUTS / 'analysis' / 'cost_sections'
+OUT = c.OUTPUTS / 'analysis' / c.CROSS_DIR   # cost_sections (first generation) or cost_sections_Sv
 FIGS, STATS, ANIMS = OUT / 'figures', OUT / 'stats', OUT / 'animations'
 LEVEL_M = 791                      # the map level: the deck's temperature film's upper level (inside every section's band)
 COLORS = c.SERIES + ['#7c4dff']    # four categorical slots: the suite's three plus a violet
@@ -488,7 +488,7 @@ def sections_jproxy_spinup():
         if nf:
             axs[1].bar(short(n), nf['jproxy']['std_monthly'], color=col)
     axs[0].set_xlabel('year of the spin-up 31203')
-    axs[0].set_ylabel('cost proxy J (30.5-d means)')
+    axs[0].set_ylabel('cost proxy J (30.5-d means) [%s]' % c.J_UNIT)
     axs[0].set_title('the cost formula applied to the spin-up\'s monthly velocity, four sections', fontsize=9.5)
     axs[0].legend(fontsize=8, ncol=4)
     axs[1].set_ylabel('σ of monthly J, years 100-170, detrended')
