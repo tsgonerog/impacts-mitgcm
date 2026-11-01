@@ -19,14 +19,17 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
+GEN = os.environ.get('FOLLOWUP_GEN', '')       # 'Sv': the second generation of the campaigns (2026-11-01)
+SUF = ('_' + GEN) if GEN else ''
+os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N' + SUF)
 import numpy as np        # noqa: E402
 import campaign as c      # noqa: E402
 
 AN = c.OUTPUTS / 'analysis'
-OUT = AN / 'cost_sections' / 'baselines'
-SECS = [('25 S', 'kappa_v_ensemble_gmFwd_sec25S', -25.15), ('26 N', 'kappa_v_ensemble_gmFwd', 26.05),
-        ('43 N', 'kappa_v_ensemble_gmFwd_sec43N', 43.21), ('60 N', 'kappa_v_ensemble_gmFwd_sec60N', 59.77)]
+OUT = AN / c.CROSS_DIR / 'baselines'           # cost_sections/ or cost_sections_Sv/
+# the four campaigns of this generation, south to north (campaign.SECTION_ORDER), with the row-centre latitudes
+_LAT = {'25 S': -25.15, '26 N': 26.05, '43 N': 43.21, '60 N': 59.77}
+SECS = [(c.COST_SECTION[n]['sec_name'], n, _LAT[c.COST_SECTION[n]['sec_name']]) for n in c.SECTION_ORDER]
 RUNS = c.RUN_ORDER
 LK = np.log2([c.FACTOR[r] for r in RUNS])
 TARGETS = [('adxx_theta', 'initial-temperature gradient (5 yr)'), ('ADJtheta_1yr', 'temperature sensitivity, 1 yr lead'),

@@ -13,7 +13,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
+GEN = os.environ.get('FOLLOWUP_GEN', '')       # 'Sv': the second generation (see followup_analysis.py)
+SUF = ('_' + GEN) if GEN else ''
+os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N' + SUF)
 import numpy as np                 # noqa: E402
 import matplotlib                  # noqa: E402
 matplotlib.use('Agg')
@@ -22,8 +24,8 @@ import campaign as c               # noqa: E402
 
 c.setup_style()
 AN = c.OUTPUTS / 'analysis'
-SWAP = AN / 'kappa_v_operator_vs_state'
-SWEEP = AN / 'cost_section_sweep'
+SWAP = AN / ('kappa_v_operator_vs_state' + SUF)
+SWEEP = AN / ('cost_section_sweep' + SUF)
 
 
 def swap():

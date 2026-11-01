@@ -25,14 +25,18 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
+# FOLLOWUP_GEN=Sv (2026-11-01) selects the second generation: the same experiments rerun under the cost in Sverdrups,
+# filed as kappa_v_operator_vs_state_Sv / cost_section_sweep_Sv beside the 43 N campaign kappa_v_ensemble_gmFwd_sec43N_Sv.
+GEN = os.environ.get('FOLLOWUP_GEN', '')
+SUF = ('_' + GEN) if GEN else ''
+os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N' + SUF)
 import numpy as np        # noqa: E402
 import campaign as c      # noqa: E402
 
 AN = c.OUTPUTS / 'analysis'
-SWAP = AN / 'kappa_v_operator_vs_state'
-SWEEP = AN / 'cost_section_sweep'
-SEC43 = AN / 'kappa_v_ensemble_gmFwd_sec43N'
+SWAP = AN / ('kappa_v_operator_vs_state' + SUF)
+SWEEP = AN / ('cost_section_sweep' + SUF)
+SEC43 = AN / ('kappa_v_ensemble_gmFwd_sec43N' + SUF)
 RUNS_ADJ = c.OUTPUTS / 'runs' / 'adjoint'
 g = c.grid()
 wet, vol, lat = g['wetC'], g['vol'], g['lat']
