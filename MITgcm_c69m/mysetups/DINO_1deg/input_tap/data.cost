@@ -18,11 +18,26 @@
 # analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/overturning_maximum.py has the
 # streamfunction behind the choices.
 #
+# Every COST_NML key this setup uses is set below with a line on what it does
+# (since 2026-10-31); a key left out takes the default of code_tap/cost_readparms.F,
+# which is the same value. A comment line must start with # in column 1.
+#
 # ******************
 # cost function
 # ******************
  &COST_NML
+# mult_atl: the weight of this term in fc (pkg/cost sums mult_atl * objf_atl over
+# its cost terms; this setup has one). 1 = fc is J itself.
   mult_atl = 1.,
+# cost_atl_jsec: the 1-based grid row whose southern face the section integrates
+# vVel across, over the whole row. 148 = the 43 N row (centre 43.21 N).
   cost_atl_jsec = 148,
+# cost_atl_kmaxdepth: how many levels, from the surface, the section integrates.
+# 24 = down to the 848 m interface, where the overturning peaks on the 43 N row.
   cost_atl_kmaxdepth = 24,
+# lastinterval: the averaging window of the cost, in seconds, ending at the end of
+# the run. 2592000 = 30 days, the pkg/cost default, written here explicitly. Keep
+# it a multiple of deltaTClock (1800 s) and not longer than the run: a longer
+# window accumulates every step with weights that sum to less than one.
+  lastinterval = 2592000.,
  &

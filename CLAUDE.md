@@ -298,10 +298,12 @@ while analysing the kappa_v ensemble; details and the validating proxy were in
 `analyses/DINO_1deg/adjoint/kappa_v_ensemble/`, retired 2026-09-12):
 
 - **fc is a terminal-30-day mean, not a run mean.** `pkg/cost` accumulates
-  `cMean*` only over the final `lastinterval` seconds of the run, and the
-  default (2,592,000 s = 30 d, `cost_readparms.F`) is not overridden in
-  `data.cost`. Direct cost forcing therefore enters the adjoint only during
-  the last month; everything at longer lead is adjoint dynamics.
+  `cMean*` only over the final `lastinterval` seconds of the run; `data.cost`
+  sets it explicitly to the `cost_readparms.F` default, 2,592,000 s = 30 d
+  (since 2026-10-31; until then it took the default, with every other
+  `COST_NML` key now also written out and commented there). Direct cost
+  forcing therefore enters the adjoint only during the last month; everything
+  at longer lead is adjoint dynamics.
 - **fc depends on the domain decomposition.** `countV(k)` is computed per MPI
   tile (the `bi,bj` loop runs `i=1,sNx`), and DINO's 51-cell section spans 3
   tiles, so J sums three per-tile-normalised transports — ~3× a globally

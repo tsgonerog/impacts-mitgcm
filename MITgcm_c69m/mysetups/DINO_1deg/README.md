@@ -1176,8 +1176,9 @@ Two verified subtleties of what `fc` actually measures (2026-08-30; full
 statement in the root `CLAUDE.md` and in
 `analyses/DINO_1deg/adjoint/kappa_v_ensemble/ensemble_common.py`, retired
 2026-09-12):
-`pkg/cost` averages only the **final 30 days** of the run (`lastinterval`
-default, not overridden in `data.cost`), and the per-level wet-count
+`pkg/cost` averages only the **final 30 days** of the run (`lastinterval`,
+set explicitly to the 30-day default in `data.cost` since 2026-10-31, with a
+comment on every `COST_NML` key), and the per-level wet-count
 normalisation is computed **per MPI tile**, so `fc` depends on the domain
 decomposition — comparable across runs only at fixed `nPx`/`nPy`.
 
