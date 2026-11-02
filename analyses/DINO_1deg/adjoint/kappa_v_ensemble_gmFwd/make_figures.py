@@ -513,8 +513,8 @@ def kappa_gradient():
         ax.plot([1.0], [kap.fd_central.iloc[0] / (0.1 * c.KAPPA0)], 'D', color=c.INK, ms=6, mec=c.SURFACE, mew=1.5,
                 label='central finite difference, κ_v ±10 % at the reference')
     ax.set_xscale('log', base=2)
-    ax.set_yscale('symlog', linthresh=300)
-    ax.set_ylim(-2e4, 3e3)
+    ax.set_yscale('symlog', linthresh=300 * c.J_SCALE)
+    ax.set_ylim(-2.5e4 * c.J_SCALE, 3e3 * c.J_SCALE)   # the limits were set for the first generation's units
     xs = sorted(c.FACTOR.values())
     ax.set_xticks(xs)
     ax.set_xticklabels(['%g' % v for v in xs])
@@ -538,7 +538,7 @@ def dJ_decomposition():
             label='adjoint: κ_v term + year-180 Theta/Salt change term')
     ax.set_xticks(x)
     ax.set_xticklabels(['%s %gx' % (r, f) for r, f in zip(d.run, d.factor)], fontsize=8)
-    ax.set_yscale('symlog', linthresh=0.02)
+    ax.set_yscale('symlog', linthresh=0.02 * c.J_SCALE)
     cols = ['dJ_measured', 'dJ_kappa_refgrad', 'dJ_predicted_refgrad_plus_state']
     ax.set_ylim(1.6 * float(d[cols].min().min()), 1.6 * float(d[cols].max().max()))
     ax.set_ylabel('ΔJ')

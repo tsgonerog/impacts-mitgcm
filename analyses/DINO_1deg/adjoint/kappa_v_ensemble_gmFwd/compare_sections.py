@@ -263,7 +263,7 @@ def sections_J_gradient():
         if len(kap):
             axs[2].plot([1.0], [kap.fd_central.iloc[0] / (0.1 * c.KAPPA0)], 'D', color=col, ms=6, mec=c.INK, mew=0.8)
     axs[2].axhline(0, color=c.AXIS_C, lw=0.8)
-    axs[2].set_yscale('symlog', linthresh=300)
+    axs[2].set_yscale('symlog', linthresh=300 * c.J_SCALE)
     xs = sorted(c.FACTOR.values())
     for ax in axs:
         ax.set_xscale('log', base=2)

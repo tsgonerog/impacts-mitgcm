@@ -109,6 +109,7 @@ _CS = COST_SECTION[CAMPAIGN]
 UNITS = _CS['units']                           # 'tile' (first generation) or 'Sv' (second)
 OLD_CAMPAIGN = _CS['old_campaign']             # the first-generation campaign of the same section, for a *_Sv campaign
 J_UNIT = 'Sv' if UNITS == 'Sv' else 'tile units'   # what fc is in, for axis labels
+J_SCALE = 16.6 if UNITS == 'Sv' else 1.0           # for limits and thresholds written in the first generation's units
 # south to north, for the cross-section comparison: the four campaigns of this campaign's generation
 SECTION_ORDER = (['kappa_v_ensemble_gmFwd_sec25S_Sv', 'kappa_v_ensemble_gmFwd_sec26N_Sv848', 'kappa_v_ensemble_gmFwd_sec43N_Sv',
                   'kappa_v_ensemble_gmFwd_sec60N_Sv848'] if UNITS == 'Sv' else

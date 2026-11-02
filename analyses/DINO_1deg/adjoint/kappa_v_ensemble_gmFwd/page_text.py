@@ -309,6 +309,8 @@ NUM = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']
 
 def _and(items):
     items = list(items)
+    if not items:
+        return 'no'
     return items[0] if len(items) == 1 else ', '.join(items[:-1]) + ' and ' + items[-1]
 
 
@@ -413,10 +415,10 @@ def forward_text(legs):
         drift[r] = float(s.iloc[-12:].mean() - s.iloc[-36:-24].mean())
         roll = s.rolling(12).mean()
         k = int(roll.idxmax())
-        if 18 <= k < len(s) - 12 and roll[k] > roll[11] + 2e-3:
+        if 18 <= k < len(s) - 12 and roll[k] > roll[11] + 2e-3 * c.J_SCALE:
             peaked[r] = (k + 1) / 12.0
-    up = [r for r in runs if drift[r] > 2e-3]
-    down = [r for r in runs if drift[r] < -2e-3]
+    up = [r for r in runs if drift[r] > 2e-3 * c.J_SCALE]
+    down = [r for r in runs if drift[r] < -2e-3 * c.J_SCALE]
     lab = lambda rs: _and(['%gx' % c.FACTOR[r] for r in rs])
     pk = [r for r in down if r in peaked]
     old8, old9 = json.loads(c.PREVIOUS.read_text())['visc2x_2026_08'], json.loads(c.PREVIOUS.read_text())['gmFree_ReMax2_2026_09_10']

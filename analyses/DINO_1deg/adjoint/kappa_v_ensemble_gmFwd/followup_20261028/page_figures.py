@@ -64,7 +64,7 @@ def line():
     ax[1].plot(FACT, G, '-o', color=c.SERIES[0], ms=5, label='adjoint: ∂J/∂κ_v at fixed state (sum of the map)')
     ax[1].plot(xs, sec, 's', color=c.SERIES[1], ms=6, label='slope of J between neighbours (includes the 10-yr adjustment)')
     ax[1].plot([1], [fd_slope], 'D', color='#0b0b0b', ms=7, label='finite difference at the reference, κ_v ±10 %')
-    ax[1].axhline(0, color=c.AXIS_C, lw=0.8); ax[1].set_yscale('symlog', linthresh=200); ax[1].set_yticks([-10000, -1000, 0, 1000])
+    ax[1].axhline(0, color=c.AXIS_C, lw=0.8); ax[1].set_yscale('symlog', linthresh=200 * c.J_SCALE); ax[1].set_yticks([v * (10 if c.UNITS == 'Sv' else 1) for v in [-10000, -1000, 0, 1000]])
     ax[1].set_ylabel('dJ/dκ_v  [per m² s⁻¹]'); xlog2(ax[1]); ax[1].set_title('the gradient against the mixing', loc='left'); ax[1].legend(loc='upper left', fontsize=8)
     fig.tight_layout(); fig.savefig(c.FIGS / 'fig_line_plot.png'); plt.close(fig); print(c.FIGS / 'fig_line_plot.png')
 
