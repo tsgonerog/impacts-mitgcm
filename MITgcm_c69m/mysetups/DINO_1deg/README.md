@@ -1234,6 +1234,17 @@ the eight adjoints, then the κ_v, forcing and four Theta-box sweeps, as in the
 43 N campaign), and `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/compare_sections.py`
 compares the four.
 
+**One interface since 2026-11-01.** With the cost rewritten as the transport in
+Sverdrups (2026-10-29), the user fixed one interface, 848 m (`kmaxdepth=24`),
+for all four sections, so that the four costs differ in latitude only; 26 N and
+60 N had been integrated to 982 m, the interface of their own maxima. At 848 m
+the 26 N cost is 5.11 Sv and the 60 N cost 5.87 Sv (5.08 and 5.87 Sv in the
+streamfunction of the spin-up's last decade, against 5.10 and 6.04 Sv at
+982 m). The four campaigns were rerun on the same legs as
+`kappa_v_ensemble_gmFwd_sec43N_Sv`, `_sec25S_Sv`, `_sec26N_Sv848` and
+`_sec60N_Sv848` (jobs 31774–31940); the campaign suite's README has the job
+ranges and what changed.
+
 Two verified subtleties of what `fc` actually measures (2026-08-30; full
 statement in the root `CLAUDE.md` and in
 `analyses/DINO_1deg/adjoint/kappa_v_ensemble/ensemble_common.py`, retired

@@ -33,6 +33,22 @@ does so section by section (`analysis/cost_sections_Sv/validation_vs_tile/`; at 
 the change of units and of depth together, at 43 N and 25 S the units alone). The first generation's runs and products stay on scratch
 under their old names as the record; the deck and the notes report the second generation.
 
+**What the four sections give in the second generation (2026-11-02; `analysis/cost_sections_Sv/stats/sections_table.csv`,
+the cost in Sverdrups, 848 m at every section).** J at the reference is 7.44, 5.11, 5.87 and 1.62 Sv (43 N, 26 N, 60 N,
+25 S), 54 (25 S) to 605 (26 N) times its monthly noise. Its dependence on κ_v keeps the first generation's shapes: a U with its minimum
+at 4× at 43 N (0.66 of the reference) and at 2× at 26 N (0.85), a local maximum at the reference at 60 N (0.81 at
+0.25×, 0.87 at 4×, 1.49 at 32×), a rise to 1.28× at 8× at 25 S. dJ/dκ_v at the reference is −1.23e5, −2.9e4, +1.45e4
+and +1.94e4 per m² s⁻¹, against finite differences +14 %, +35 %, no signal (the ±10 % response is 0.6 σ at 60 N) and
+−9 % (below twice the 25 S noise). The 60 N reference gradient changed sign with the interface: to 982 m it was −301 in
+the old units. The 43 N and 60 N temperature sensitivities lose 83–90 % of their RMS within a year, the 26 N and 25 S
+ones keep about twice as much at five years, while 43 N and 60 N accumulate twice the κ_v sensitivity. The northern
+patterns correlate 0.23–0.39 (five-year temperature field; the κ_v gradient 0.71 between 26 N and 43 N, 0.15–0.17 to
+60 N), and 25 S correlates with none of them (|r| ≤ 0.07). The member-vs-reference correlation of the one-year
+temperature field is 0.85–0.99 at 25 S, 0.54–0.92 at 26 N and 43 N, 0.17–0.80 at 60 N, and the 60 N κ_v gradient
+falls to |r| ≤ 0.05 from 2× up. The surface-flux gradients fail the finite-difference check at every section as
+before. `validate_generations.py` says what moved between the generations; the paragraph below is the first
+generation's record.
+
 **What the four sections gave (2026-10-21; `analysis/cost_sections/stats/sections_table.csv`).** The cost's
 dependence on κ_v changes shape and sign with latitude: a U with its minimum at 2–4× at 26 N and 43 N, a
 maximum at the reference at 60 N (0.84 at 0.25×, 0.72 at 8×), a rise to 1.44× at 8× at 25 S; dJ/dκ_v at the
@@ -226,4 +242,5 @@ second pass over the dumps: `build_explorer.py --page-only` re-renders it around
 
 The explorer needs a server even locally — a browser refuses to read the pixels back out of a canvas
 drawn from a `file://` image — so `explorer/serve.sh` starts one on port 8765. It is also published
-at <https://claude.ai/artifact/M14dASutpLo9EohDruuwwL>, which is the link the slide deck carries.
+at <https://claude.ai/artifact/W5fPa2DiJ4vPsan6QV78fx> (the second generation, merged over the four sections, since 2026-11-02), which is the link the
+slide deck carries; the first generation's merged explorer stays at <https://claude.ai/artifact/M14dASutpLo9EohDruuwwL> as the record.
