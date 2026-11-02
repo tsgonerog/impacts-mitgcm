@@ -12,10 +12,14 @@ generations_fd.csv (the finite-difference checks side by side), generations_summ
 README.md with the table and the reading of it. --self-test compares each first-generation campaign with itself (every
 ratio 1, every correlation 1), to exercise the code paths before the new runs exist.
 
-What is expected: fc_new / fc_old close to 16.6 (the per-tile normalisation removed; 16, 17 and 16 wet cells per tile,
-so the exact factor depends on how the transport splits across the tiles), the same factor for dJ/dkappa_v and for the
-noise floor, pattern correlations of the sensitivity fields above 0.999 (the middle tile is no longer weighted 6 % less,
-which is the only change of pattern), and the finite-difference relative errors unchanged within the noise.
+What it found first at 43 N (2026-11-01): fc_new / fc_old is close to 16.6 but not constant (16, 17 and 16 wet cells per
+tile, so the factor depends on how the transport splits across the tiles), dJ/dkappa_v scales by a different factor, and
+the fields are NOT a rescaling: the expectation written here before the rerun, correlations above 0.999, was wrong, having
+been read off a 5-day comparison. The per-tile weights leave a net sensitivity at the two tile seams of the cost row
+(i=17|18, 34|35), which the adjoint carries away from them, so the difference grows with lead. seam_share_<lead> measures
+it: the share, in the eight columns around the seams, of the squared difference between the new field and the best
+rescaling of the old one, on the rows within 6 of the cost row. At 26 N and 60 N the first generation also integrated to
+982 m, so there the comparison carries the change of depth as well.
 """
 from __future__ import annotations
 
@@ -32,6 +36,7 @@ import matplotlib.pyplot as plt
 import campaign as c
 
 LEADS = {'30 d': 30.0 / 366, '1 yr': 1.0, '5 yr': 5.0}
+SEAM_COLUMNS = [15, 16, 17, 18, 32, 33, 34, 35]   # 0-based: the columns around the tile seams i=17|18 and 34|35
 FIELDS = ['ADJtheta', 'ADJsalt', 'ADJdiffkr', 'ADJqnet', 'ADJempmr']
 ADXX = ['adxx_theta', 'adxx_salt', 'adxx_diffkr', 'adxx_qnet', 'adxx_empmr', 'adxx_qsw', 'adxx_fu', 'adxx_fv']
 
@@ -44,6 +49,20 @@ def corr_rms(a, b, w):
     """Pattern correlation of a against b, and RMS ratio a/b, both weighted by w (the suite's conventions)."""
     r = c.rms(b, w)
     return c.pattern_corr(a, b, w), (c.rms(a, w) / r if r > 0 else np.nan)
+
+
+def seam_share(new, old, jsec):
+    """(share of the difference in the seam columns near the cost row, the same share of the new field, RMS difference /
+    RMS new), the difference being new minus the volume-weighted best rescaling of old."""
+    g = c.grid(); wet = g['wetC']; w = g['vol'] * wet
+    a, b = np.where(wet, new, 0.0).astype(np.float64), np.where(wet, old, 0.0).astype(np.float64)
+    d = a - (w * a * b).sum() / (w * b * b).sum() * b
+    rows = slice(max(jsec - 6, 0), jsec + 7)
+
+    def share(x):
+        z = (w * x * x)[:, rows, :].sum(axis=(0, 1))
+        return float(z[SEAM_COLUMNS].sum() / z.sum())
+    return share(d), share(a), float(np.sqrt((w * d * d).sum() / (w * a * a).sum()))
 
 
 def ls_ratio(a, b):
@@ -76,6 +95,10 @@ def compare(new, old, out):
                     cc, rr = corr_rms(fn[k], fo[k], w)
                     row['%s_corr_%s' % (v, lab.replace(' ', ''))] = cc
                     row['%s_rmsratio_%s' % (v, lab.replace(' ', ''))] = rr
+                    if v == 'ADJtheta':
+                        tag = lab.replace(' ', '')
+                        row['seam_share_%s' % tag], row['seam_share_of_new_%s' % tag], row['diff_rms_over_new_%s' % tag] = seam_share(
+                            fn[k], fo[k], c.COST_SECTION[new]['jsec'])
         xn, xo = np.load(A(new) / 'cache' / ('adxx_%s.npz' % r)), np.load(A(old) / 'cache' / ('adxx_%s.npz' % r))
         for v in ADXX:
             if v in xn and v in xo:
@@ -186,7 +209,8 @@ def main():
     (out / 'generations_summary.json').write_text(json.dumps(summ, indent=1, default=float))
     figure(df, fd, summ, out)
     cols = ['section', 'run', 'fc_old', 'fc_new', 'fc_ratio', 'dJdk_old', 'dJdk_new', 'dJdk_ratio', 'ADJtheta_corr_30d',
-            'ADJtheta_corr_1yr', 'ADJtheta_corr_5yr', 'adxx_theta_corr', 'adxx_diffkr_corr', 'adxx_qnet_corr']
+            'ADJtheta_corr_1yr', 'ADJtheta_corr_5yr', 'adxx_theta_corr', 'adxx_diffkr_corr', 'adxx_qnet_corr', 'adxx_fu_corr',
+            'seam_share_30d', 'seam_share_of_new_30d', 'diff_rms_over_new_30d', 'diff_rms_over_new_1yr', 'diff_rms_over_new_5yr']
     cols = [k for k in cols if k in df]
     md = ['# The second generation (cost in Sverdrups) against the first (per-tile normalised)', '',
           'Written by validate_generations.py on %s. One row per section and member; ratios are second / first.' % pd.Timestamp.today().date(), '',

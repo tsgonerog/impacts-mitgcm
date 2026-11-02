@@ -17,6 +17,22 @@ directories end in `_sec60N` / `_sec25S`. All four differentiate the same eight 
 differs between them is the cost section; **`compare_sections.py` compares them** (its figures, table
 and four-panel film go to `analysis/cost_sections/`).
 
+**The second generation (2026-11-01).** On 29 October 2026 `code_tap/cost_atlantic_heat.F` was rewritten (merged on
+2026-10-31): J is the row transport in Sverdrups, each tile's sum added without the tree's per-tile wet-count
+normalisation, so every `fc` is about 16.6 times the first generation's and the middle third of the row is no longer
+weighted 6 % less. All four sections were rerun on 2026-11-01, at one interface, 848 m (a decision of that morning; the
+first submission of 26 N and 60 N at 982 m, jobs 31748–31773 and 31800–31829, was cancelled and deleted, records in
+`logs/deleted_run_records/`): `kappa_v_ensemble_gmFwd_sec43N_Sv` (31774–31799), `_sec25S_Sv` (31830–31859),
+`_sec26N_Sv848` (31885–31910) and `_sec60N_Sv848` (31911–31940), on the same legs, pickups and forcing files, with the
+targeted Theta boxes of 60 N and 25 S in the chain, and the 2026-10-28 follow-ups as 31860–31884
+(`kappa_v_operator_vs_state_Sv/`, `cost_section_sweep_Sv/`). `campaign.py` carries both
+generations (`COST_SECTION[...]['units']`, `UNITS`, `OLD_CAMPAIGN`, a generation-aware `SECTION_ORDER` and `CROSS_DIR`,
+`jproxy` in each form); a second-generation campaign's `PREV_GMFWD_5YR_JOB` is the first generation's reference
+adjoint, so the suite's member metrics and `ref_vs_previous` compare the generations, and `validate_generations.py`
+does so section by section (`analysis/cost_sections_Sv/validation_vs_tile/`; at 26 N and 60 N that comparison carries
+the change of units and of depth together, at 43 N and 25 S the units alone). The first generation's runs and products stay on scratch
+under their old names as the record; the deck and the notes report the second generation.
+
 **What the four sections gave (2026-10-21; `analysis/cost_sections/stats/sections_table.csv`).** The cost's
 dependence on κ_v changes shape and sign with latitude: a U with its minimum at 2–4× at 26 N and 43 N, a
 maximum at the reference at 60 N (0.84 at 0.25×, 0.72 at 8×), a rise to 1.44× at 8× at 25 S; dJ/dκ_v at the

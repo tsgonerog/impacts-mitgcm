@@ -1155,11 +1155,25 @@ count at each level (16, 17 and 16 along every DINO row): J was about 1/16.6
 of the transport (`fc` = 0.448 against 7.44 Sv in the 43 N reference 31553),
 depended on the decomposition, and a 5-day run reported one sixth of the
 30-day form. Every run up to the rewrite, the four κ_v campaigns included,
-reports that quantity (no `cost_units` line in its `build_info.txt`); since it
-is linear in the transport, the patterns, signs, ratios and finite-difference
-comparisons of those runs stand, and only the absolute values differ in
-units. `input_tap/variants/toolchain_validation/` holds the record that checks
-the value against the run's own `VVEL` diagnostic.
+reports that quantity (no `cost_units` line in its `build_info.txt`).
+`input_tap/variants/toolchain_validation/` holds the record that checks the
+value against the run's own `VVEL` diagnostic.
+
+**That quantity is not a multiple of the transport, and the difference reaches
+the sensitivity fields** (measured by the rerun of 2026-11-01 at 43 N;
+`analysis/cost_sections_Sv/validation_vs_tile/` has all four sections). Each
+`fc` is 16.15–16.85 times its old value and dJ/dκ_v 14.6–15.9 times. The
+temperature sensitivity correlates 0.99–1.00 with the old field at 30 d of
+lead and 0.88–0.99 at 1 yr, the κ_v gradient 0.84–1.00, worst at 16×, and the
+zonal-stress gradient 0.87–1.00. At 30 d, on the rows around the cost row,
+87–90 % of the difference lies in the eight columns around the two tile seams,
+i=17|18 and 34|35, in every member, where the new field has 2–9 % of its
+variance: the per-tile weights left a net sensitivity at the seams of the cost
+row, and the adjoint carries it away from them. The J(κ_v) curve, the signs of
+dJ/dκ_v and the heat and freshwater flux gradients are unchanged,
+but the old patterns should not be reused quantitatively; the deep box under
+the 43 N section changes sign, from an adjoint +1.2e-4 at the noise floor to
+−7.1e-3 against −7.5e-3 from finite differences.
 **Since 2026-10-20 the row and the depth are `data.cost` settings**,
 `cost_atl_jsec` and `cost_atl_kmaxdepth`, read by `code_tap/cost_readparms.F`
 into a common block in `code_tap/cost.h` (both shadows of the `pkg/cost` files,
