@@ -20,7 +20,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
+GEN = os.environ.get('FOLLOWUP_GEN', '')       # 'Sv': the second generation (see followup_analysis.py)
+os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N' + (('_' + GEN) if GEN else ''))
 import numpy as np                                        # noqa: E402
 import matplotlib                                         # noqa: E402
 matplotlib.use('Agg')
@@ -60,12 +61,13 @@ def line():
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.2))
     ax[0].plot(FACT, J, '-o', color=c.SERIES[0], ms=5)
     ax[0].plot([1], [J[2]], 'o', color='#0b0b0b', ms=6); ax[0].annotate('reference', (1, J[2]), xytext=(8, -14), textcoords='offset points', color=c.INK2, fontsize=9)
-    ax[0].set_ylabel('J: 30-day mean transport through the %s box (fc)' % c.SEC_NAME); xlog2(ax[0]); ax[0].set_title('the cost against the mixing', loc='left')
+    ax[0].set_ylabel('J, 30-day mean, %s box [%s]' % (c.SEC_NAME, c.J_UNIT)); xlog2(ax[0]); ax[0].set_title('the cost against the mixing', loc='left')
     ax[1].plot(FACT, G, '-o', color=c.SERIES[0], ms=5, label='adjoint: ∂J/∂κ_v at fixed state (sum of the map)')
     ax[1].plot(xs, sec, 's', color=c.SERIES[1], ms=6, label='slope of J between neighbours (includes the 10-yr adjustment)')
     ax[1].plot([1], [fd_slope], 'D', color='#0b0b0b', ms=7, label='finite difference at the reference, κ_v ±10 %')
     ax[1].axhline(0, color=c.AXIS_C, lw=0.8); ax[1].set_yscale('symlog', linthresh=200 * c.J_SCALE); ax[1].set_yticks([v * (10 if c.UNITS == 'Sv' else 1) for v in [-10000, -1000, 0, 1000]])
-    ax[1].set_ylabel('dJ/dκ_v  [per m² s⁻¹]'); xlog2(ax[1]); ax[1].set_title('the gradient against the mixing', loc='left'); ax[1].legend(loc='upper left', fontsize=8)
+    ax[1].set_ylabel('dJ/dκ_v  [per m² s⁻¹]'); xlog2(ax[1]); ax[1].set_title('the gradient against the mixing', loc='left'); ax[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.17), ncol=1, fontsize=8, frameon=False)
+    lo = min(np.nanmin(G), np.nanmin(sec), fd_slope); ax[1].set_ylim(bottom=1.6 * lo)   # room for the lowest marker on the symlog axis
     fig.tight_layout(); fig.savefig(c.FIGS / 'fig_line_plot.png'); plt.close(fig); print(c.FIGS / 'fig_line_plot.png')
 
 

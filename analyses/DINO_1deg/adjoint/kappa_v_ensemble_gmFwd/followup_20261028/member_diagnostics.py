@@ -18,7 +18,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
+GEN = os.environ.get('FOLLOWUP_GEN', '')       # 'Sv': the second generation (see followup_analysis.py)
+os.environ.setdefault('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N' + (('_' + GEN) if GEN else ''))
 import numpy as np        # noqa: E402
 import campaign as c      # noqa: E402
 
