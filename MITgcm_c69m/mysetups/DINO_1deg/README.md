@@ -1173,7 +1173,8 @@ row, and the adjoint carries it away from them. The J(κ_v) curve, the signs of
 dJ/dκ_v and the heat and freshwater flux gradients are unchanged,
 but the old patterns should not be reused quantitatively; the deep box under
 the 43 N section changes sign, from an adjoint +1.2e-4 at the noise floor to
-−7.1e-3 against −7.5e-3 from finite differences.
+−7.1e-3 against −7.5e-3 from finite differences: the same sign and size, but at
+half the cost's monthly noise, so the check is still not counted.
 **Since 2026-10-20 the row and the depth are `data.cost` settings**,
 `cost_atl_jsec` and `cost_atl_kmaxdepth`, read by `code_tap/cost_readparms.F`
 into a common block in `code_tap/cost.h` (both shadows of the `pkg/cost` files,
