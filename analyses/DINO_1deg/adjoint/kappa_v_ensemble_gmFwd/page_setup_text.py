@@ -3,10 +3,13 @@ filled in by page_text.py from the stats files.
 
 Two campaigns share this page (campaign.CAMPAIGN, since 2026-10-13): the September one with the cost at 26 N and
 its rerun with the cost at the overturning maximum, 43 N. Each block below exists in both versions and the one
-for the current campaign is selected at import; the September texts are kept verbatim so that page can be rebuilt."""
+for the current campaign is selected at import; the September texts are kept verbatim so that page can be rebuilt.
+Since 2026-11-02 the 43 N blocks also exist in a second-generation version (*_43SV): the same campaign rerun on
+2026-11-01 with the cost as the row transport in Sverdrups; the first-generation 43 N texts are kept verbatim too."""
 import campaign as c
 
 IS43 = c.COST_SECTION[c.CAMPAIGN]['sec_name'] == '43 N'   # the section, in either generation (the name test missed *_Sv)
+SV = c.UNITS == 'Sv'   # the second generation (2026-11-01): the cost in Sverdrups; the 43 N blocks exist in a third version
 
 SETUP_INTRO_26 = """
 <p>Every run in this campaign starts from a new 170-year spin-up from rest, <b>31329</b>, integrated under
@@ -161,8 +164,97 @@ the 43° N adjoint predicts as little, so the check is consistent but says nothi
 2026-10-14 (31577, 31578) and is the deep-box check reported here.</div>
 """
 
-SETUP_INTRO = SETUP_INTRO_43 if IS43 else SETUP_INTRO_26
-SETUP_DESIGN = SETUP_DESIGN_43 if IS43 else SETUP_DESIGN_26
-CONSISTENCY = CONSISTENCY_43 if IS43 else CONSISTENCY_26
-PROVENANCE = PROVENANCE_43 if IS43 else PROVENANCE_26
-INCIDENTS = INCIDENTS_43 if IS43 else INCIDENTS_26
+SETUP_INTRO_43SV = """
+<p>This is the 43° N campaign rerun on 2026-11-01 with the cost in its second form: the volume transport across grid row 148
+(centre 43.21° N, southern face 42.84° N) from the surface to the 848 m interface, in Sverdrups, averaged over the last
+30 days of the window. That row and interface are where the depth-space streamfunction of the production spin-up 31203 peaks,
+7.37 Sv over years 190–200, in every decade of the spin-up, in the reference leg and in the adjoint's window. The first form,
+which every campaign from September to October 2026 measured, divided each MPI tile's transport by the tile's own count of
+wet cells before adding the three tiles of the row: about one sixteenth of the transport at this row, and not a multiple of
+it, because the per-tile weights left a spurious sensitivity at the tile seams. Nothing else changed: the eight 5-year
+adjoints and the finite-difference sweeps were rerun from the September legs' year-180 states with the same perturbed
+pickups and forcing files. The forward model, its legs and the adjoint's approximations are those of September: DINO's
+reference lateral viscosity files with <code>viscAhReMax=2.</code>, the flux-limited DST3 tracer advection (scheme 33) with
+explicit vertical advection, GM/Redi on (in the adjoint's forward sweep only), the adjoint sweep linearised about the
+unlimited DST3 (scheme 30).</p>
+"""
+
+SETUP_DESIGN_43SV = """
+<ul class="findings">
+<li><b>Forward legs (September's, runs 31366–31373).</b> Ten years from year 170 of the spin-up 31203, one per vertical
+diffusivity κ<sub>v</sub> ∈ {0.25, 0.5, 2, 4, 8, 16, 32} × 1.2×10⁻⁵ m² s⁻¹
+(<code>input/variants/kappa_v_ensemble/data_M&lt;k&gt;_ReMax2</code>); the reference leg at the unperturbed
+κ<sub>v</sub> continues the spin-up to year 180 with the same settings. Nothing about them depends on the cost.</li>
+<li><b>Five-year adjoints (runs 31774–31781).</b> From year 180 to 185, sensitivities dumped every 5 days. The reference is the
+live <code>input_tap/data</code> from the reference leg's year-180 pickup; each member is the same namelist with its
+κ<sub>v</sub> (<code>input_tap/variants/kappa_v_ensemble/</code>), started from its leg's year-180 pickup.</li>
+<li><b>Finite-difference sweeps (runs 31782–31799).</b> Forward sweeps of the adjoint executable from the reference leg's year 180,
+stopped once the cost is printed: κ<sub>v</sub> ±10 %, Theta raised and lowered in four boxes of the pickup, and uniform
+perturbations of the four surface controls (<code>input_tap/variants/fd_checks/</code>), with September's perturbed
+pickups and forcing files. The deep box under the section (40–50° N below 1500 m) moves J by half its monthly noise, so the
+box north of it (45–60° N below 1500 m, the same ±0.016 K) is the deep-box check reported here, as in October. A
+localised κ<sub>v</sub> check (45–65° N, western half, top 127 m, ×1.1 and ×0.9) was rerun as 31868/31869.</li>
+</ul>
+"""
+
+CONSISTENCY_43SV = [
+    ('The cost section', 'data.cost: cost_atl_jsec=148, cost_atl_kmaxdepth=24, chosen by overturning_maximum.py from the spin-up '
+     '31203 (the maximum of psi north of 20 N below 300 m, the same row and interface in every decade tested, in the reference leg '
+     'and in the adjoint\'s window). The staged data.cost of each run directory is the record; the build records '
+     'cost_section=namelist with these values as its compiled defaults.'),
+    ('The cost', 'cost_atlantic_heat.F since 2026-10-29: the transport across the whole row in Sverdrups, the tiles\' sums added '
+     'without normalisation, the mean over the final lastinterval = 2592000 s (30 days, written out in data.cost). Validated on '
+     '2026-10-29 against the model\'s own velocity: fc equals the transport recomputed offline from VVEL to 1e-6 (31737, 31738).'),
+    ('Adjoint executable', 'build_tapAdj_ckpAll, rebuilt on 2026-10-31 from main ba11371 (exe_md5 67b521705acdd7c8f2bb8f1adcfbb0e0) '
+     'and used by all eight adjoints and the eighteen finite-difference sweeps: one checksum in every run directory, verified by the '
+     'submit body against the build record before each run; the submit body refuses a build whose record lacks cost_units=Sv.'),
+    ('Forward legs and executable', 'Unchanged from September (build_frd of 2026-09-12, runs 31366–31373): the cost is not compiled '
+     'into the forward model, and the legs\' year-180 pickups are the states every adjoint and sweep here starts from.'),
+    ('Namelists', 'The live input_tap/data, data.pkg, data.gmredi and data.autodiff of September, unchanged; the member and '
+     'finite-difference variants likewise. data.cost differs from October\'s only in writing every COST_NML key out.'),
+    ('Adjoint-mode switches', 'Every adjoint staged data.autodiff with useGMRediInAdMode=.FALSE. and '
+     'useApproxAdvectionInAdMode=.TRUE.; the submit body checked both before each run.'),
+    ('Cost against the forward model', 'The reference adjoint\'s forward sweep gives J = 7.4409 Sv; the overturning streamfunction '
+     'of the reference leg\'s last year at this row and interface is 7.46 Sv, and the monthly index\'s internal variability in the '
+     'spin-up is 0.0139 Sv.'),
+    ('Controls', 'Eight declared (Theta, Salt, κ_v in 3-D; Qnet, E−P−R, Qsw and both surface stresses in 2-D), '
+     'all constant in time over the window; the six controls that no DINO build can apply stay commented out.'),
+    ('Ensemble parameters', 'Each member adjoint differs from the live adjoint namelist only in diffKrT/diffKrS, '
+     'which equal its forward leg\'s; nIter0 = 3162240 is the leg\'s last iteration.'),
+]
+
+PROVENANCE_43SV = """
+<p>Model output: <code>/scratch2/tshahriar/DINO_1deg_outputs/runs/forward/</code> (<code>spinup_200yr_viscRef_ReMax2/</code>
+and the September legs under <code>kappa_v_ensemble_gmFwd/</code>) and <code>runs/adjoint/kappa_v_ensemble_gmFwd_sec43N_Sv/</code>
+(the adjoints and finite-difference sweeps of 2026-11-01). Products, figures and animations:
+<code>analysis/kappa_v_ensemble_gmFwd_sec43N_Sv/</code>, with the job map in <code>job_map.tsv</code>. The first generation of
+this campaign, the cost in its earlier form, stays under <code>runs/adjoint/kappa_v_ensemble_gmFwd_sec43N/</code> and
+<code>analysis/kappa_v_ensemble_gmFwd_sec43N/</code> as the record, and the two generations are compared in
+<code>analysis/cost_sections_Sv/validation_vs_tile/</code> (<code>validate_generations.py</code>). Analysis code:
+<code>analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/</code> in impacts-mitgcm, which serves every campaign of both
+generations through <code>CAMPAIGN_NAME</code> (<code>campaign.py</code>, <code>overturning_maximum.py</code>,
+<code>forward_state.py</code>, <code>adjoint_products.py</code>, <code>make_figures.py</code>, <code>make_films.py</code>,
+<code>adjoint_waves.py</code>, <code>build_explorer.py</code>, <code>build_page.py</code>). The
+<a href="https://claude.ai/artifact/W5fPa2DiJ4vPsan6QV78fx" target="_blank" rel="noopener">sensitivity explorer</a> was rebuilt
+for the second generation on 2026-11-02 and switches between the four cost sections (<code>build_explorer.py --merge</code>;
+<code>analysis/cost_sections_Sv/</code> holds the merged page and the comparison's figures, film and tables, from
+<code>compare_sections.py</code>). The 26° N campaign of the same generation is compared through its own stats files; the two
+older ensembles through <code>previous_campaigns_reference.json</code>.</p>
+"""
+
+INCIDENTS_43SV = """
+<div class="note-box"><b>What the rerun changed.</b> J and its gradients are now in Sverdrups: at this row each member's J is
+16.2–16.8 times its first-generation value and dJ/dκ<sub>v</sub> 14.6–15.9 times. The sensitivity fields are not a rescaling of
+the old ones: 87–90 % of their 30-day difference lies in the eight columns around the two tile seams, where the per-tile weights
+had left a spurious sensitivity, and the adjoint carries that difference away with lead (the one-year temperature sensitivity
+correlates 0.88–0.99 with the old one, the κ<sub>v</sub> gradient down to 0.84). The κ<sub>v</sub> check moved from +12 % to
++14 %; the deep box under the section, of the wrong sign at the noise floor before, now agrees with its finite difference in sign
+and size (−6 %) but still at half the monthly noise, so it is not counted. The first submission of the 26° N and 60° N
+campaigns, to 982 m, was cancelled when one interface was chosen for every section; it did not touch this campaign.</div>
+"""
+
+SETUP_INTRO = (SETUP_INTRO_43SV if SV else SETUP_INTRO_43) if IS43 else SETUP_INTRO_26
+SETUP_DESIGN = (SETUP_DESIGN_43SV if SV else SETUP_DESIGN_43) if IS43 else SETUP_DESIGN_26
+CONSISTENCY = (CONSISTENCY_43SV if SV else CONSISTENCY_43) if IS43 else CONSISTENCY_26
+PROVENANCE = (PROVENANCE_43SV if SV else PROVENANCE_43) if IS43 else PROVENANCE_26
+INCIDENTS = (INCIDENTS_43SV if SV else INCIDENTS_43) if IS43 else INCIDENTS_26

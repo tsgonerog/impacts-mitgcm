@@ -116,6 +116,18 @@ SECTION_ORDER = (['kappa_v_ensemble_gmFwd_sec25S_Sv', 'kappa_v_ensemble_gmFwd_se
                  ['kappa_v_ensemble_gmFwd_sec25S', 'kappa_v_ensemble_gmFwd', 'kappa_v_ensemble_gmFwd_sec43N',
                   'kappa_v_ensemble_gmFwd_sec60N'])
 CROSS_DIR = 'cost_sections_Sv' if UNITS == 'Sv' else 'cost_sections'   # analysis/<CROSS_DIR>/: the sections compared
+# The campaign a section's own figures and page compare it with (the orange markers of fd_checks, the second curve of
+# fc_vs_kappa, the page's "for the 26 N cost ..." clauses). The first generation compares with the campaign whose legs it
+# reuses, the 26 N campaign of September; a second-generation campaign compares with the 26 N campaign of its own
+# generation (848 m, Sverdrups), so that both numbers are in the same units and at the same interface, and that 26 N
+# campaign with its own first generation.
+if UNITS == 'Sv':
+    CMP_CAMPAIGN = OLD_CAMPAIGN if CAMPAIGN == 'kappa_v_ensemble_gmFwd_sec26N_Sv848' else 'kappa_v_ensemble_gmFwd_sec26N_Sv848'
+else:
+    CMP_CAMPAIGN = _CS['legs_from']
+CMP_LABEL = {'kappa_v_ensemble_gmFwd': 'the 26 N cost of September (earlier form, 982 m)',
+             'kappa_v_ensemble_gmFwd_sec26N_Sv848': 'the 26 N cost in Sverdrups, 848 m'}.get(CMP_CAMPAIGN, CMP_CAMPAIGN)
+CMP_SAME_UNITS = bool(CMP_CAMPAIGN) and COST_SECTION.get(CMP_CAMPAIGN, {}).get('units') == UNITS
 ANALYSIS = OUTPUTS / 'analysis' / CAMPAIGN
 CACHE = ANALYSIS / 'cache'
 STATS = ANALYSIS / 'stats'

@@ -11,13 +11,18 @@ import page_setup_text as st
 IS43 = st.IS43          # the 43 N rerun: its comparisons are with the September campaign, read from that campaign's stats
 
 
-def _parent(name, kind='csv'):
-    """A stats file of the campaign whose legs this one reuses (the 26 N campaign for the 43 N rerun), or None."""
-    par = c.COST_SECTION[c.CAMPAIGN]['legs_from']
+def _parent(name, kind='csv', campaign=None):
+    """A stats file of the campaign this one is compared with (c.CMP_CAMPAIGN: the 26 N campaign of September for a
+    first-generation section, the 26 N campaign of the same generation for a second-generation one), or None."""
+    par = campaign or c.CMP_CAMPAIGN
     q = c.OUTPUTS / 'analysis' / par / 'stats' / name if par else None
     if q is None or not q.exists():
         return None
     return json.loads(q.read_text()) if kind == 'json' else pd.read_csv(q)
+
+
+CMP26 = c.CMP_LABEL.replace('26 N', '26° N')     # 'the 26° N cost of September (earlier form, 982 m)' or '... in Sverdrups, 848 m'
+SV2 = c.UNITS == 'Sv' and c.CMP_SAME_UNITS        # a second-generation section compared within its generation
 
 
 def _sec_meta():
@@ -27,7 +32,9 @@ def _sec_meta():
 
 # The interactive depth-level explorer (build_explorer.py beside this script), published 2026-09-16. Opened in a
 # new tab: this page is shown in a sandboxed frame, and a link that navigates the frame itself may be blocked.
-EXPLORER_URL = 'https://claude.ai/artifact/M14dASutpLo9EohDruuwwL'
+# The explorer of each generation is its own page: the first generation's (2026-09-16, sections switch since 2026-10-21)
+# stays at its address as the record; the second generation's, the cost in Sverdrups, was published on 2026-11-02.
+EXPLORER_URL = 'https://claude.ai/artifact/W5fPa2DiJ4vPsan6QV78fx' if c.UNITS == 'Sv' else 'https://claude.ai/artifact/M14dASutpLo9EohDruuwwL'
 
 
 def explorer_link(text):
@@ -49,7 +56,8 @@ def fmt(x, n=3):
         return '0'
     a = abs(x)
     if 1e-3 <= a < 1e4:
-        return ('%.' + str(n) + 'g') % x
+        t = ('%.' + str(n) + 'g') % x
+        return t if 'e' in t and a < 1 or 'e' not in t else '%.0f' % x   # 3840 prints as 3840, not 3.84e+03
     e = int(np.floor(np.log10(a)))
     d = max(n - 1, 1)
     if abs(round(x / 10 ** e, d)) >= 10:
@@ -133,7 +141,8 @@ def body(h):
                    c.SEC_NAME.replace(' N', '° N'), ', the overturning maximum,' if IS43 else '', lat_sec, dep_sec))
     out.append('<p class="explore">%s — every ADJ* field of the reference adjoint at all 36 depth levels, and ADJtheta and '
                'ADJdiffkr for all eight members, through the five-year lead.</p>' % explorer_link('Open the sensitivity explorer'))
-    tiles = [stat('Reference cost J', fmt(fcref, 4), 'σ of the monthly index %s' % fmt(sigma, 2) if sigma else ''),
+    unit = ' <span class="mono" style="font-size:13px">Sv</span>' if c.UNITS == 'Sv' else ''
+    tiles = [stat('Reference cost J', fmt(fcref, 4) + unit, 'σ of the monthly index %s' % fmt(sigma, 2) if sigma else ''),
              stat('dJ/dκ<sub>v</sub>, adjoint', fmt(Gref, 3) + ' <span class="mono" style="font-size:13px">per m² s⁻¹</span>',
                   'against finite differences: %s' % pct(kap_err) if kap_err is not None else ''),
              stat('Member adjoints bounded', '%s of 7' % n_bounded if n_bounded is not None else '–', 'over the full 5-year lead'),
@@ -155,7 +164,8 @@ def body(h):
                       for k, e, f in zip(v.kind, v.get('ended_normally', False), v.get('fc', np.nan))]
         out.append('<h3>Run verification</h3>')
         out.append(table(v, ['kind', 'label', 'job', 'state', 'runtime', 'fc'], ['Kind', 'Run', 'Job', 'State', 'Runtime', 'J (fc)'],
-                         num=('job', 'fc'), fmt={'state': lambda x, r: x, 'fc': lambda x, r: fmt(x, 6) if pd.notna(x) else ''}))
+                         num=('job', 'fc'), fmt={'state': lambda x, r: x, 'fc': lambda x, r: fmt(x, 6) if pd.notna(x) else '',
+                                                 'runtime': lambda x, r: esc_(x) if pd.notna(x) else '–'}))
     out.append(st.INCIDENTS)
     out.append('</section>')
 
@@ -200,9 +210,9 @@ def body(h):
                          ['Perturbation', 'Central FD ΔJ', 'One-sided +', 'One-sided −', 'Adjoint ΔJ', 'Adjoint ÷ FD', 'Reading'],
                          num=('fd_central', 'fd_plus', 'fd_minus', 'adjoint', 'ratio'),
                          fmt=dict({k: (lambda x, r: fmt(x, 3)) for k in ('fd_central', 'adjoint', 'fd_plus', 'fd_minus')},
-                                  ratio=lambda x, r: '%.3g' % x, verdict=lambda x, r: x)))
+                                  ratio=lambda x, r: fmt(x, 3), verdict=lambda x, r: x)))
     out.append(fig('fd_checks', '<b>Adjoint prediction over central finite difference</b> for κ<sub>v</sub> and the temperature '
-                   'boxes, against %s.' % ('the 26° N cost of September from the same legs (hollow: a check without signal)' if IS43
+                   'boxes, against %s.' % ('%s from the same legs (hollow: a check without signal)' % CMP26 if IS43
                                             else 'the 2026-09-11 test of the same adjoint from a different state'), cls='narrow'))
     out.append(fig('fd_forcing', '<b>The four surface controls.</b> ΔJ for a spatially uniform perturbation applied at every forcing '
                    'record: the central finite difference and the adjoint\'s prediction (symmetric log scale).', cls='narrow'))
@@ -222,7 +232,10 @@ def body(h):
                               'corr_theta_1': lambda x, r: fmt(x, 2), 'corr_diffkr_5': lambda x, r: fmt(x, 2),
                               'factor': lambda x, r: '%g' % x}).replace('&lt;sub&gt;', '<sub>').replace('&lt;/sub&gt;', '</sub>'))
     out.append(fig('fc_vs_kappa', '<b>J against κ<sub>v</sub> in %s.</b> The internal variability of the monthly cost index '
-                   'in the spin-up, σ = %s, is smaller than the markers.' % ('four campaigns and two sections (the 26° N ones on the right axis)' if IS43
+                   'in the spin-up, σ = %s, is smaller than the markers.' % (('this section and the 26° N one in Sverdrups at 848 m (left axis) '
+                                                                              'and three earlier 26° N campaigns in the cost\'s earlier form, to 982 m '
+                                                                              '(right axis, compared in shape only)' if SV2 else
+                                                                              'four campaigns and two sections (the 26° N ones on the right axis)') if IS43
                                                                              else 'three campaigns', fmt(sigma, 2)), cls='narrow'))
     out.append(fig('member_stability', '<b>Each member\'s adjoint amplitude against lead</b>, with the reference in grey.'))
     out.append(fig('member_pattern_corr', '<b>How far each member\'s sensitivity patterns stay like the reference\'s</b>, by lead and field.'))
@@ -289,6 +302,28 @@ def _ratio(r):
     return pct(q - 1) if 0.5 < q < 2 else '%.0f times' % q
 
 
+def _cmp_kappa_ratio():
+    """the comparison campaign's kappa_v check, as _ratio prints it ('+35 %'), or 'about a fifth' when it is unreadable"""
+    pk = _fd_row(_parent('fd_checks.csv'), 'kappa')
+    return _ratio(pk) if pk is not None else 'about a fifth'
+
+
+def _old26_kappa():
+    """for a second-generation page: the first generation's 26 N kappa_v check, which measured the cost's earlier form to 982 m"""
+    pk = _fd_row(_parent('fd_checks.csv', campaign='kappa_v_ensemble_gmFwd'), 'kappa')
+    return ' (with the cost\'s earlier form, to 982 m, it was %s)' % _ratio(pk) if pk is not None else ''
+
+
+def _gradient_vs_26():
+    """how many times the reference dJ/dkappa_v at this section is the comparison campaign's (26 N), and the verb's tense"""
+    pfg = _parent('fc_gradient.csv')
+    fg = _read('fc_gradient.csv')
+    if pfg is None or fg is None:
+        return ('3.5', 'was')
+    q = float(fg.set_index('run').G_dJdkappa_uniform['REF'] / pfg.set_index('run').G_dJdkappa_uniform['REF'])
+    return ('%.1f' % q, 'is' if SV2 else 'was')
+
+
 def _name(test):
     t = test.split(' +')[0]
     return {'kappa_v': 'κ<sub>v</sub>', 'Theta': 'temperature', 'zonal surface stress': 'zonal stress',
@@ -331,11 +366,12 @@ def findings(fg, fd, ms, dec, nf, tgt, prev, legs):
         pk = pfd[pfd.test.str.startswith('kappa')].iloc[0]
         g = prev['gmFree_ReMax2_2026_09_10']['fd']
         out.append('<b>The adjoint κ<sub>v</sub> gradient %s finite differences, with a bias that the section only shifts.</b> At the '
-                   'reference it is %s against %s per m² s⁻¹ (%s); for the 26° N cost of September, from the same legs, it was %s, '
+                   'reference it is %s against %s per m² s⁻¹ (%s); for %s, from the same legs, it %s %s%s, '
                    'from the 2026-09-11 state +22 %%, and for the GM-free adjoint against the GM-free model on 2026-09-10 %s. The '
                    'approximation all of these share is the unlimited advection scheme in the adjoint sweep, the likely source.' % (
                        VERB[_verdict(k)], fmt(k.adjoint / (0.1 * c.KAPPA0), 4), fmt(k.fd_central / (0.1 * c.KAPPA0), 4), _ratio(k),
-                       _ratio(pk), pct(g['adjoint_G'] / g['fd_central'] - 1)))
+                       CMP26, 'is' if SV2 else 'was', _ratio(pk), _old26_kappa() if SV2 else '',
+                       pct(g['adjoint_G'] / g['fd_central'] - 1)))
     elif k is not None:
         g = prev['gmFree_ReMax2_2026_09_10']['fd']
         out.append('<b>The adjoint κ<sub>v</sub> gradient %s finite differences, with a bias that depends neither on the state nor on '
@@ -388,7 +424,7 @@ def findings(fg, fd, ms, dec, nf, tgt, prev, legs):
     ident = lp.get('adjoint identity (window-mean state)')
     if ident:
         ptg = _parent('target_structure.json', 'json')
-        cmp_ = ('%s for the 26° N cost of September' % fmt(ptg['local_predictors']['adjoint identity (window-mean state)']['pattern_corr'], 3)) \
+        cmp_ = ('%s for %s' % (fmt(ptg['local_predictors']['adjoint identity (window-mean state)']['pattern_corr'], 3), CMP26)) \
             if IS43 and ptg else '%s in the 2026-09-11 adjoint from another state' % fmt(prev['structure_31237']['identity_pattern_corr'], 3)
         out.append('<b>∂J/∂κ<sub>v</sub> is the time integral of −∂<sub>z</sub>λ·∂<sub>z</sub>(T, S)</b>: the adjoint temperature and '
                    'salinity fields acting on the stratification reproduce its pattern with correlation %s (%s). The stratification '
@@ -464,8 +500,8 @@ def reference_text(fg, ts, nf):
              'north of the section where the deep water forms. After five years it lies in bands that slope towards the equator from west '
              'to east across both subtropical gyres, and in the subpolar lobes. The control gradients integrate this history: '
              '∂J/∂κ<sub>v</sub> is largest, and negative, in the north-western subpolar corner, at whose edge the section now sits, which '
-             'is why it is 3.5 times what it was at 26° N; ∂J/∂Q<sub>net</sub>, ∂J/∂Q<sub>sw</sub> and ∂J/∂(E−P−R) share one pattern '
-             'centred on that corner.</p>') if IS43 else (
+             'is why it is %s times what it %s at 26° N; ∂J/∂Q<sub>net</sub>, ∂J/∂Q<sub>sw</sub> and ∂J/∂(E−P−R) share one pattern '
+             'centred on that corner.</p>' % _gradient_vs_26()) if IS43 else (
              '<p>At a lead of 30 days the temperature sensitivity lies on the cost section and along the two boundaries that close it, the '
              'western boundary north of 26° N and the eastern boundary south of it, upstream along the paths of boundary waves. After a '
              'year it has moved into the tropics of both hemispheres and, below 500 m, along the western boundary between 25° and 55° N. '
@@ -488,7 +524,7 @@ def checks_text(fd, prev):
     pfd = _parent('fd_checks.csv')
     if IS43 and pfd is not None:
         old = list(pfd.adjoint[:4] / pfd.fd_central[:4])
-        old_what = 'the 26° N cost of September, from the same legs'
+        old_what = CMP26 + ', from the same legs'
         lin = [row(k) for k in ('kappa', '45-60 N', '0-10 N')]
     else:
         g = prev['gm_test_2026_09_11']
@@ -542,9 +578,9 @@ def ensemble_text(fg, ms, dec, nf, prev):
     fac = np.maximum(np.abs(sec[~hi] / gm[~hi]), np.abs(gm[~hi] / sec[~hi]))
     if IS43 and pfg is not None:
         pj = pfg.set_index('run').fc
-        shape = ('The 26° N cost of September, from the same legs, has the same shape (%.3f at the reference, %.3f at 2x, %.3f at 32x), '
+        shape = ('%s, from the same legs, has the same shape (%.3f at the reference, %.3f at 2x, %.3f at 32x), '
                  'as do the two older ensembles, so the shape belongs to the forward model\'s response rather than to the section or to '
-                 'any one adjoint.' % (pj['REF'], pj['M3'], pj['M7']))
+                 'any one adjoint.' % (CMP26[0].upper() + CMP26[1:], pj['REF'], pj['M3'], pj['M7']))
     else:
         old = prev['gmFree_ReMax2_2026_09_10']
         oj = lambda f: old['fc'][old['factor'].index(f)]
@@ -600,7 +636,7 @@ def target_text(tgt, prev):
         pl5 = ptg['leads']['5.000']; pid = ptg['local_predictors']['adjoint identity (window-mean state)']
         s0 = dict(frac_cells_50pct_5yr=pl5['frac_cells_50pct'], frac_cells_90pct_5yr=pl5['frac_cells_90pct'],
                   identity_pattern_corr=pid['pattern_corr'], identity_regression_slope=pid['regression_slope'])
-        cmpwhat = 'the 26° N cost of September'
+        cmpwhat = CMP26
     else:
         s0 = prev['structure_31237']
         cmpwhat = 'the 2026-09-11 adjoint from another state'
@@ -682,7 +718,7 @@ def surrogate_text(fg, fd, ms, dec, tgt, h):
             '<li><b>%s</b> under the current configuration: %s member adjoints stay bounded over five years.</li>'
             '</ul>' % (100 * usable_err, tab, m.corr_diffkr_5['M1'], m.corr_diffkr_5['M4'], m.corr_diffkr_5['M5'], m.corr_diffkr_5['M7'],
                        _lead_corr('ADJdiffkr', 1.0),
-                       ('by %s at 43° N and by about a fifth at 26° N, in every finite-difference test so far' % _ratio(k)) if IS43
+                       ('by %s at 43° N and by %s at 26° N, in every finite-difference test so far' % (_ratio(k), _cmp_kappa_ratio())) if IS43
                        else 'by about a fifth in all three finite-difference tests',
                        'The range 0.25x–32x needs no adjoint-mode viscosity' if nb == 7 else 'Part of the range needs adjoint-mode viscosity',
                        'all seven' if nb == 7 else NUM[nb] + ' of the seven'))
@@ -702,6 +738,12 @@ def sections_text(h):
         return ''
     S = json.loads(p.read_text())
     df = pd.DataFrame(S['table'])
+    # a kappa_v check without signal (|central difference| below twice the cost's monthly noise, the rule of
+    # compare_sections.py's figures) is shown as such rather than as a percentage
+    for i, r in df.iterrows():
+        fdk = _fd_row(_parent('fd_checks.csv', campaign=r.get('campaign')), 'kappa')
+        if fdk is not None and abs(fdk.fd_central) < 2 * r.sigma_monthly:
+            df.loc[i, 'dJdkappa_fd_err'] = np.nan
     out = ['<section id="sections"><h2>The same experiments at four cost sections</h2>']
     out.append('<p>On 15 October 2026 the advisor asked for the cost to be measured at more latitudes beside 26° N and '
                'the overturning maximum at 43° N: a subpolar section near the OSNAP array (60° N) and one north of the '
@@ -709,16 +751,26 @@ def sections_text(h):
                'dependence of the patterns on latitude can be seen. Since 20 October the section is a namelist setting '
                '(<code>cost_atl_jsec</code>, <code>cost_atl_kmaxdepth</code> in <code>data.cost</code>), bit for bit '
                'the compiled one, and the whole campaign — eight 5-year adjoints and eighteen finite-difference sweeps on '
-               'the same eight legs — exists for each of the four sections (campaigns <code>kappa_v_ensemble_gmFwd</code>, '
-               '<code>_sec43N</code>, <code>_sec60N</code>, <code>_sec25S</code>). Whatever differs between them is the '
-               'cost. The figures and numbers here are <code>compare_sections.py</code>\'s, in '
-               '<code>analysis/cost_sections/</code>; %s lets the section be switched with the field, level and lead '
-               'held fixed.</p>' % explorer_link('the explorer'))
+               'the same eight legs — exists for each of the four sections (campaigns %s). Whatever differs between them is the '
+               'cost.%s The figures and numbers here are <code>compare_sections.py</code>\'s, in '
+               '<code>analysis/%s/</code>; %s lets the section be switched with the field, level and lead '
+               'held fixed.</p>' % (
+                   ('<code>kappa_v_ensemble_gmFwd_sec43N_Sv</code>, <code>_sec25S_Sv</code>, <code>_sec26N_Sv848</code>, '
+                    '<code>_sec60N_Sv848</code>') if c.UNITS == 'Sv' else
+                   ('<code>kappa_v_ensemble_gmFwd</code>, <code>_sec43N</code>, <code>_sec60N</code>, <code>_sec25S</code>'),
+                   (' These are the second generation, rerun on 1 November 2026 with the cost as the transport in Sverdrups '
+                    'and one interface, 848 m, at every section; until then 26° N and 60° N were integrated to 982 m, the '
+                    'interface of their own maxima, and the cost divided each tile\'s transport by its wet-cell count.')
+                   if c.UNITS == 'Sv' else '',
+                   c.CROSS_DIR, explorer_link('the explorer')))
     FD = CS_DIR / 'figures'
     out.append(fig('sections_on_psi', '<b>Where the four costs are measured.</b> The depth-space overturning of the spin-up '
                    '31203 (years 190–200) with each section drawn as what it is: the transport across one grid row from the '
-                   'surface to the marked interface. 43° N and 60° N integrate to the interface where the cell peaks on their '
-                   'row; at 25° S the streamfunction has no interior maximum, so the 848 m interface of 43° N is kept.',
+                   'surface to the marked interface. %s' % (
+                       'Every section integrates to 848 m, the interface where the cell peaks at 43° N; at 26° N and 60° N the '
+                       'cell peaks at 982 m, at 25° S the streamfunction has no interior maximum.' if c.UNITS == 'Sv' else
+                       '43° N and 60° N integrate to the interface where the cell peaks on their '
+                       'row; at 25° S the streamfunction has no interior maximum, so the 848 m interface of 43° N is kept.'),
                    src_dir=FD))
     cols = ['section', 'lat_face', 'interface_m', 'psi_at_interface_sv', 'J_ref', 'sigma_monthly', 'dJdkappa_ref',
             'dJdkappa_fd_err', 'rms_ADJtheta_1yr', 'member_corr_ADJtheta_1yr_min', 'member_corr_ADJdiffkr_5yr_min']
@@ -728,7 +780,7 @@ def sections_text(h):
              'dJdkappa_fd_err': 'vs FD', 'rms_ADJtheta_1yr': 'RMS ADJtheta, 1 yr',
              'member_corr_ADJtheta_1yr_min': 'min member corr, θ 1 yr', 'member_corr_ADJdiffkr_5yr_min': 'min member corr, κ_v 5 yr'}
     fmts = {'lat_face': lambda v, r: '%.1f' % v, 'interface_m': lambda v, r: '%.0f' % v, 'psi_at_interface_sv': lambda v, r: '%.2f' % v,
-            'J_ref': lambda v, r: '%.4f' % v, 'sigma_monthly': lambda v, r: '%.1e' % v, 'dJdkappa_ref': lambda v, r: '%.0f' % v,
+            'J_ref': lambda v, r: '%.4f' % v, 'sigma_monthly': lambda v, r: '%.1e' % v, 'dJdkappa_ref': lambda v, r: fmt(v, 3),
             'dJdkappa_fd_err': lambda v, r: ('%+.0f %%' % (100 * v)) if v == v else 'no signal',
             'rms_ADJtheta_1yr': lambda v, r: '%.1e' % v,
             'member_corr_ADJtheta_1yr_min': lambda v, r: '%.2f' % v, 'member_corr_ADJdiffkr_5yr_min': lambda v, r: '%.2f' % v}

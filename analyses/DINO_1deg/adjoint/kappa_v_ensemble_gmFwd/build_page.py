@@ -75,7 +75,7 @@ def chip(text, kind):
 
 def stat(label, value, note=''):
     return ('<div class="stat"><div class="label">%s</div><div class="value">%s</div><div class="note">%s</div></div>'
-            % (esc(label), value, note))
+            % (esc(label).replace('&lt;sub&gt;', '<sub>').replace('&lt;/sub&gt;', '</sub>'), value, note))
 
 
 def build():

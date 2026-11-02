@@ -335,11 +335,22 @@ def ref_vs_previous():
 
 # ------------------------------------------------------------------ finite differences
 def parent_stats(name):
-    """A stats file of the campaign this one reuses the legs of (None when there is none): the 43 N rerun
-    compares itself with the 26 N campaign of September, the September campaign with the 2026-09-11 test."""
-    par = c.COST_SECTION[c.CAMPAIGN]['legs_from']
+    """A stats file of the campaign this one is compared with, c.CMP_CAMPAIGN (None when there is none): a
+    first-generation section with the 26 N campaign of September whose legs it reuses, a second-generation one with
+    the 26 N campaign of its own generation; the September campaign itself with the 2026-09-11 test."""
+    par = c.CMP_CAMPAIGN
     p = c.OUTPUTS / 'analysis' / par / 'stats' / name if par else None
     return pd.read_csv(p) if p and p.exists() else None
+
+
+def parent_stats_of(campaign, name):
+    p = c.OUTPUTS / 'analysis' / campaign / 'stats' / name
+    return pd.read_csv(p) if p.exists() else None
+
+
+def cmp_ref_job():
+    """The reference adjoint of the comparison campaign, from its job map."""
+    return next(j for j, role, _ in c._job_map(c.CMP_CAMPAIGN) if role.startswith('reference adjoint'))
 
 
 @figure
@@ -359,7 +370,7 @@ def fd_checks():
     if par is not None:        # the same checks of the parent campaign (26 N section, 2026-09): its own adjoint/FD, by test name
         pr = par.set_index('test')
         prev = [float(pr.adjoint[t] / pr.fd_central[t]) if t in pr.index else np.nan for t in rows.test]
-        prev_label = '2026-09 campaign, the 26 N section: adjoint 31374 vs FD, same legs'
+        prev_label = '%s: adjoint %d vs FD, same legs' % (c.CMP_LABEL, cmp_ref_job())
     else:
         prev_map = {  # 2026-09-11 GM test (fd_summary.md): adjoint 31237 against finite differences of the GM model
             'kappa': -2.4511e3 / -2.0012e3, '40-50 N': -4.4259e-3 / -5.5797e-3, '0-10 N': 5.0309e-3 / 4.8365e-3, '40-60 S': 3.7552e-3 / 2.5825e-3}
@@ -425,13 +436,13 @@ def fc_vs_kappa():
             ax.plot(np.array(x)[o], np.array(yv)[o], '-o', color=col, ms=5, mec=c.SURFACE, mew=1.5, label=lab)
         ax.set_ylabel('J (fc) over the 5-yr window [%s]' % c.J_UNIT)
         ax.legend(loc='upper center', fontsize=8)
-    else:
+    elif c.UNITS != 'Sv' or not c.CMP_SAME_UNITS:
         # this campaign measures another section than every earlier one, so the earlier curves go on a second
         # axis: their shape against kappa_v is what is compared, not their level
         o = np.argsort(fg.factor.values)
         ax.plot(fg.factor.values[o], fg.fc.values[o], '-o', color=c.SERIES[0], ms=6, mec=c.SURFACE, mew=1.5,
                 label='this campaign: the %s section (left axis)' % c.SEC_NAME)
-        ax.set_ylabel('J at %s (fc) over the 5-yr window' % c.SEC_NAME, color=c.SERIES[0])
+        ax.set_ylabel('J at %s (fc) over the 5-yr window [%s]' % (c.SEC_NAME, c.J_UNIT), color=c.SERIES[0])
         ax2 = ax.twinx()
         ax2.grid(False)
         ax2.spines['right'].set_visible(True)
@@ -440,10 +451,35 @@ def fc_vs_kappa():
             oo = np.argsort(np.array(x))
             ax2.plot(np.array(x)[oo], np.array(yv)[oo], '--o', color=col, ms=4, mec=c.SURFACE, mew=1.2, lw=1.1,
                      alpha=0.85, label=lab + ' (right axis)')
-        ax2.set_ylabel('J at 26 N, the earlier campaigns', color=c.SERIES[1])
+        ax2.set_ylabel('J at 26 N, the earlier campaigns [tile units]', color=c.SERIES[1])
         h1, l1 = ax.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
         ax.legend(h1 + h2, l1 + l2, loc='upper center', fontsize=7.5)
+    else:
+        # second generation: this section and the 26 N section of the same generation share the left axis (Sverdrups,
+        # 848 m); the earlier 26 N campaigns, in the cost's first form and to 982 m, keep the right axis, where only
+        # their shape against kappa_v is compared
+        old26 = parent_stats_of('kappa_v_ensemble_gmFwd', 'fc_gradient.csv')
+        for lab, d, col, ms in [('%s, this campaign' % c.SEC_NAME, fg, c.SERIES[0], 6),
+                                ('26 N, Sv, 848 m, same legs', par, c.INK, 5)]:
+            o = np.argsort(d.factor.values)
+            ax.plot(d.factor.values[o], d.fc.values[o], '-o', color=col, ms=ms, mec=c.SURFACE, mew=1.5, label=lab + ' (left)')
+        ax.set_ylabel('J over the 5-yr window [Sv]')
+        ax2 = ax.twinx()
+        ax2.grid(False)
+        ax2.spines['right'].set_visible(True)
+        rows = ([('2026-09, same legs', old26.factor, old26.fc, c.SERIES[1])] if old26 is not None else []) + \
+               [('2026-09-10, GM-free adjoint', earlier[0][1], earlier[0][2], c.MUTED),
+                ('2026-08, 2x viscosity', earlier[1][1], earlier[1][2], earlier[1][3])]
+        for lab, x, yv, col in rows:
+            oo = np.argsort(np.array(x))
+            ax2.plot(np.array(x)[oo], np.array(yv)[oo], '--o', color=col, ms=4, mec=c.SURFACE, mew=1.2, lw=1.1,
+                     alpha=0.85, label=lab + ', 26 N, earlier form (right)')
+        ax2.set_ylabel('J at 26 N to 982 m, earlier form [tile units]', color=c.MUTED)
+        h1, l1 = ax.get_legend_handles_labels()
+        h2, l2 = ax2.get_legend_handles_labels()
+        ax.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, -0.17), ncol=2, fontsize=7.5,
+                  columnspacing=1.2, handlelength=1.8)
     ax.set_xscale('log', base=2)
     xs = sorted(c.FACTOR.values())
     ax.set_xticks(xs)
