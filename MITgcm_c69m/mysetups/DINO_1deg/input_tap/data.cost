@@ -4,8 +4,10 @@
 # cost_atl_kmaxdepth levels, averaged over the final lastinterval (default 30 d)
 # of the run (a shorter run averages over its own length), mult_atl times.
 # Since 2026-10-29; until then the routine kept the tree's form, which divided
-# each MPI tile's sum by the tile's wet-cell count, so J was about 1/16.6 of the
-# transport (and a 5-day run reported one sixth of that): a run's build_info.txt
+# each MPI tile's sum by the tile's wet-cell count, so J was not a fixed fraction of
+# the transport (about 1/16.6 at 43 N and 60 N, 1/14.8 at 26 N, 1/25 at 25 S, where
+# the western boundary current opposes the interior; and a 5-day run reported one
+# sixth of that): a run's build_info.txt
 # says which with cost_units=Sv, absent for the old form. Since 2026-10-31 the
 # same routine computes the meridional HEAT transport across the row instead, in
 # PW, when cost_atl_quantity = 'heat' (below).

@@ -19,7 +19,7 @@ and four-panel film go to `analysis/cost_sections/`).
 
 **The second generation (2026-11-01).** On 29 October 2026 `code_tap/cost_atlantic_heat.F` was rewritten (merged on
 2026-10-31): J is the row transport in Sverdrups, each tile's sum added without the tree's per-tile wet-count
-normalisation, so every `fc` is about 16.6 times the first generation's and the middle third of the row is no longer
+normalisation, so every `fc` is 15 to 25 times the first generation's, depending on the row, and the middle third is no longer
 weighted 6 % less. All four sections were rerun on 2026-11-01, at one interface, 848 m (a decision of that morning; the
 first submission of 26 N and 60 N at 982 m, jobs 31748–31773 and 31800–31829, was cancelled and deleted, records in
 `logs/deleted_run_records/`): `kappa_v_ensemble_gmFwd_sec43N_Sv` (31774–31799), `_sec25S_Sv` (31830–31859),

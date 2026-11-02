@@ -91,7 +91,9 @@ C     Until 2026-10-29 this file kept the tree's form (pkg/cost): at
 C     each level it divided each tile's sum by the tile's own count
 C     of wet cells, then summed the tiles. Along every DINO row the
 C     counts are 16, 17 and 16, so that J was about 1/16.6 of the
-C     transport in Sv, depended on the decomposition, and weighted
+C     transport in Sv at 43 N and 60 N but 1/14.8 at 26 N and 1/25 at
+C     25 S, where the western boundary current opposes the interior;
+C     it depended on the decomposition, and weighted
 C     the middle third of the row 6 % less than the rest; a run
 C     shorter than lastinterval reported the covered fraction of the
 C     mean. A run of that form has no cost_units line in its

@@ -828,7 +828,7 @@ Four files matter more than the rest when following how a sensitivity is produce
 | File | Role |
 | --- | --- |
 | `code_tap/the_main_loop.F` | **The differentiation head.** `genmake2` runs `tapenade -b -head 'the_main_loop(fc)/(xx_genarr3d_dummy, xx_genarr2d_dummy, xx_gentim2d_dummy)'` — the cost `fc` is differentiated with respect to those control dummies, so everything reachable from this routine is what gets an adjoint |
-| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: the northward volume transport across a zonal section, from the surface to one interface, in Sverdrups since 2026-10-29 (about 1/16.6 of that before: the tree's per-tile normalisation), or since 2026-10-31 the meridional heat transport across it in PW when `data.cost` sets `cost_atl_quantity = 'heat'`. Since 2026-10-20 the row and the depth come from `data.cost` (`cost_atl_jsec`, `cost_atl_kmaxdepth`; `code_tap/cost.h` and `cost_readparms.F`), so a section is a namelist setting, not a build |
+| `code_tap/cost_atlantic_heat.F` | **The cost function** `fc`: the northward volume transport across a zonal section, from the surface to one interface, in Sverdrups since 2026-10-29 (before, the tree's per-tile normalisation made it 1/14.8 to 1/25 of that, depending on the row), or since 2026-10-31 the meridional heat transport across it in PW when `data.cost` sets `cost_atl_quantity = 'heat'`. Since 2026-10-20 the row and the depth come from `data.cost` (`cost_atl_jsec`, `cost_atl_kmaxdepth`; `code_tap/cost.h` and `cost_readparms.F`), so a section is a namelist setting, not a build |
 | `../../mods_tapenade_hooks/dummy_tap.F` | **Where `ADJ*` output is written.** The hand-written `DUMMY_IN_STEPPING_XYZ_RL_B` and its three siblings — one per field shape, each a halo fold followed by `CALL DUMP_ADJ_*(..., 'ADJtheta', ...)` over its adjoint argument — produce the files the analysis notebooks read; `DUMMY_FOR_ETAN_TAP_B` in the same file writes `ADJetan`. Each signature must match the call Tapenade generates; the build body asserts this |
 | `../../mods_tapenade_hooks/forward_step.F`, `dummy_in_stepping_tap.F` and `flow_tap` | **How the dump calls get generated.** The shadowed `forward_step.F` calls `DUMMY_IN_STEPPING_TAP`, a wrapper Tapenade differentiates, which calls one external per output field; the directory's `flow_tap` declares each field argument read-then-written (active), so Tapenade emits the `_B` call of every active field in the reverse sweep — TAF's `ADNAME` directive has no Tapenade equivalent, and this activity-through-arguments design replaced the old hand-patched `forward_step_b.f_modified` |
 
@@ -1152,7 +1152,9 @@ directory), and the companion volume run 31741 on the same build reproduces
 31737 bitwise. Until then the file kept
 the tree's form, which divided each MPI tile's sum by the tile's wet-cell
 count at each level (16, 17 and 16 along every DINO row): J was about 1/16.6
-of the transport (`fc` = 0.448 against 7.44 Sv in the 43 N reference 31553),
+of the transport at 43 N and 60 N (`fc` = 0.448 against 7.44 Sv in the 43 N
+reference 31553) but 1/14.8 at 26 N and 1/25 at 25 S, where the western
+boundary current and the interior carry transport of opposite sign,
 depended on the decomposition, and a 5-day run reported one sixth of the
 30-day form. Every run up to the rewrite, the four κ_v campaigns included,
 reports that quantity (no `cost_units` line in its `build_info.txt`).

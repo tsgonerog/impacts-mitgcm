@@ -334,13 +334,13 @@ dirty=$(git -C "$SETUP_DIR" diff --name-only HEAD -- . 2>/dev/null | wc -l)
             # What J is (DINO since 2026-10-29): the transport across the whole row in Sv, as the mean
             # over the covered time, written when the compiled routine carries tileTransport (the
             # sum each tile adds to objf_atl); the tree's form divided each tile's sum by its own
-            # wet-cell count (countV), giving about 1/16.6 of the transport in DINO. The submit body
+            # wet-cell count (countV), giving 1/14.8 to 1/25 of the transport in DINO, depending on the row. The submit body
             # refuses a record whose form is not the source's, so a build older than the source
             # cannot run under the wrong units.
             if grep -q 'tileTransport' cost_atlantic_heat.f; then
                 echo "cost_units=Sv   # J = transport across the whole row, mean over the covered time, in Sverdrups (cost_atlantic_heat.F since 2026-10-29)"
             elif grep -q 'countV' cost_atlantic_heat.f; then
-                echo "cost_units=tile_normalised   # J = sum over tiles of each tile's transport divided by its wet-cell count, times 1e-6 (the tree's form; about 1/16.6 of the transport in Sv)"
+                echo "cost_units=tile_normalised   # J = sum over tiles of each tile's transport divided by its wet-cell count, times 1e-6 (the tree's form; 1/14.8 to 1/25 of the transport in Sv in DINO, depending on the row)"
             fi
             # The quantities the compiled routine can integrate (DINO since 2026-10-31): volume or heat,
             # chosen by cost_atl_quantity of the staged data.cost. The submit body honours

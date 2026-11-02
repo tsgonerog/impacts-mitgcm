@@ -45,7 +45,7 @@ reads all four.
 
 THE SECOND GENERATION, `*_Sv` (2026-11-01): the same four sections rerun after the cost routine was rewritten on
 2026-10-29 (merged 2026-10-31): J is the row transport in Sverdrups, each tile's sum added without the tree's per-tile
-wet-count normalisation, so every fc is about 16.6 times the first generation's and the middle third of the row is no
+wet-count normalisation, so every fc is 15 to 25 times the first generation's, depending on the row, and the middle third is no
 longer weighted 6 % less. The same legs, pickups and forcing files; eight new 5-yr adjoints and the finite-difference
 sweeps per section, filed under runs/adjoint/<campaign>/ and analysis/<campaign>/ beside the old ones, which stay as the
 record. UNITS says which form a campaign's numbers are in ('tile' or 'Sv'), OLD_CAMPAIGN names the first-generation

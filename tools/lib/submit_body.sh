@@ -284,7 +284,7 @@ fi
 # What J is, record against source (DINO since 2026-10-29). The build body writes
 # cost_units=Sv when the compiled cost_atlantic_heat.f is the rewritten routine (the
 # transport across the whole row in Sv) and cost_units=tile_normalised for the tree's
-# form (each tile's sum divided by its wet-cell count, about 1/16.6 of the transport).
+# form (each tile's sum divided by its wet-cell count, 1/14.8 to 1/25 of the transport in DINO).
 # The source in code_tap/ says which form a build from it would get; a record that
 # says otherwise, or says nothing while the source is the rewritten one, is a build
 # older than the source, which this refuses: the submit body otherwise checks the
