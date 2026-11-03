@@ -144,6 +144,91 @@ def leg_timeseries():
 
 
 @figure
+def leg_drift():
+    """Whether the legs have settled when the adjoints start (year 180): the volume-mean temperature and the cost J
+    (12-month running means of the monthly dynDiag; every leg continues the spin-up's years 150-170), and their
+    trends over each leg's last three years against the reference's own three-year trends, taken every year from
+    year 150 to 180 (the spin-up, then the REF leg, which reproduces it). Writes stats/leg_drift.csv and
+    stats/leg_drift_reference.json."""
+    from matplotlib.colors import LogNorm
+    df = pd.read_csv(c.CACHE / 'leg_series.csv')
+    sp = df[df.run == 'spinup'].sort_values('iter')
+    depth = int(round(float(-np.asarray(c.grid()['RF']).ravel()[c.KMAX])))
+    cm = c.sequential_cmap()
+    norm = LogNorm(vmin=min(c.FACTOR.values()) / 1.5, vmax=max(c.FACTOR.values()))
+
+    def colour(r):
+        return c.INK if r == 'REF' else cm(norm(c.FACTOR[r]))
+
+    def trend(s, col):          # per decade, over whole years (36 months), so the seasonal cycle cancels
+        return float(np.polyfit(s.year.values, s[col].values, 1)[0] * 10)
+
+    series = {r: pd.concat([sp, df[df.run == r]]).sort_values('iter') for r in c.RUN_ORDER}
+    ref = series['REF']
+    ref_tr = {k: [trend(ref.iloc[i:i + 36], k) for i in range(0, len(ref) - 35, 12)] for k in ('Tmean', 'jproxy')}
+    rows = []
+    for r in c.RUN_ORDER:
+        leg = df[df.run == r].sort_values('iter')
+        rows.append(dict(run=r, factor=c.FACTOR[r], kappa_v=1.2e-5 * c.FACTOR[r],
+                         T_first_year=leg.Tmean.iloc[:12].mean(), T_last_year=leg.Tmean.iloc[-12:].mean(),
+                         T_trend_last3yr_per_decade=trend(leg.iloc[-36:], 'Tmean'),
+                         J_first_year=leg.jproxy.iloc[:12].mean(), J_last_year=leg.jproxy.iloc[-12:].mean(),
+                         J_trend_last3yr_per_decade=trend(leg.iloc[-36:], 'jproxy')))
+    tab = pd.DataFrame(rows)
+    tab.to_csv(c.STATS / 'leg_drift.csv', index=False, float_format='%.5g')
+    (c.STATS / 'leg_drift_reference.json').write_text(json.dumps(
+        {k + '_3yr_trend_per_decade': dict(min=min(v), max=max(v), n=len(v), years='150-180') for k, v in ref_tr.items()},
+        indent=1))
+
+    fig = plt.figure(figsize=(6.4, 3.05))
+    gs = fig.add_gridspec(2, 3, width_ratios=[1.2, 1.2, 0.95], left=0.07, right=0.985, top=0.75, bottom=0.15,
+                          wspace=0.45, hspace=0.9)
+    series_axes = [fig.add_subplot(gs[:, 0]), fig.add_subplot(gs[:, 1])]
+    rate_axes = [fig.add_subplot(gs[0, 2]), fig.add_subplot(gs[1, 2])]
+    titles = ['(a) volume-mean temperature [°C]', '(b) transport at %s, 0-%d m [Sv]' % (c.SEC_NAME, depth)]
+    for ax, k, title in zip(series_axes, ('Tmean', 'jproxy'), titles):
+        ax.axvspan(177, 180, color=c.GRID_C, alpha=0.6, lw=0, zorder=0)
+        for x in (170, 180):
+            ax.axvline(x, color=c.AXIS_C, lw=0.8, zorder=1)
+        sm = sp.set_index('year')[k].rolling(12, center=True).mean()
+        ax.plot(sm.index, sm.values, color=c.INK, lw=1.3, zorder=4)
+        for r in c.RUN_ORDER:
+            s = series[r].set_index('year')[k].rolling(12, center=True).mean()
+            s = s[s.index >= 169.5]
+            ax.plot(s.index, s.values, color=colour(r), lw=1.5 if r == 'REF' else 1.1, zorder=4 if r == 'REF' else 3)
+        for r in ('M1', 'REF', 'M7'):
+            s = series[r].set_index('year')[k].rolling(12, center=True).mean().dropna()
+            ax.annotate('%gx' % c.FACTOR[r], (s.index[-1], s.values[-1]), xytext=(3, 0), textcoords='offset points',
+                        fontsize=7, color=c.INK2, va='center')
+        ax.set_xlim(150, 182.5)
+        ax.set_xticks([150, 160, 170, 180])
+        ax.set_xlabel('model year', fontsize=7.5)
+        ax.tick_params(labelsize=7)
+        ax.set_title(title, fontsize=7.8, loc='left')
+    series_axes[0].text(169.6, 0.03, 'legs\nbranch', transform=series_axes[0].get_xaxis_transform(), fontsize=6.5,
+                        color=c.MUTED, va='bottom', ha='right')
+    for ax, k, unit, letter in zip(rate_axes, ('Tmean', 'jproxy'), ('°C', 'Sv'), 'cd'):
+        col = 'T_trend_last3yr_per_decade' if k == 'Tmean' else 'J_trend_last3yr_per_decade'
+        ax.axhline(0, color=c.MUTED, lw=0.6, zorder=1)
+        ax.plot(tab.factor, tab[col], color=c.AXIS_C, lw=0.8, zorder=2)
+        for _, row in tab.iterrows():
+            ax.plot(row.factor, row[col], 'o', ms=4.2, color=colour(row.run), mec=c.SURFACE, mew=0.6, zorder=3)
+        ax.set_xscale('log', base=2)
+        ax.set_xticks([0.25, 1, 4, 16])
+        ax.set_xticklabels(['0.25', '1', '4', '16'])
+        ax.minorticks_off()
+        ax.tick_params(labelsize=7)
+        ax.set_title('(%s) trend at year 180 [%s/decade]' % (letter, unit), fontsize=7.8, loc='left')
+    rate_axes[1].set_xlabel(r'$\kappa_v$ / reference', fontsize=7.5)
+    fig.text(0.07, 0.985, 'Colour: $\\kappa_v$ from 0.25x (light) to 32x (dark); black: the reference (the spin-up to '
+             'year 170, the REF leg after).\n(b) is the transport the cost J measures, computed month by month along '
+             'the legs; J itself is its mean over the last 30 days of each adjoint run.\nShaded: each leg\'s last three '
+             'years, over which the trends in (c) and (d) are taken. Every adjoint starts at year 180.', fontsize=7,
+             color=c.INK2, va='top', linespacing=1.35)
+    save(fig, 'leg_drift')
+
+
+@figure
 def leg_temperature_change():
     z = np.load(c.CACHE / 'leg_final_profiles.npz')
     g = c.grid()

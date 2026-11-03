@@ -282,6 +282,34 @@ def sections_J_gradient():
 
 
 @figure
+def sections_J_relative():
+    """The middle panel of sections_J_gradient on its own, for a slide: J of every member relative to its section's
+    reference, one line per section (2026-11-02, the advisor deck)."""
+    names = sections()
+    fig, ax = plt.subplots(figsize=(6.2, 3.3))
+    for n in names:
+        col = COLORS[c.SECTION_ORDER.index(n)]
+        fg = load(n, 'stats/fc_gradient.csv').sort_values('factor')
+        ref = float(fg.set_index('run').fc['REF'])
+        ax.plot(fg.factor, fg.fc / ref, '-o', color=col, lw=1.8, ms=5.5, mec=c.SURFACE, mew=1.2, label=short(n))
+    ax.axhline(1.0, color=c.AXIS_C, lw=0.8, zorder=0)
+    ax.axvline(1.0, color=c.AXIS_C, lw=0.8, ls=':', zorder=0)
+    xs = sorted(c.FACTOR.values())
+    ax.set_xscale('log', base=2)
+    ax.set_xticks(xs)
+    ax.set_xticklabels(['%g' % v for v in xs])
+    ax.minorticks_off()
+    ax.set_xlabel('$\\kappa_v$ / reference ($1.2\\times10^{-5}$ m$^2$ s$^{-1}$)')
+    ax.set_ylabel('J / J at the reference')
+    ax.set_title('the cost at each section, relative to its value at the reference $\\kappa_v$', fontsize=10, loc='left')
+    ax.legend(fontsize=9, title='cost section', title_fontsize=9, loc='upper left', ncol=2)
+    fig.tight_layout()
+    fig.savefig(FIGS / 'sections_J_relative.png', dpi=220)
+    plt.close(fig)
+    print('wrote', FIGS / 'sections_J_relative.png')
+
+
+@figure
 def sections_amplitude_vs_lead():
     names = sections()
     fig, axs = plt.subplots(1, 3, figsize=(12.5, 3.5))
