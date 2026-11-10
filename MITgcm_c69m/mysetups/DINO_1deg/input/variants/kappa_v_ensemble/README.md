@@ -1,5 +1,24 @@
 # `kappa_v_ensemble/` — forward legs
 
+**Since 2026-11-10 the legs are being extended from year 180 in 50-year chunks.** `data_<m>_ReMax2_from180yrPk`
+(REF and M1–M7) is `data_<m>_ReMax2` with `nIter0=3162240` (each leg's final pickup, linked with
+`IMPACTS_PICKUP_RUN_DIR=<that leg's run directory> IMPACTS_PICKUP_ITER=3162240`) and `nTimeSteps=878400` (50 yr,
+`IMPACTS_DURATION_DAYS=18300`); `pChkptFreq=316224000`, 10 years, now writes a permanent pickup at years 190, 200,
+210, 220 and 230, so an adjoint can start from any of them and the next chunk (`_from230yrPk`) from the last. The
+first chunk is runs 31966 (REF) and 31967–31973 (M1–M7), one node each, about 7.5 h. Why: at year 180 the members
+were still adjusting to their κ_v (the transport the cost measures drifting 1.0–1.7 Sv per decade, 13–32× the
+reference's own drift), and the advisor meeting of 2026-11-03 decided to extend every leg by about 50 years before
+any further adjoint. A spin-up to equilibrium at each κ_v, as DINO itself was spun up (3000 years from rest in
+Kamm et al. 2025), is out of reach: the basin turns over once in about 1100 years and the diffusive time to 1000 m
+is 2600 years at the reference κ_v, 42 000 at a quarter of it. So the extension runs in chunks, every member and the
+reference at the same age (the reference's chunk repeats the spin-up's years 180–200, a free reproducibility check),
+until the stopping rule of `analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/leg_convergence.py` is met: over
+the last five years, the trends of the full-column heat transport across 43 N, of the transport the previous cost
+measured and of the mean temperature above 500 m each within three times the spin-up's own largest five-year trend
+over years 150–200. The job map and products are `analysis/kappa_v_legs_extension/` on scratch; the runs land
+unfiled under `runs/forward/` and are filed into `runs/forward/kappa_v_legs_extension/` when a chunk finishes.
+The notes' Section 7.2 (impacts-docs) has the argument.
+
 **Since 2026-09-14 the legs start from the year-170 state of the spin-up 31329** (legs 31366 for
 `REF_ReMax2` and 31367–31373 for `M1_ReMax2`–`M7_ReMax2`), a 170-year run from rest of the live
 `input/data` on `/scratch`; the namelists are unchanged. 31329 integrated all 170 years but could
