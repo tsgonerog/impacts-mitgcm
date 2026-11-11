@@ -9,7 +9,10 @@ first chunk is runs 31966 (REF) and 31967–31973 (M1–M7), one node each, abou
 met the rule, so the second chunk, `data_<m>_ReMax2_from230yrPk` from each run's year-230 pickup, followed for
 every member: runs 31974 (REF) and 31975–31981 (M1–M7). At year 280 every member but 32× met the rule (that member's upper-ocean temperature and heat
 transport had settled, but its transport across 43 N still rose by 0.5 Sv per decade), so the third chunk,
-`data_<m>_ReMax2_from280yrPk`, followed on 2026-11-11: runs 31982 (REF) and 31983–31989 (M1–M7). Why: at year 180 the members
+`data_<m>_ReMax2_from280yrPk`, followed on 2026-11-11: runs 31982 (REF) and 31983–31989 (M1–M7). At year 330 six members are settled; 32× still climbs in transport (0.5 Sv per decade,
+unchanged for a century, tied to its still-warming deep ocean) and 0.25× still eases down from its overshoot (0.3 Sv
+per decade), both in the volume transport only. No fourth chunk was submitted: whether to run one, to start the
+heat-transport campaign from the year-330 states, or to drop 32× is a decision recorded in the project notes. Why: at year 180 the members
 were still adjusting to their κ_v (the transport the cost measures drifting 1.0–1.7 Sv per decade, 13–32× the
 reference's own drift), and the advisor meeting of 2026-11-03 decided to extend every leg by about 50 years before
 any further adjoint. A spin-up to equilibrium at each κ_v, as DINO itself was spun up (3000 years from rest in
