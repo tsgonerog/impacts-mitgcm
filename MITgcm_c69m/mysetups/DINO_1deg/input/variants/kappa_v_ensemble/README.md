@@ -5,7 +5,9 @@
 `IMPACTS_PICKUP_RUN_DIR=<that leg's run directory> IMPACTS_PICKUP_ITER=3162240`) and `nTimeSteps=878400` (50 yr,
 `IMPACTS_DURATION_DAYS=18300`); `pChkptFreq=316224000`, 10 years, now writes a permanent pickup at years 190, 200,
 210, 220 and 230, so an adjoint can start from any of them and the next chunk (`_from230yrPk`) from the last. The
-first chunk is runs 31966 (REF) and 31967–31973 (M1–M7), one node each, about 7.5 h. Why: at year 180 the members
+first chunk is runs 31966 (REF) and 31967–31973 (M1–M7), one node each, about 7.5 h. It finished the same evening (7.5–7.7 h each); at year 230 only the reference and the 2× member
+met the rule, so the second chunk, `data_<m>_ReMax2_from230yrPk` from each run's year-230 pickup, followed for
+every member: runs 31974 (REF) and 31975–31981 (M1–M7). Why: at year 180 the members
 were still adjusting to their κ_v (the transport the cost measures drifting 1.0–1.7 Sv per decade, 13–32× the
 reference's own drift), and the advisor meeting of 2026-11-03 decided to extend every leg by about 50 years before
 any further adjoint. A spin-up to equilibrium at each κ_v, as DINO itself was spun up (3000 years from rest in
