@@ -101,6 +101,26 @@ COST_SECTION = {   # jsec is 0-based here (the Fortran row is jsec + 1); kmax th
     'kappa_v_ensemble_gmFwd_sec60N_Sv848': dict(jsec=174, kmax=24, sec_name='60 N', sec_amoc='amoc60', since='2026-11-01',
                                                 prev_5yr_job=31621, legs_from='kappa_v_ensemble_gmFwd', units='Sv',
                                                 old_campaign='kappa_v_ensemble_gmFwd_sec60N'),
+    # third generation (2026-11-11): the full-column HEAT transport (cost_atl_quantity='heat', kmaxdepth=36 = Nr, units='PW')
+    # at eight northern rows 5-7 degrees apart, from the YEAR-330 states of the extended legs (legs_from names the
+    # extension's job map, whose chunk-3 rows are the states; niter0 is the adjoint window's start). old_campaign is the
+    # Sverdrup campaign of the same row where one exists (26 N, 43 N, 60 N), for the comparison of the two costs.
+    'kappa_v_heat_sec20N': dict(jsec=119, kmax=36, sec_name='20 N', sec_amoc='amoc26', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign=None, niter0=5797440, quantity='heat'),
+    'kappa_v_heat_sec26N': dict(jsec=126, kmax=36, sec_name='26 N', sec_amoc='amoc26', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign='kappa_v_ensemble_gmFwd_sec26N_Sv848', niter0=5797440, quantity='heat'),
+    'kappa_v_heat_sec32N': dict(jsec=133, kmax=36, sec_name='32 N', sec_amoc='amoc26', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign=None, niter0=5797440, quantity='heat'),
+    'kappa_v_heat_sec38N': dict(jsec=140, kmax=36, sec_name='38 N', sec_amoc='amoc43', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign=None, niter0=5797440, quantity='heat'),
+    'kappa_v_heat_sec43N': dict(jsec=147, kmax=36, sec_name='43 N', sec_amoc='amoc43', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign='kappa_v_ensemble_gmFwd_sec43N_Sv', niter0=5797440, quantity='heat'),
+    'kappa_v_heat_sec48N': dict(jsec=154, kmax=36, sec_name='48 N', sec_amoc='amoc43', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign=None, niter0=5797440, quantity='heat'),
+    'kappa_v_heat_sec54N': dict(jsec=163, kmax=36, sec_name='54 N', sec_amoc='amoc60', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign=None, niter0=5797440, quantity='heat'),
+    'kappa_v_heat_sec60N': dict(jsec=174, kmax=36, sec_name='60 N', sec_amoc='amoc60', since='2026-11-11', prev_5yr_job=None,
+                                legs_from='kappa_v_legs_extension', units='PW', old_campaign='kappa_v_ensemble_gmFwd_sec60N_Sv848', niter0=5797440, quantity='heat'),
 }
 CAMPAIGN = os.environ.get('CAMPAIGN_NAME', 'kappa_v_ensemble_gmFwd_sec43N')
 if CAMPAIGN not in COST_SECTION:
@@ -108,14 +128,15 @@ if CAMPAIGN not in COST_SECTION:
 _CS = COST_SECTION[CAMPAIGN]
 UNITS = _CS['units']                           # 'tile' (first generation) or 'Sv' (second)
 OLD_CAMPAIGN = _CS['old_campaign']             # the first-generation campaign of the same section, for a *_Sv campaign
-J_UNIT = 'Sv' if UNITS == 'Sv' else 'tile units'   # what fc is in, for axis labels
+J_UNIT = {'Sv': 'Sv', 'PW': 'PW'}.get(UNITS, 'tile units')   # what fc is in, for axis labels
 J_SCALE = 16.6 if UNITS == 'Sv' else 1.0           # for limits and thresholds written in the first generation's units
 # south to north, for the cross-section comparison: the four campaigns of this campaign's generation
-SECTION_ORDER = (['kappa_v_ensemble_gmFwd_sec25S_Sv', 'kappa_v_ensemble_gmFwd_sec26N_Sv848', 'kappa_v_ensemble_gmFwd_sec43N_Sv',
+HEAT_SECTIONS = ['kappa_v_heat_sec%s' % t for t in ('20N', '26N', '32N', '38N', '43N', '48N', '54N', '60N')]   # south to north
+SECTION_ORDER = HEAT_SECTIONS if UNITS == 'PW' else (['kappa_v_ensemble_gmFwd_sec25S_Sv', 'kappa_v_ensemble_gmFwd_sec26N_Sv848', 'kappa_v_ensemble_gmFwd_sec43N_Sv',
                   'kappa_v_ensemble_gmFwd_sec60N_Sv848'] if UNITS == 'Sv' else
                  ['kappa_v_ensemble_gmFwd_sec25S', 'kappa_v_ensemble_gmFwd', 'kappa_v_ensemble_gmFwd_sec43N',
                   'kappa_v_ensemble_gmFwd_sec60N'])
-CROSS_DIR = 'cost_sections_Sv' if UNITS == 'Sv' else 'cost_sections'   # analysis/<CROSS_DIR>/: the sections compared
+CROSS_DIR = {'Sv': 'cost_sections_Sv', 'PW': 'cost_sections_heat'}.get(UNITS, 'cost_sections')   # analysis/<CROSS_DIR>/: the sections compared
 # The campaign a section's own figures and page compare it with (the orange markers of fd_checks, the second curve of
 # fc_vs_kappa, the page's "for the 26 N cost ..." clauses). The first generation compares with the campaign whose legs it
 # reuses, the 26 N campaign of September; a second-generation campaign compares with the 26 N campaign of its own
@@ -123,10 +144,14 @@ CROSS_DIR = 'cost_sections_Sv' if UNITS == 'Sv' else 'cost_sections'   # analysi
 # campaign with its own first generation.
 if UNITS == 'Sv':
     CMP_CAMPAIGN = OLD_CAMPAIGN if CAMPAIGN == 'kappa_v_ensemble_gmFwd_sec26N_Sv848' else 'kappa_v_ensemble_gmFwd_sec26N_Sv848'
+elif UNITS == 'PW':
+    CMP_CAMPAIGN = OLD_CAMPAIGN     # the Sverdrup campaign of the same row, where one exists (None otherwise)
 else:
     CMP_CAMPAIGN = _CS['legs_from']
 CMP_LABEL = {'kappa_v_ensemble_gmFwd': 'the 26 N cost of September (earlier form, 982 m)',
-             'kappa_v_ensemble_gmFwd_sec26N_Sv848': 'the 26 N cost in Sverdrups, 848 m'}.get(CMP_CAMPAIGN, CMP_CAMPAIGN)
+             'kappa_v_ensemble_gmFwd_sec26N_Sv848': 'the 26 N cost in Sverdrups, 848 m',
+             'kappa_v_ensemble_gmFwd_sec43N_Sv': 'the 43 N volume transport in Sverdrups, 848 m',
+             'kappa_v_ensemble_gmFwd_sec60N_Sv848': 'the 60 N volume transport in Sverdrups, 848 m'}.get(CMP_CAMPAIGN, CMP_CAMPAIGN)
 CMP_SAME_UNITS = bool(CMP_CAMPAIGN) and COST_SECTION.get(CMP_CAMPAIGN, {}).get('units') == UNITS
 ANALYSIS = OUTPUTS / 'analysis' / CAMPAIGN
 CACHE = ANALYSIS / 'cache'
@@ -198,7 +223,8 @@ if _CS['legs_from'] and not any(role == 'forward leg' for _, role, _ in _MAP):
 # to year 200, so anything that means "the spin-up up to the legs' start" must stop at LEG_NITER0 itself.
 SPINUP_JOB = 31203
 SPINUP_END_JOB = None     # was 31365, the rerun last 61 days; deleted with 31329
-LEG_JOB = {tag.split('/')[-1].replace('_ReMax2', ''): j for j, role, tag in _MAP if role.startswith('forward leg')}
+# the member key of a leg row: 'M3_ReMax2' and, for the heat generation's states, 'M3_ReMax2_from280yrPk' both give 'M3'
+LEG_JOB = {re.sub(r'_from\d+yrPk$', '', tag.split('/')[-1]).replace('_ReMax2', ''): j for j, role, tag in _MAP if role.startswith('forward leg')}
 ADJ_JOB = {('REF' if role.startswith('reference') else tag.split('/')[-1].split('_')[0]): j
            for j, role, tag in _MAP if role.startswith(('reference adjoint', 'member adjoint'))}
 FD_JOB = {(role.split()[-1] if role.split()[-1] != 'sweep' else tag.split('/')[-1].split('_')[0]): j
@@ -224,7 +250,7 @@ def run_dir(job):
 # ---------------------------------------------------------------- time axis of the adjoint window
 DT = 1800.0
 STEPS_PER_YEAR = 48 * 366
-NITER0 = 3162240                 # year 180
+NITER0 = _CS.get('niter0', 3162240)   # the adjoint window's start: year 180 for the generations from the legs, year 330 (5797440) for the heat generation
 NSTEPS = 87840                   # 5 yr
 NITER_END = NITER0 + NSTEPS      # year 185
 DUMP_STRIDE = 240                # adjDumpFreq = 5 d
@@ -396,6 +422,8 @@ def pattern_corr(a, r, w=None):
 # JSEC is the 0-based row whose SOUTHERN face the compiled cost integrates VVEL across (Fortran jsec = JSEC + 1); KMAX the
 # number of levels from the surface (Fortran kmaxdepth). 126 / 25 for the 26 N campaign, 147 / 24 for the 43 N rerun.
 JSEC, KMAX, SNX, NTILE = _CS['jsec'], _CS['kmax'], 17, 3
+QUANTITY = _CS.get('quantity', 'volume')     # cost_atl_quantity of the campaign's runs
+RHO0, CP = 1035.0, 3994.0                    # rhoConst and HeatCapacity_Cp the heat cost multiplies by
 SEC_NAME = _CS['sec_name']                   # how the section is named in titles: '26 N' / '43 N' / '60 N' / '25 S' (the row centre, rounded)
 SEC_AMOC = _CS['sec_amoc']                   # the forward_state.py column holding the overturning maximum at the section's row
 AMOC_INDEX_LATS = {'amoc26': 26.0, 'amoc43': 43.2, 'amoc60': 59.8, 'amoc25S': -25.2}   # the overturning index columns
@@ -409,12 +437,18 @@ def sec_lat():
 
 
 
-def jproxy(v, g=None):
+def jproxy(v, g=None, th=None):
     """The compiled cost formula applied to a meridional-velocity field v (k, j, i), upper KMAX
     levels, row JSEC: for a 'Sv' campaign the row transport in Sverdrups (the rewritten routine of
     2026-10-29), for a 'tile' campaign the tree's per-tile wet-face normalisation. With a 30.5-d
     mean v it is a proxy of fc, which averages the final 30 d."""
     g = g or grid()
+    if UNITS == 'PW':      # the heat generation: theta on the row's southern face times v, over KMAX levels, in PW
+        if th is None:
+            raise ValueError('the heat-transport cost needs the temperature field: jproxy(v, g, th)')
+        area = g['DXG'][JSEC][None, :] * g['DRF'][:KMAX, None] * g['hFacS'][:KMAX, JSEC, :]
+        tf = 0.5 * (th[:KMAX, JSEC, :] + th[:KMAX, JSEC - 1, :])
+        return RHO0 * CP * 1e-15 * float((tf * v[:KMAX, JSEC, :] * area).sum())
     msk = g['hFacS'][:, JSEC, :] > 0
     dxg = g['DXG'][JSEC, :]
     vs = v[:, JSEC, :]

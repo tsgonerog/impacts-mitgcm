@@ -133,6 +133,12 @@ cost_section_token() {
     148) echo sec43N ;;
     175) echo sec60N ;;
     74)  echo sec25S ;;
+    # the heat-transport generation of 2026-11-11: eight northern rows 5-7 degrees apart
+    120) echo sec20N ;;
+    134) echo sec32N ;;
+    141) echo sec38N ;;
+    155) echo sec48N ;;
+    164) echo sec54N ;;
     *)   echo "jsec$1" ;;
   esac
 }

@@ -1,5 +1,12 @@
 # `fd_checks/` — finite-difference checks of the production adjoint (since 2026-09-12)
 
+**Since 2026-11-11 every campaign sweep has a `_from330yrPk` twin** (`REFp10`, `REFm10`, the eight forcing sweeps and
+`thetaPatchFD`; not the `diffkrBox` pair): the same file with `nIter0=5797440`, the year-330 state of the reference's
+extended leg (scratch `analysis/kappa_v_legs_extension/`, chunk 3 run 31982), for the heat-transport generation of
+the campaign. Their Theta pickups are perturbed copies of that run's `pickup.0005797440` under
+`analysis/kappa_v_legs_extension/perturbed_pickups/`; the forcing files are the same as before (they do not depend
+on the state).
+
 Forward sweeps of the adjoint executable from the year-180 state of the reference forward
 leg (`input/variants/kappa_v_ensemble/data_REF_ReMax2`, the spin-up's continuation), each cancelled once the forward sweep has printed its cost, so that the change in
 J can be compared with the gradient of the reference adjoint (the live `input_tap/data`

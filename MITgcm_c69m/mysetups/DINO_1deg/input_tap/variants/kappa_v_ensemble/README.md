@@ -1,5 +1,13 @@
 # `kappa_v_ensemble/` — adjoint half of the κ_v ensemble (since 2026-09-12)
 
+**Since 2026-11-11 each member has a `_from330yrPk` twin** (`data_M<k>_ReMax2_gmFwd_approxAdv_from330yrPk`, and
+`data_REF_ReMax2_gmFwd_approxAdv_from330yrPk` for the reference, which until then ran from the live namelist):
+the same file with `nIter0=5797440`, the year-330 state of the extended legs (scratch
+`analysis/kappa_v_legs_extension/`, chunk 3 runs 31982–31989), for the heat-transport generation of the
+campaign (`analyses/DINO_1deg/adjoint/kappa_v_ensemble_gmFwd/submit_heat_campaign.sh`). The pickup is named with
+`IMPACTS_PICKUP_RUN_DIR=<the member's chunk-3 run>`; the cost comes from `IMPACTS_COST_QUANTITY=heat`,
+`IMPACTS_COST_JSEC` and `IMPACTS_COST_KMAXDEPTH=36`, so the run directory ends in `_sec<lat>_heat`.
+
 The seven member adjoints of the vertical-diffusivity ensemble under the current
 configuration. Each `data_M<k>_ReMax2_gmFwd_approxAdv` is the live `input_tap/data`
 with `diffKrT` and `diffKrS` set to the member's κ_v and nothing else changed, so it

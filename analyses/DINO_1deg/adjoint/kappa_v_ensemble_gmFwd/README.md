@@ -1,5 +1,7 @@
 # `kappa_v_ensemble_gmFwd/` — the κ_v ensemble and the 5-year adjoint under the current configuration
 
+**Third generation since 2026-11-11: the full-column heat transport from the year-330 states.** After the leg extension (`leg_convergence.py`; six members settled at year 330, the 32× member's volume transport still rising with its deep ocean, the 0.25× member's still easing down, both documented) the campaign was rerun with the cost decided with the advisor on 2026-11-03, the meridional heat transport over the whole column, at eight northern rows 5–7° apart (`submit_heat_campaign.sh`, campaigns `kappa_v_heat_sec{20N,26N,32N,38N,43N,48N,54N,60N}`, jobs 31990–32201; `campaign.py` entries with `units='PW'`, `niter0=5797440`, `legs_from='kappa_v_legs_extension'`). The analysis scripts below were written for the volume-transport generations; their adaptation to the heat generation (the cost proxy needs the temperature field, `jproxy(v, g, th)`) follows while the runs run.
+
 **Four campaigns, one suite (two since 2026-10-13, four since 2026-10-20), one per cost section.** Every
 script here reads `CAMPAIGN_NAME` from the environment: `kappa_v_ensemble_gmFwd` is the September
 campaign described below, with the cost section at 26 N (`jsec=127`, upper 982 m);
@@ -104,6 +106,7 @@ The write-up is the meeting review page, https://claude.ai/artifact/CZGptTdunuHu
 | Script | What it does |
 | --- | --- |
 | `submit_campaign.sh` | Submits the campaign as one dependency chain with `SCRATCH_ROOT=/scratch/$USER` (or, with `CAMPAIGN_SPINUP_JOB`/`CAMPAIGN_SPINUP_DIR`, from an existing run holding the year-170 pickup): the 170-year spin-up, the eight 10-year legs, the reference and seven member 5-year adjoints, the finite-difference forward sweeps, and the job that writes the perturbed pickups; writes `job_map.tsv` |
+| `submit_heat_campaign.sh` | **The heat-transport generation** (2026-11-11): submits one campaign `kappa_v_heat_sec<lat>` of the third generation, the eight 5-yr adjoints and the finite-difference sweeps of one row, from the year-330 states of the extended legs (`analysis/kappa_v_legs_extension/`, chunk 3 runs 31982–31989) with `IMPACTS_COST_QUANTITY=heat`, `IMPACTS_COST_KMAXDEPTH=36` and the row's `IMPACTS_COST_JSEC`; the `*_from330yrPk` namelists; the Theta pickups perturbed from the reference's year-330 pickup (`analysis/kappa_v_legs_extension/perturbed_pickups/`), the forcing files of the first generation; starts `watch_campaign.sh` detached. Eight rows 5–7° apart, 20 N to 60 N (rows 120, 127, 134, 141, 148, 155, 164, 175), submitted 2026-11-11 as jobs 31990–32201 |
 | `watch_campaign.sh` | Reports job state changes and cancels each finite-difference sweep once the model has printed its cost (writes `fd_fc_lines.tsv`) |
 | `campaign.py` | Run registry (from `job_map.tsv`), grid and MDS readers, the cost proxy, metrics and figure style |
 | `forward_state.py` | `spinup`: the cost proxy's internal variability from the spin-up's monthly `dynDiag`; `legs`: indices of the eight legs and, once `/scratch2` is readable, the comparison with 31203 |
