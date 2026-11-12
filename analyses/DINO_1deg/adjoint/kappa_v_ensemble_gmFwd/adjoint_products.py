@@ -147,7 +147,7 @@ def fields():
 def tables():
     g = c.grid()
     nf = json.loads((c.STATS / 'noise_floor.json').read_text())
-    sigma = nf['jproxy']['std_monthly']
+    sigma = c.noise_sigma(nf)
     rows = []
     for r in c.RUN_ORDER:
         if r not in ADJ:

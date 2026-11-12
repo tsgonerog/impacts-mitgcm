@@ -431,6 +431,18 @@ AMOC_INDEX_LATS = {'amoc26': 26.0, 'amoc43': 43.2, 'amoc60': 59.8, 'amoc25S': -2
                                                       # 1000 m is the Ekman layer's, not an AMOC cell (jproxy is the cost)
 
 
+def noise_sigma(nf):
+    """The cost's noise floor for the finite-difference verdicts, from stats/noise_floor.json. For the heat generation
+    the seasonal cycle of the heat transport is as large as its mean at 43 N (monthly std 0.015 PW against a mean of
+    0.05), and a finite-difference pair is evaluated at the same calendar time, so the cycle cancels out of it: the
+    deseasonalised monthly std (forward_state.py, 2026-11-11) is the floor there. The volume generations keep the
+    plain monthly std their records were made with."""
+    j = nf['jproxy']
+    if UNITS == 'PW' and 'std_monthly_deseasonalised' in j:
+        return float(j['std_monthly_deseasonalised'])
+    return float(j['std_monthly'])
+
+
 def sec_lat():
     """Latitude (deg N) of the section row's centre, from the grid."""
     return float(grid()['lat'][JSEC])

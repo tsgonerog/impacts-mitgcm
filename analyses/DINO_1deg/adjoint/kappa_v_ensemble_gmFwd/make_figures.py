@@ -441,7 +441,7 @@ def cmp_ref_job():
 @figure
 def fd_checks():
     df = pd.read_csv(c.STATS / 'fd_checks.csv')
-    sigma = json.loads((c.STATS / 'noise_floor.json').read_text())['jproxy']['std_monthly']
+    sigma = c.noise_sigma(json.loads((c.STATS / 'noise_floor.json').read_text()))
     # the kappa_v check and the Theta boxes, in the order of the file; a check without signal (below) is drawn
     # hollow with its sigma counts instead of a ratio
     rows = df[~df.test.str.contains('everywhere')].reset_index(drop=True)
@@ -450,7 +450,12 @@ def fd_checks():
     ratio = (rows.adjoint / rows.fd_central).values
     # a check has signal when its central difference clears the noise floor and its two one-sided differences agree
     # (one_sided_spread < 1: |fd_plus - fd_minus| below |fd_central|); deepN at 43 N fails both, fv and qnet the second
-    signal = ((np.abs(rows.fd_central) >= sigma) & (rows.one_sided_spread < 1.0)).values
+    # For the heat generation the floor is dropped from this rule: a finite-difference pair runs from one state at one
+    # calendar phase, so what limits it is the model's nonlinearity (the spread), not the climate's variability, and
+    # the heat transport's variability at 43 N (0.005 PW deseasonalised) exceeds responses the spread shows are clean
+    # (2026-11-12). The page's _verdict has always used the spread alone.
+    floor = 0.0 if c.UNITS == 'PW' else sigma
+    signal = ((np.abs(rows.fd_central) >= floor) & (rows.one_sided_spread < 1.0)).values
     par = parent_stats('fd_checks.csv')
     if par is not None:        # the same checks of the parent campaign (26 N section, 2026-09): its own adjoint/FD, by test name
         pr = par.set_index('test')
@@ -508,7 +513,7 @@ def fc_vs_kappa():
     fg = pd.read_csv(c.STATS / 'fc_gradient.csv')
     old = json.loads((c.STATS / 'previous_campaigns.json').read_text())
     nf = json.loads((c.STATS / 'noise_floor.json').read_text())
-    sig = nf['jproxy']['std_monthly']
+    sig = c.noise_sigma(nf)
     fig, ax = plt.subplots(figsize=(7.5, 3.8))
     ref = float(fg[fg.run == 'REF'].fc.iloc[0])
     par = parent_stats('fc_gradient.csv')
@@ -649,7 +654,7 @@ def kappa_gradient():
 def dJ_decomposition():
     d = pd.read_csv(c.STATS / 'dJ_decomposition.csv')
     nf = json.loads((c.STATS / 'noise_floor.json').read_text())
-    sig = nf['jproxy']['std_monthly']
+    sig = c.noise_sigma(nf)
     x = np.arange(len(d))
     fig, ax = plt.subplots(figsize=(7.5, 3.4))
     ax.axhline(0, color=c.AXIS_C, lw=0.8)

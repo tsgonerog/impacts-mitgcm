@@ -114,7 +114,7 @@ def body(h):
     ms = member_summary(ts, mm) if ts is not None and mm is not None else pd.DataFrame()
     fcref = float(fg.set_index('run').fc['REF']) if fg is not None else None
     Gref = float(fg.set_index('run').G_dJdkappa_uniform['REF']) if fg is not None else None
-    sigma = nf.get('jproxy', {}).get('std_monthly')
+    sigma = c.noise_sigma(nf) if nf.get('jproxy') else None
     kap = fd[fd.test.str.startswith('kappa')] if fd is not None else None
     kap_err = float(kap.adjoint_rel_err.iloc[0]) if kap is not None and len(kap) else None
     n_bounded = int((ms.status == 'bounded').sum()) if len(ms) else None
@@ -351,7 +351,7 @@ def _and(items):
 
 def findings(fg, fd, ms, dec, nf, tgt, prev, legs):
     out = []
-    sig = nf['jproxy']['std_monthly']
+    sig = c.noise_sigma(nf)
     if fg is not None:
         f = fg.set_index('run').fc
         jmin = f.idxmin()

@@ -32,7 +32,7 @@ def indices(base):
     th = c.read_record(base, 'THETA')
     sa = c.read_record(base, 'SALT')
     it = int(re.search(r'\.(\d{10})$', str(base)).group(1))
-    return dict(iter=it, year=it / c.STEPS_PER_YEAR, jproxy=c.jproxy(v, g),
+    return dict(iter=it, year=it / c.STEPS_PER_YEAR, jproxy=c.jproxy(v, g, th),   # th only used by the heat generation
                 **{k: c.amoc_index(v, L, g) for k, L in c.AMOC_INDEX_LATS.items()},
                 Tmean=float((th * g['vol']).sum() / g['vol'].sum()),
                 Smean=float((sa * g['vol']).sum() / g['vol'].sum()))
@@ -62,7 +62,13 @@ def spinup():
         x = w[k].values
         x_d = x - np.polyval(np.polyfit(t, x, 1), t)
         ann = pd.Series(x_d).groupby(np.arange(len(x_d)) // 12).mean().values
-        out[k] = dict(mean=float(x.mean()), std_monthly=float(x_d.std(ddof=1)),
+        # the anomaly from the mean seasonal cycle (12 records of 30.5 d per 366-d year, the series starting at a
+        # year boundary): the noise that matters for a finite-difference pair evaluated at the same calendar time,
+        # which the seasonal cycle cancels out of -- decisive for the heat cost, whose seasonal range at 43 N is
+        # the size of its mean (2026-11-11)
+        mon = np.arange(len(x_d)) % 12
+        deseas = x_d - pd.Series(x_d).groupby(mon).transform('mean').values
+        out[k] = dict(mean=float(x.mean()), std_monthly=float(x_d.std(ddof=1)), std_monthly_deseasonalised=float(deseas.std(ddof=1)),
                       std_annual=float(ann.std(ddof=1)),
                       lag1_monthly=float(np.corrcoef(x_d[:-1], x_d[1:])[0, 1]),
                       lag1_annual=float(np.corrcoef(ann[:-1], ann[1:])[0, 1]),
