@@ -83,7 +83,9 @@ MEMBER_VARS = ['ADJtheta', 'ADJdiffkr']       # the two the ensemble's results r
 # other eight (empmr, qsw, etan, uvel, vvel, wvel, taux, tauy) carry no result the deck rests on and
 # stay in animations/ and in the explorer. The two eight-member films are always copied.
 DECK_FILMS = {'film_theta', 'film_salt', 'film_diffkr', 'film_qnet'}
-KCOST = c.KMAX                                # the levels the cost integrates: 25 (982 m) at 26 N, 24 (848 m) at 43 N
+KCOST = c.KMAX if c.KMAX < 36 else 24         # the levels the cost integrates: 25 (982 m) at 26 N, 24 (848 m) at 43 N;
+                                              # for the full-column heat cost (36 = Nr, 2026-11-11) the split stays at the
+                                              # 848 m interface, so the film levels and the wave level match the earlier generations
 
 PROFILES = c.CACHE / 'level_rms_profiles.npz'
 INDEX = c.ANIMS / 'films_index.tsv'
