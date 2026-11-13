@@ -44,6 +44,9 @@ OUT = c.OUTPUTS / 'analysis' / c.CROSS_DIR   # cost_sections (first generation) 
 FIGS, STATS, ANIMS = OUT / 'figures', OUT / 'stats', OUT / 'animations'
 LEVEL_M = 791                      # the map level: the deck's temperature film's upper level (inside every section's band)
 COLORS = c.SERIES + ['#7c4dff']    # four categorical slots: the suite's three plus a violet
+if len(c.SECTION_ORDER) > len(COLORS):   # the heat generation's eight rows (2026-11-13): one ramp, south light to north dark
+    import matplotlib.cm as _cm
+    COLORS = [matplotlib.colors.to_hex(_cm.viridis(x)) for x in np.linspace(0.05, 0.92, len(c.SECTION_ORDER))]
 LEADS = [30.0 / 366, 1.0, 5.0]
 LEAD_LAB = {LEADS[0]: '30 d', 1.0: '1 yr', 5.0: '5 yr'}
 
