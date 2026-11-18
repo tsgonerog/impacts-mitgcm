@@ -232,6 +232,12 @@ def sections_on_psi():
     ax.contour(lat, rf[1:], P.T, levels=lev, colors='k', linewidths=0.25, alpha=0.5)
     for i, r in geo.iterrows():
         col = COLORS[i]
+        if c.UNITS == 'PW':   # the heat generation (2026-11-13): the full column, so the line runs to the floor and carries the row's name
+            ax.plot([r.lat_face, r.lat_face], [0, -4000], color=col, lw=2.6, solid_capstyle='butt')
+            ax.annotate(r.section, (r.lat_face, -3950 + 320 * (i % 2)), xytext=(0, 0), textcoords='offset points',
+                        ha='center', va='bottom', fontsize=7.5, color=col, weight='bold',
+                        bbox=dict(fc=c.SURFACE, ec='none', alpha=0.8, pad=1.0))
+            continue
         ax.plot([r.lat_face, r.lat_face], [0, -r.interface_m], color=col, lw=2.6, solid_capstyle='butt')
         ax.plot([r.lat_face], [-r.interface_m], 'o', color=col, ms=6, mec='white', mew=1.2)
         ax.annotate('%s\n%d m, %.1f Sv' % (r.section, round(r.interface_m), r.psi_at_interface_sv),
@@ -244,8 +250,13 @@ def sections_on_psi():
     ax.set_ylabel('depth [m]')
     ax.set_ylim(-4000, 0)
     ax.set_xlim(lat.min(), lat.max())
-    ax.set_title('The four cost sections on the overturning of the spin-up 31203, years 190-200\n'
-                 '(each cost: the transport across one row, from the surface to the marked interface)', fontsize=9.5)
+    if c.UNITS == 'PW':
+        ttl = ('The eight cost sections on the overturning of the spin-up 31203, years 190-200\n'
+               '(each cost: the heat transport across one row over the full column, surface to sea floor)')
+    else:
+        ttl = ('The four cost sections on the overturning of the spin-up 31203, years 190-200\n'
+               '(each cost: the transport across one row, from the surface to the marked interface)')
+    ax.set_title(ttl, fontsize=9.5)
     ax.grid(False)
     save(fig, 'sections_on_psi')
 
@@ -372,7 +383,7 @@ def sections_ADJtheta_maps():
               for L in LEADS]
     panels.append(('lead 5 yr, column sum', lambda n: colsum(load(n, 'cache/fields_REF.npz')['ADJtheta_L5.000'], m)))
     _maps_grid(sections(), panels, 'sections_ADJtheta_maps',
-               'Temperature sensitivity of the reference adjoint at the four sections (each map on its own scale)', 'dJ/K')
+               'Temperature sensitivity of the reference adjoint at the %d sections (each map on its own scale)' % len(c.SECTION_ORDER), 'dJ/K')
 
 
 @figure
@@ -386,7 +397,7 @@ def sections_adxx_maps():
               ('dJ/dτ_x (5-yr total)', lambda n: np.where(c.mask('adxx_fu'), load(n, 'cache/adxx_REF.npz')['adxx_fu'], np.nan)),
               ('dJ/d(E−P−R) (5-yr total)', lambda n: np.where(c.mask('adxx_empmr'), load(n, 'cache/adxx_REF.npz')['adxx_empmr'], np.nan))]
     _maps_grid(sections(), panels, 'sections_adxx_maps',
-               'Control gradients over the 5-yr window, reference adjoint, four sections (each map on its own scale)', 'per unit of the control')
+               'Control gradients over the 5-yr window, reference adjoint, %d sections (each map on its own scale)' % len(c.SECTION_ORDER), 'per unit of the control')
 
 
 @figure
@@ -397,9 +408,9 @@ def sections_pattern_corr():
             ('ADJtheta_L5.000', 'ADJtheta, lead 5 yr'), ('adxx_theta', 'dJ/dθ(t=0)'), ('adxx_diffkr', 'dJ/dκ_v'),
             ('adxx_qnet', 'dJ/dQnet'), ('adxx_fu', 'dJ/dτ_x'), ('adxx_empmr', 'dJ/d(E−P−R)')]
     keys = [(k, l) for k, l in keys if k in s['pattern_corr_between_sections']]
-    fig, axs = plt.subplots(1, len(keys), figsize=(2.3 * len(keys) + 0.6, 2.9), squeeze=False)
     labs = [short(n) for n in names]
-    for ax, (k, lab) in zip(axs[0], keys):
+
+    def draw(ax, k, lab, ylabels):
         M = np.array([[s['pattern_corr_between_sections'][k][a][b] for b in names] for a in names])
         ax.imshow(M, cmap=c.sequential_cmap(), vmin=-1, vmax=1)
         for i in range(len(names)):
@@ -409,13 +420,26 @@ def sections_pattern_corr():
         ax.set_xticks(range(len(names)))
         ax.set_xticklabels(labs, fontsize=7.5)
         ax.set_yticks(range(len(names)))
-        ax.set_yticklabels(labs if ax is axs[0, 0] else [], fontsize=7.5)
+        ax.set_yticklabels(labs if ylabels else [], fontsize=7.5)
         ax.set_title(lab, fontsize=8.5)
         ax.grid(False)
+
+    fig, axs = plt.subplots(1, len(keys), figsize=(2.3 * len(keys) + 0.6, 2.9), squeeze=False)
+    for ax, (k, lab) in zip(axs[0], keys):
+        draw(ax, k, lab, ax is axs[0, 0])
     fig.suptitle('Pattern correlation between the reference adjoints of two sections (same state, same executable, only the cost differs)',
                  fontsize=9.5, y=1.02)
     fig.tight_layout()
     save(fig, 'sections_pattern_corr')
+    if len(keys) >= 6:   # the same panels in two rows, for a 16:9 slide: one row of eight is too wide to read there (2026-11-18)
+        ncol = (len(keys) + 1) // 2
+        fig, axs = plt.subplots(2, ncol, figsize=(2.75 * ncol + 0.5, 6.0), squeeze=False)
+        for n, (k, lab) in enumerate(keys):
+            draw(axs[n // ncol, n % ncol], k, lab, n % ncol == 0)
+        for ax in axs.ravel()[len(keys):]:
+            ax.axis('off')
+        fig.tight_layout()
+        save(fig, 'sections_pattern_corr_slide')
 
 
 @figure

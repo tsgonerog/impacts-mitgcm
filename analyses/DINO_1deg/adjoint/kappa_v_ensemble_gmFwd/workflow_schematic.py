@@ -5,6 +5,12 @@ with what changed, and what each output is used for.
     python workflow_schematic.py          # -> analysis/<campaign>/figures/workflow_schematic.png
     python workflow_schematic.py --notes ~/Proj_ImPACTS/impacts-docs/references/dino_overturning_sensitivity/notes/figures
 
+Three figures: workflow_schematic.png (portrait, the year-180 generation with its bottom panels), workflow_schematic_slide.png
+(the same as a 16:9 slide) and, since 2026-11-18, workflow_schematic_slide_generations.png (a slide with what came after:
+the legs run on in 50-year chunks to year 330 and the third generation's adjoints, the heat-transport campaigns, start
+there; read from analysis/kappa_v_legs_extension/job_map.tsv and the HEAT_SECTIONS campaigns' job maps, cross-checked
+the same way). Run under CAMPAIGN_NAME=kappa_v_ensemble_gmFwd_sec43N_Sv, the second generation at 43 N.
+
 EVERY NUMBER IS READ FROM THE RUNS, not typed in: the spin-up's length and time step from its staged `data`; each
 leg's start, length, diffusivity and the spin-up pickup it links; each adjoint's start, length, dump interval, the
 leg pickup it links and its staged `data.cost` (cost row, interface, averaging window); the job ranges of the four
@@ -444,6 +450,198 @@ def plot_slide(f, out):
     plt.close(fig)
 
 
+def facts_generations(f):
+    """What came after the year-180 adjoints, read and cross-checked like facts(): the legs' extension in 50-year
+    chunks (analysis/kappa_v_legs_extension/job_map.tsv; each chunk must start from the previous run of its member
+    and keep its diffusivity) and the third generation's adjoints, the heat-transport campaigns of campaign.py's
+    HEAT_SECTIONS (each must start from the last chunk of its member, with its diffusivity)."""
+    spy = f['spy']
+    chunks = {r: [] for r in C.RUN_ORDER}
+    for job, role, tag in C._job_map('kappa_v_legs_extension'):
+        if not role.startswith('forward leg extension'):
+            continue
+        r = tag.split('/')[-1].split('_')[0]
+        d = C.run_dir(job)
+        it0 = int(nml(d / 'data', 'nIter0'))
+        if nml(d / 'data', 'diffKrT') != f['legs'][r]['k']:
+            raise SystemExit('chunk %d of %s runs with a diffusivity other than its leg\'s' % (job, r))
+        prev = f['legs'][r]['dir'] if not chunks[r] else chunks[r][-1]['dir']
+        if pickup_source(d, it0) != prev:
+            raise SystemExit('chunk %d of %s does not start from the previous run of that member' % (job, r))
+        chunks[r].append(dict(job=job, start=it0 / spy, years=nml(d / 'data', 'nTimeSteps') / spy, dir=d))
+    f['chunks'] = chunks
+    heat = []
+    for camp in C.HEAT_SECTIONS:
+        m = C._job_map(camp)
+        adj = {}
+        for job, role, tag in m:
+            if 'adjoint' not in role:
+                continue
+            r = tag.split('/')[-1].split('_')[0]
+            d = C.run_dir(job)
+            it0 = int(nml(d / 'data', 'nIter0'))
+            if pickup_source(d, it0) != chunks[r][-1]['dir']:
+                raise SystemExit('adjoint %d of %s does not start from the last chunk of %s' % (job, camp, r))
+            if nml(d / 'data', 'diffKrT') != f['legs'][r]['k']:
+                raise SystemExit('adjoint %d of %s runs with a diffusivity other than its leg\'s' % (job, camp))
+            adj[r] = dict(job=job, start=it0 / spy, years=nml(d / 'data', 'nTimeSteps') / spy)
+        dref = C.run_dir(adj['REF']['job'])
+        heat.append(dict(camp=camp, name=C.COST_SECTION[camp]['sec_name'], adj=adj,
+                         row=int(nml(dref / 'data.cost', 'cost_atl_jsec')), kmax=int(nml(dref / 'data.cost', 'cost_atl_kmaxdepth')),
+                         quantity=nml(dref / 'data.cost', 'cost_atl_quantity'),
+                         n_fd=len([j for j, role, t in m if role.startswith('FD')])))
+    f['heat'] = heat
+    return f
+
+
+def plot_slide_generations(f, out):
+    """The slide version with everything that came after the year-180 adjoints (2026-11-18): the legs run on in
+    50-year chunks to year 330, and the third generation's adjoints start there. Years 0-170 compressed, 170-185 and
+    330-335 enlarged (the adjoint windows), 185-330 in between; the axis says so."""
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+    from matplotlib.colors import LogNorm
+    from matplotlib.transforms import Bbox
+    C.setup_style()
+    Ws, Hs = 9.6, 5.5
+    x0 = 2.45
+    segs = [(0, 170, 0.4), (170, 180, 1.0), (180, 185, 0.6), (185, 330, 2.9), (330, 335, 1.1)]   # (from, to, inches)
+
+    def X(year):
+        x = x0
+        for a, b, w in segs:
+            if year <= b:
+                return x + w * (year - a) / (b - a)
+            x += w
+        return x + 0.08 * (year - segs[-1][1])
+
+    chunk_ends = sorted({round(c['start'] + c['years']) for r in C.RUN_ORDER for c in f['chunks'][r]})
+    y330 = chunk_ends[-1]
+    yadj3 = y330 + f['heat'][0]['adj']['REF']['years']
+    cm = C.sequential_cmap()
+    norm = LogNorm(vmin=min(f['legs'][r]['k'] for r in C.RUN_ORDER) / 1.5,
+                   vmax=max(f['legs'][r]['k'] for r in C.RUN_ORDER))
+    BLUE, ORANGE, GREEN = C.SERIES
+    fig = plt.figure(figsize=(Ws, Hs))
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, Ws); ax.set_ylim(0, Hs); ax.axis('off')
+    FS = 9.5
+
+    def arrow(x1, y1, x2, y2, color, lw=1.4, ls='-', head=8):
+        ax.annotate('', xy=(x2, y2), xytext=(x1, y1), zorder=3,
+                    arrowprops=dict(arrowstyle='-|>', color=color, lw=lw, ls=ls, mutation_scale=head,
+                                    shrinkA=0, shrinkB=0))
+
+    def diamond(x, y, ms=5):
+        ax.plot([x], [y], 'D', ms=ms, color='white', mec=C.INK, mew=1.1, zorder=6)
+
+    def lane(y, title, sub):
+        ax.text(0.08, y, title, fontsize=11, fontweight='bold', va='center', color=C.INK)
+        ax.text(0.08, y - 0.17, sub, fontsize=FS - 0.5, va='top', color=C.INK2, linespacing=1.3)
+
+    # legend and axis
+    ly = Hs - 0.22
+    arrow(0.08, ly, 0.5, ly, BLUE, lw=1.6); ax.text(0.58, ly, 'forward run', fontsize=FS, va='center')
+    arrow(2.35, ly, 1.93, ly, ORANGE, lw=2.4); ax.text(2.43, ly, 'adjoint, backward in time', fontsize=FS, va='center')
+    diamond(4.62, ly); ax.text(4.75, ly, 'saved state a later run starts from', fontsize=FS, va='center')
+    ax.add_patch(Rectangle((7.55, ly - 0.07), 0.08, 0.14, color=ORANGE, zorder=4))
+    ax.text(7.7, ly, 'cost window (30 d)', fontsize=FS, va='center')
+    ty = Hs - 0.62
+    xb = x0 + 0.2
+    ax.plot([x0, xb - 0.04], [ty, ty], color=C.AXIS_C, lw=0.9)
+    ax.plot([xb + 0.04, X(yadj3) + 0.3], [ty, ty], color=C.AXIS_C, lw=0.9)
+    for xx in (xb - 0.03, xb + 0.03):
+        ax.plot([xx - 0.025, xx + 0.025], [ty - 0.06, ty + 0.06], color=C.MUTED, lw=0.9)
+    for yr in [0, 170, 180, 185] + chunk_ends + [yadj3]:
+        ax.plot([X(yr)] * 2, [ty - 0.04, ty + 0.04], color=C.MUTED, lw=0.9)
+        ax.text(X(yr), ty + 0.07, '%d' % yr, fontsize=FS - 1, ha='center', va='bottom', color=C.INK2)
+    ax.text(x0 - 0.08, ty, 'model year\n(not to scale)', fontsize=FS - 1.5, ha='right', va='center', color=C.INK2,
+            linespacing=1.2)
+
+    # the reference run: the spin-up
+    ys = ty - 0.4
+    kref = f['spin_k']
+    ax.add_patch(Rectangle((x0, ys - 0.08), X(f['spin_years']) - x0, 0.16, color=cm(norm(kref)), zorder=2))
+    for xx in (xb - 0.03, xb + 0.03):
+        ax.plot([xx - 0.03, xx + 0.03], [ys - 0.11, ys + 0.11], color=C.SURFACE, lw=2.6, zorder=3)
+    ax.text(X(f['spin_years']) + 0.06, ys, '%d' % round(f['spin_years']), fontsize=FS - 1, va='center', color=C.INK2)
+    ax.text(X(170) + 0.06, ys + 0.12, 'from rest, $\\kappa_v = %s$ m$^2$ s$^{-1}$' % sci(kref), fontsize=FS - 0.5,
+            color=C.INK2, va='bottom')
+    diamond(X(170), ys); diamond(X(180), ys)
+    lane(ys + 0.02, 'Reference run', 'spin-up %d' % f['spin_job'])
+
+    # the eight legs, then their chunks
+    order = C.RUN_ORDER[::-1]
+    dy = 0.155
+    yl = {r: ys - 0.38 - n * dy for n, r in enumerate(order)}
+    ax.plot([X(170)] * 2, [ys - 0.06, yl[order[-1]]], color=C.INK2, lw=0.9, zorder=1)
+    for r in order:
+        y = yl[r]
+        L = f['legs'][r]
+        col = cm(norm(L['k']))
+        pieces = [(L['start'], L['years'])] + [(c['start'], c['years']) for c in f['chunks'][r]]
+        for st, yrs in pieces:
+            ax.add_patch(Rectangle((X(st), y - 0.055), X(st + yrs) - X(st), 0.11, color=col,
+                                   ec=C.INK if r == 'REF' else 'none', lw=0.9, zorder=2))
+            diamond(X(st + yrs), y, ms=4.4)
+        ax.text(X(170) - 0.07, y, ('REF ' if r == 'REF' else '') + '%gx' % C.FACTOR[r], fontsize=FS - 1, ha='right',
+                va='center', fontweight='bold' if r == 'REF' else 'normal')
+    nchunk = len(f['chunks']['REF'])
+    lane(yl[order[1]] - 0.03, 'Forward legs', '8 members, only $\\kappa_v$ differs:\n%d years from year %d, then\n'
+         '%d chunks of %d years to year %d\n(REF\'s leg is identical to the spin-up)' %
+         (round(f['legs']['REF']['years']), round(f['legs']['REF']['start']), nchunk,
+          round(f['chunks']['REF'][0]['years']), y330))
+
+    # the adjoints: generations 1 and 2 from the year-180 states, generation 3 from the year-330 states
+    ya = {r: yl[order[-1]] - 0.72 - n * dy for n, r in enumerate(order)}   # room for the generation labels above
+    y180 = round(f['legs']['REF']['start'] + f['legs']['REF']['years'])
+    for x1, x2 in ((X(y180), X(y180 + f['adj']['REF']['years'])), (X(y330), X(yadj3))):
+        ax.plot([x1] * 2, [yl[order[0]], ya[order[-1]]], color=C.INK2, lw=0.9, ls=':', zorder=1)
+        for r in order:
+            y = ya[r]
+            ax.plot([x1, x2], [y + 0.035, y + 0.035], color=BLUE, lw=0.9, zorder=2)
+            arrow(x2 - 0.08, y - 0.025, x1 + 0.06, y - 0.025, ORANGE, lw=2.0, head=7)
+            ax.add_patch(Rectangle((x2 - 0.08, y - 0.06), 0.08, 0.12, color=ORANGE, zorder=4))
+            diamond(x1, y, ms=4.4)
+    for r in order:
+        ax.text(X(y180) - 0.08, ya[r], '%gx' % C.FACTOR[r], fontsize=FS - 1, ha='right', va='center',
+                fontweight='bold' if r == 'REF' else 'normal')
+    ytop = ya[order[0]] + 0.14
+    ax.text((X(y180) + X(y180 + f['adj']['REF']['years'])) / 2, ytop,
+            'generations 1 and 2\nfrom the year-%d states\n%d sections, volume transport' % (y180, len(f['sections'])),
+            fontsize=FS - 1.5, ha='center', va='bottom', color=C.INK2, linespacing=1.25)
+    ax.text((X(y330) + X(yadj3)) / 2, ytop,
+            'generation 3\nfrom the year-%d states\n%d rows, heat transport' % (y330, len(f['heat'])),
+            fontsize=FS - 1.5, ha='center', va='bottom', color=C.INK2, linespacing=1.25)
+    ax.text((X(185) + X(y330)) / 2, ya[order[3]], 'each member from its own\nstate, with its own $\\kappa_v$',
+            fontsize=FS - 1, ha='center', va='center', color=C.INK2, linespacing=1.3)
+    lane(ya[order[0]] - 0.03, 'Adjoint runs', '%d years each, J over the\nlast 30 days; the 8 members\nfor each cost section' %
+         round(f['adj']['REF']['years']))
+
+    # finite-difference checks and the follow-ups
+    yo = ya[order[-1]] - 0.45
+    rows = [('finite-difference checks: forward only, from REF', 'fd'),
+            ('latitude sweep: REF state, cost at 14 rows, 1 year', 'sweep'),
+            ('8x state, cost at its own maximum (69 N), 5 years', 'ownmax')]
+    for n, (txt, kind) in enumerate(rows):   # the text to the right of each arrow (year 180 sits too far left for a label before it)
+        y = yo - n * 0.2
+        if kind == 'fd':
+            for ys_, ye_ in ((y180, y180 + f['adj']['REF']['years']), (y330, yadj3)):
+                arrow(X(ys_), y, X(ye_) - 0.03, y, BLUE, lw=1.1, ls='--', head=7)
+                ax.plot([X(ye_)], [y], 'o', ms=5, color=GREEN, zorder=5)
+            xt = X(y180 + f['adj']['REF']['years']) + 0.12
+        elif kind == 'sweep':
+            arrow(X(y180 + 1.0), y, X(y180), y, ORANGE, lw=1.7, head=7)
+            xt = X(y180 + 1.0) + 0.12
+        else:
+            arrow(X(y180 + 5.0), y, X(y180), y, ORANGE, lw=1.7, head=7)
+            xt = X(y180 + 5.0) + 0.12
+        ax.text(xt, y, txt, fontsize=FS - 2, ha='left', va='center', color=C.INK)
+    lane(yo + 0.02, 'Checks and follow-ups', 'from the year-%d states; the\nchecks (J only) from year %d too' % (y180, y330))
+    fig.savefig(out, dpi=220, bbox_inches=Bbox.from_bounds(0, max(0, yo - 2 * 0.2 - 0.25), Ws, Hs - max(0, yo - 0.65)))
+    plt.close(fig)
+
+
 def sci(v):
     m, e = ('%.1e' % v).split('e')
     return '%s\\times10^{%d}' % (m, int(e))
@@ -465,6 +663,12 @@ def main():
     print(out)
     plot_slide(f, C.FIGS / 'workflow_schematic_slide.png')
     print(C.FIGS / 'workflow_schematic_slide.png')
+    facts_generations(f)
+    print('extension: %d chunks per member to year %d; third generation: %d campaigns, adjoints from year %d (%s)' % (
+        len(f['chunks']['REF']), round(f['chunks']['REF'][-1]['start'] + f['chunks']['REF'][-1]['years']), len(f['heat']),
+        round(f['heat'][0]['adj']['REF']['start']), ', '.join(q['name'] for q in f['heat'])))
+    plot_slide_generations(f, C.FIGS / 'workflow_schematic_slide_generations.png')
+    print(C.FIGS / 'workflow_schematic_slide_generations.png')
     if a.notes:
         dest = Path(a.notes).expanduser() / out.name
         shutil.copy2(out, dest)
